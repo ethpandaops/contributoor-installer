@@ -2,10 +2,7 @@ package install
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/install/wizard"
@@ -70,53 +67,11 @@ func installContributoor(c *cli.Context) error {
 		log.Infof("Using provided version: %s", version)
 	}
 
-	log.WithFields(logrus.Fields{
-		"url": installerURL,
-	}).Info("Downloading installation script")
-
-	// Download the installation script
-	resp, err := http.Get(installerURL)
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%sUnexpected http status downloading installation script: %d%s", colorRed, resp.StatusCode, colorReset)
-	}
-
-	// Sanity check that the script octet length matches content-length
-	script, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	if fmt.Sprint(len(script)) != resp.Header.Get("content-length") {
-		return fmt.Errorf("%sDownloaded script length %d did not match content-length header %s%s", colorRed, len(script), resp.Header.Get("content-length"), colorReset)
-	}
-
 	// Expand the home directory if necessary. Takes care of paths provided with `~`.
 	expandedDir, err := homedir.Expand(configDir)
 	if err != nil {
 		return fmt.Errorf("%sFailed to expand config path: %w%s", colorRed, err, colorReset)
 	}
-
-	log.Info("Running installation script")
-
-	// Execute the script and capture output
-	scriptPath := filepath.Join(os.TempDir(), "install.sh")
-	if err := os.WriteFile(scriptPath, script, 0755); err != nil {
-		return fmt.Errorf("%sFailed to write installation script: %w%s", colorRed, err, colorReset)
-	}
-	defer os.Remove(scriptPath)
-
-	cmd := exec.Command(scriptPath, "-p", expandedDir)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("%sFailed to execute installation script: %w\nOutput: %s%s", colorRed, err, output, colorReset)
-	}
-
-	log.Info("Installation script completed")
 
 	// Create empty config or load existing
 	cfg := config.NewContributoorConfig(expandedDir)
