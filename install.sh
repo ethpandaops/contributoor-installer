@@ -30,8 +30,8 @@ esac
 # Get the platform type
 PLATFORM=$(uname -s)
 case "$PLATFORM" in
-    Linux)  PLATFORM="linux" ;;
-    Darwin) PLATFORM="darwin" ;;
+    Linux)  PLATFORM="Linux" ;;
+    Darwin) PLATFORM="Darwin" ;;
     *)      fail "Operating system not supported: $PLATFORM" ;;
 esac
 
