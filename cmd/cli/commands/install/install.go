@@ -23,10 +23,6 @@ const (
 	clearLine      string = "\033[2K"
 )
 
-const (
-	InstallerURL string = "https://gist.githubusercontent.com/mattevans/5cba10243f8fa5fa547aa8cfd96ff888/raw/%s/test.sh"
-)
-
 func RegisterCommands(app *cli.App, name string, aliases []string) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:      name,
@@ -54,7 +50,6 @@ func installContributoor(c *cli.Context) error {
 		freshInstall bool
 		configDir    = c.GlobalString("config-path")
 		version      = c.String("version")
-		installerURL = fmt.Sprintf(InstallerURL, version)
 	)
 
 	log := c.App.Metadata["logger"].(*logrus.Logger)
