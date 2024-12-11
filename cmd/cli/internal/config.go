@@ -16,9 +16,9 @@ const (
 type ContributoorConfig struct {
 	Title                 string         `yaml:"title"`
 	Version               string         `yaml:"version"`
-	ContributoorDirectory string         `yaml:"contributoor_directory"`
+	ContributoorDirectory string         `yaml:"contributoorDirectory"`
 	Network               *NetworkConfig `yaml:"network"`
-	RunMethod             string         `yaml:"run_method"`
+	RunMethod             string         `yaml:"runMethod"`
 }
 
 type NetworkConfig struct {
