@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	config "github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
 )
 
@@ -59,14 +59,24 @@ func runContributoor(c *cli.Context) error {
 
 	logger := c.App.Metadata["logger"].(*logrus.Logger)
 
-	cfg, err := config.LoadConfig(configFile)
+	cfg, err := internal.LoadConfig(configFile)
 	if err != nil {
 		return err
 	}
 
-	dockerService := service.NewDockerService(logger, cfg)
-	if err = dockerService.Restart(); err != nil {
-		return fmt.Errorf("could not start service: %w", err)
+	switch cfg.RunMethod {
+	case internal.RunMethodDocker:
+		dockerService := service.NewDockerService(logger, cfg)
+		if err := dockerService.Start(); err != nil {
+			logger.Errorf("could not start service: %v", err)
+			return err
+		}
+	case internal.RunMethodBinary:
+		binaryService := service.NewBinaryService(logger, cfg)
+		if err := binaryService.Start(); err != nil {
+			logger.Errorf("could not start service: %v", err)
+			return err
+		}
 	}
 
 	return nil
