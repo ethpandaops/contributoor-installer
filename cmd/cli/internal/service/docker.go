@@ -172,19 +172,19 @@ func (s *DockerService) checkForUpdates() error {
 	var hasUpdate bool
 
 	// Get current image info before pull
-	before, err := s.getImageInfo("mattevansnz/contributoor-test:latest")
+	before, err := s.getImageInfo("ethpandaops/contributoor-test:latest")
 	if err != nil {
 		return err
 	}
 
 	// Pull latest image
-	cmd := exec.Command("docker", "pull", "mattevansnz/contributoor-test:latest")
+	cmd := exec.Command("docker", "pull", "ethpandaops/contributoor-test:latest")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to pull latest image: %w", err)
 	}
 
 	// Get image info after pull
-	after, err := s.getImageInfo("mattevansnz/contributoor-test:latest")
+	after, err := s.getImageInfo("ethpandaops/contributoor-test:latest")
 	if err != nil {
 		return err
 	}
