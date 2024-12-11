@@ -31,6 +31,6 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean ${{ github.ref_type == 'tag' && '' || '--snapshot' }}
+          args: release --clean ${{ startsWith(github.ref, 'refs/tags/') && '' || '--snapshot' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
