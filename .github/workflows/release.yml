@@ -1,11 +1,7 @@
 name: Release
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - master
-      - develop
     tags:
       - 'v*'
 
@@ -31,6 +27,6 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean ${{ startsWith(github.ref, 'refs/tags/') && '' || '--snapshot' }}
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
