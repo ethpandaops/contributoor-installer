@@ -26,7 +26,6 @@ Authored by the ethPandaOps team
 	// Set application info
 	app.Name = "contributoor"
 	app.Usage = "Xatu Contributoor CLI"
-	app.Version = "0.0.1"
 	app.Copyright = "(c) 2024 ethPandaOps"
 
 	// Initialize app metadata

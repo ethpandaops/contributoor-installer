@@ -89,18 +89,23 @@ add_to_path() {
     esac
 
     if [ -n "$SHELL_RC" ] && [ -f "$SHELL_RC" ]; then
-        if ! echo "$PATH" | tr ":" "\n" | grep -Fxq "$CONTRIBUTOOR_BIN"; then
-            if [ "$(basename "$SHELL")" = "fish" ]; then
-                echo "fish_add_path $CONTRIBUTOOR_BIN" >> "$SHELL_RC"
-            else
-                echo "export PATH=\"\$PATH:$CONTRIBUTOOR_BIN\"" >> "$SHELL_RC"
+        # Check if line already exists in RC file
+        PATH_LINE="export PATH=\"\$PATH:$CONTRIBUTOOR_BIN\""
+        FISH_LINE="fish_add_path $CONTRIBUTOOR_BIN"
+        if [ "$(basename "$SHELL")" = "fish" ]; then
+            if ! grep -Fxq "$FISH_LINE" "$SHELL_RC"; then
+                echo "$FISH_LINE" >> "$SHELL_RC"
+                echo "Added $CONTRIBUTOOR_BIN to PATH in $SHELL_RC"
+                echo "Please restart your shell or run: source $SHELL_RC"
             fi
-            echo "Added $CONTRIBUTOOR_BIN to PATH in $SHELL_RC"
-            echo "Please restart your shell or run: source $SHELL_RC"
+        else
+            if ! grep -Fxq "$PATH_LINE" "$SHELL_RC"; then
+                echo "$PATH_LINE" >> "$SHELL_RC"
+                echo "Added $CONTRIBUTOOR_BIN to PATH in $SHELL_RC"
+                echo "Please restart your shell or run: source $SHELL_RC"
+            fi
         fi
     fi
-    echo "To manually add to PATH, add this line to your shell's RC file:"
-    echo "  export PATH=\"\$PATH:$CONTRIBUTOOR_BIN\""
 }
 
 case ":$PATH:" in
@@ -139,20 +144,20 @@ if ! tar -xzf "$TEMP_ARCHIVE" -C "$CONTRIBUTOOR_BIN"; then
 fi
 
 # Check if binary exists and is executable
-if [ ! -f "$CONTRIBUTOOR_BIN/contributoor-installer" ]; then
+if [ ! -f "$CONTRIBUTOOR_BIN/contributoor" ]; then
     fail "Binary not found after extraction"
 fi
 
-chmod +x "$CONTRIBUTOOR_BIN/contributoor-installer"
-if [ ! -x "$CONTRIBUTOOR_BIN/contributoor-installer" ]; then
+chmod +x "$CONTRIBUTOOR_BIN/contributoor"
+if [ ! -x "$CONTRIBUTOOR_BIN/contributoor" ]; then
     fail "Failed to make binary executable"
 fi
 
 export PATH="$PATH:$CONTRIBUTOOR_BIN"
 
-progress 3 "Contributoor installer has been installed to $CONTRIBUTOOR_BIN/contributoor-installer"
+progress 3 "Contributoor has been installed to $CONTRIBUTOOR_BIN/contributoor"
 
 # Run initial install
 progress 4 "Running installation..."
-contributoor-installer --config-path "$CONTRIBUTOOR_PATH" install --version "$VERSION"
+contributoor --config-path "$CONTRIBUTOOR_PATH" install --version "$VERSION"
 
