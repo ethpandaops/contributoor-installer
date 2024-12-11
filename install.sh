@@ -5,6 +5,14 @@ CONTRIBUTOOR_PATH=${CONTRIBUTOOR_PATH:-"$HOME/.contributoor"}
 CONTRIBUTOOR_BIN="$CONTRIBUTOOR_PATH/bin"
 VERSION="latest"
 
+# Print usage
+usage() {
+    echo "Usage: $0 [-p path] [-v version]"
+    echo "  -p: Path to install contributoor (default: $HOME/.contributoor)"
+    echo "  -v: Version to install (default: latest)"
+    exit 1
+}
+
 # Error handling
 COLOR_RED='\033[0;31m'
 COLOR_YELLOW='\033[33m'
@@ -35,13 +43,17 @@ case "$PLATFORM" in
     *)      fail "Operating system not supported: $PLATFORM" ;;
 esac
 
-while getopts "p:" FLAG; do
+while getopts "p:v:h" FLAG; do
     case "$FLAG" in
         p) CONTRIBUTOOR_PATH="$OPTARG" ;;
         v) VERSION="$OPTARG" ;;
-        *) fail "Incorrect usage." ;;
+        h) usage ;;
+        *) usage ;;
     esac
 done
+
+# Update bin path after potential flag override
+CONTRIBUTOOR_BIN="$CONTRIBUTOOR_PATH/bin"
 
 # Construct binary URL based on platform and arch
 BINARY_NAME="contributoor-installer-test_${PLATFORM}_"
@@ -146,5 +158,5 @@ progress 3 "Contributoor installer has been installed to $CONTRIBUTOOR_BIN/contr
 
 # Run initial install
 progress 4 "Running installation..."
-contributoor-installer install
+contributoor-installer --config-path "$CONTRIBUTOOR_PATH" install 
 
