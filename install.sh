@@ -9,7 +9,7 @@ VERSION="latest"
 usage() {
     echo "Usage: $0 [-p path] [-v version]"
     echo "  -p: Path to install contributoor (default: $HOME/.contributoor)"
-    echo "  -v: Version to install (default: latest)"
+    echo "  -v: Version of contributoor to install (default: latest)"
     exit 1
 }
 
@@ -63,11 +63,7 @@ else
     BINARY_NAME="${BINARY_NAME}${ARCH}"
 fi
 
-if [ "$VERSION" = "latest" ]; then
-    BINARY_URL="https://github.com/ethpandaops/contributoor-installer-test/releases/latest/download/${BINARY_NAME}.tar.gz"
-else
-    BINARY_URL="https://github.com/ethpandaops/contributoor-installer-test/releases/download/${VERSION}/${BINARY_NAME}.tar.gz"
-fi
+BINARY_URL="https://github.com/ethpandaops/contributoor-installer-test/releases/latest/download/${BINARY_NAME}.tar.gz"
 
 # Print progress
 progress() {
