@@ -1,16 +1,13 @@
 name: Release
 
 on:
-  # Manual trigger from GitHub UI
   workflow_dispatch:
-  # Optionally trigger on push to specific branches
   push:
     branches:
       - master
       - develop
-  # Keep existing release trigger
-  tags:
-    - 'v*'
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
