@@ -2,10 +2,10 @@ package wizard
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
 	"github.com/rivo/tview"
+	"github.com/sirupsen/logrus"
 )
 
 type FinishStep struct {
@@ -31,7 +31,6 @@ func NewFinishStep(w *InstallWizard) *FinishStep {
 				// Process config first
 				if err := step.processConfigAfterQuit(); err != nil {
 					step.wizard.Logger.Error("failed to process config after quit: %w", err)
-					return
 				}
 
 				step.wizard.GetApp().Stop()
@@ -63,11 +62,14 @@ func (s *FinishStep) GetProgress() (int, int) {
 }
 
 func (s *FinishStep) processConfigAfterQuit() error {
-	// Write config to file
-	configPath := filepath.Join(s.wizard.Config.ContributoorDirectory, "contributoor.yaml")
+	configPath := s.wizard.Config.ContributoorDirectory
 	if err := s.wizard.Config.WriteToFile(configPath); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
+
+	s.wizard.Logger.WithFields(logrus.Fields{
+		"path": configPath,
+	}).Info("Configuration saved")
 
 	return nil
 }

@@ -9,7 +9,7 @@ VERSION="latest"
 usage() {
     echo "Usage: $0 [-p path] [-v version]"
     echo "  -p: Path to install contributoor (default: $HOME/.contributoor)"
-    echo "  -v: Version of contributoor to install (default: latest)"
+    echo "  -v: Version of contributoor to install without 'v' prefix (default: latest, example: 0.0.6)"
     exit 1
 }
 
@@ -154,5 +154,5 @@ progress 3 "Contributoor installer has been installed to $CONTRIBUTOOR_BIN/contr
 
 # Run initial install
 progress 4 "Running installation..."
-contributoor-installer --version "$VERSION" --config-path "$CONTRIBUTOOR_PATH" install 
+contributoor-installer --config-path "$CONTRIBUTOOR_PATH" install --version "$VERSION"
 

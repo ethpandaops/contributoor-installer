@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   sentry:
-    image: ethpandaops/contributoor-test:${CONTRIBUTOOR_VERSION:-latest}
+    image: ethpandaops/contributoor-test:${CONTRIBUTOOR_VERSION}
     command: ["sentry", "--config", "/config/contributoor.yaml"]
     volumes:
       - ${CONTRIBUTOOR_CONFIG_PATH}:/config:ro

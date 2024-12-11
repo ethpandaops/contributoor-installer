@@ -1,8 +1,6 @@
 package wizard
 
 import (
-	"path/filepath"
-
 	config "github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
@@ -46,11 +44,6 @@ func (w *InstallWizard) OnComplete() error {
 	w.GetApp().Stop()
 
 	w.Logger.Info("Installation wizard complete")
-
-	configPath := filepath.Join(w.Config.ContributoorDirectory, "contributoor.yaml")
-	w.Logger.WithFields(logrus.Fields{
-		"path": configPath,
-	}).Info("Configuration saved")
 
 	switch w.Config.RunMethod {
 	case config.RunMethodDocker:

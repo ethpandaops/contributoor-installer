@@ -56,6 +56,16 @@ func (s *DockerService) Stop() error {
 }
 
 func (s *DockerService) Start() error {
+	// Check if image exists
+	imageInfo, err := s.getImageInfo(fmt.Sprintf("ethpandaops/contributoor-test:%s", s.config.Version))
+	if err != nil || imageInfo.ID == "" {
+		s.logger.Warnf("Image not found locally, attempting to pull...")
+		cmd := exec.Command("docker", "pull", fmt.Sprintf("ethpandaops/contributoor-test:%s", s.config.Version))
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("failed to pull image: %w\nOutput: %s", err, string(output))
+		}
+	}
+
 	if err := s.checkForUpdates(); err != nil {
 		s.logger.Warnf("Failed to check for updates: %v", err)
 	}
@@ -138,13 +148,24 @@ func (s *DockerService) stopContainers(dockerComposeFile string, cfgPath string)
 }
 
 func (s *DockerService) startContainers(dockerComposeFile string, cfgPath string) error {
+	// Ensure we're using directory path, not file path
+	configDir := filepath.Dir(cfgPath)
+
 	cmd := exec.Command("docker", "compose", "-f", dockerComposeFile, "up", "-d", "--pull", "always")
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", cfgPath),
+		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", configDir),
 		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", s.config.Version),
 	)
-	if _, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("docker compose up failed: %w", err)
+
+	// Log the command for debugging
+	s.logger.WithFields(logrus.Fields{
+		"compose_file": dockerComposeFile,
+		"config_path":  cfgPath,
+		"version":      s.config.Version,
+	}).Debug("Starting docker containers")
+
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("docker compose up failed: %w\nOutput: %s", err, string(output))
 	}
 	return nil
 }
@@ -199,7 +220,7 @@ func (s *DockerService) checkForUpdates() error {
 	var hasUpdate bool
 
 	// Get current image info before pull
-	imageTag := s.config.Version
+	imageTag := strings.TrimPrefix(s.config.Version, "v")
 	if imageTag == "latest" {
 		imageTag = "latest"
 	}

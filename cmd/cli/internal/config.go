@@ -73,7 +73,7 @@ func LoadConfig(path string) (*ContributoorConfig, error) {
 		return nil, err
 	}
 
-	cfg := NewContributoorConfig(path)
+	cfg := &ContributoorConfig{}
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return nil, err
 	}

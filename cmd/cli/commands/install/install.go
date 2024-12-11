@@ -90,6 +90,7 @@ func installContributoor(c *cli.Context) error {
 		}
 	}
 
+	// Set version from flag if provided
 	if c.IsSet("version") {
 		cfg.Version = c.String("version")
 	}
