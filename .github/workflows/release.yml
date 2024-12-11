@@ -1,9 +1,16 @@
 name: Release
 
 on:
+  # Manual trigger from GitHub UI
+  workflow_dispatch:
+  # Optionally trigger on push to specific branches
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
+      - develop
+  # Keep existing release trigger
+  tags:
+    - 'v*'
 
 permissions:
   contents: write
@@ -27,6 +34,6 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean
+          args: release --clean ${{ github.ref_type == 'tag' && '' || '--snapshot' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
