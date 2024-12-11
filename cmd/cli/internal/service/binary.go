@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
+	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 )
 
@@ -155,7 +156,15 @@ func (s *BinaryService) downloadAndInstallBinary() error {
 		s.logger.Warnf("Failed to remove tar.gz file: %v", err)
 	}
 
+	// Expand the home directory if necessary. Takes care of paths provided with `~`.
+	expandedDir, err := homedir.Expand(s.config.ContributoorDirectory)
+	if err != nil {
+		return fmt.Errorf("failed to expand config path: %w", err)
+	}
+	configPath := filepath.Join(expandedDir, "contributoor.yaml")
+
 	s.logger.WithField("path", binDir).Info("Binary installed successfully")
+	s.logger.WithField("run_cmd", fmt.Sprintf("%s/sentry --config %s", binDir, configPath)).Info("Binary mode is still WIP, please execute run_cmd to start the service")
 
 	return nil
 }
