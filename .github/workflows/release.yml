@@ -6,7 +6,7 @@ on:
   # Optionally trigger on push to specific branches
   push:
     branches:
-      - main
+      - master
       - develop
   # Keep existing release trigger
   tags:
