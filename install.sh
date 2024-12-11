@@ -30,8 +30,8 @@ esac
 # Get the platform type
 PLATFORM=$(uname -s)
 case "$PLATFORM" in
-    Linux)  PLATFORM="Linux" ;;
-    Darwin) PLATFORM="Darwin" ;;
+    Linux)  PLATFORM="linux" ;;
+    Darwin) PLATFORM="darwin" ;;
     *)      fail "Operating system not supported: $PLATFORM" ;;
 esac
 
@@ -44,7 +44,7 @@ while getopts "p:" FLAG; do
 done
 
 # Construct binary URL based on platform and arch
-BINARY_NAME="contributoor-installer_${PLATFORM}_"
+BINARY_NAME="contributoor-installer-test_${PLATFORM}_"
 if [ "$ARCH" = "amd64" ]; then
     BINARY_NAME="${BINARY_NAME}x86_64"
 else
