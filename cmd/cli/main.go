@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/install"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/run"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/config"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -40,6 +41,20 @@ Authored by the ethPandaOps team
 			Usage: "Contributoor config asset `path`",
 			Value: "~/.contributoor",
 		},
+		cli.StringFlag{
+			Name:  "version, v",
+			Usage: "The contributoor version to install",
+			Value: "latest",
+		},
+	}
+
+	// Set before action to update config with version
+	app.Before = func(c *cli.Context) error {
+		if c.IsSet("version") {
+			cfg := config.NewContributoorConfig(c.String("config-path"))
+			cfg.Version = c.String("version")
+		}
+		return nil
 	}
 
 	// Register commands

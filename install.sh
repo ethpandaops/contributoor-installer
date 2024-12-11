@@ -158,5 +158,5 @@ progress 3 "Contributoor installer has been installed to $CONTRIBUTOOR_BIN/contr
 
 # Run initial install
 progress 4 "Running installation..."
-contributoor-installer --config-path "$CONTRIBUTOOR_PATH" install 
+contributoor-installer --version "$VERSION" --config-path "$CONTRIBUTOOR_PATH" install 
 

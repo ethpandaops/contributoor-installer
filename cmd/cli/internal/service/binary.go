@@ -70,7 +70,7 @@ func (s *BinaryService) verifyChecksum(binaryPath string, expectedChecksum strin
 }
 
 func (s *BinaryService) downloadAndInstallBinary() error {
-	url := getBinaryURL()
+	url := s.getBinaryURL()
 	checksumURL := url + ".sha256"
 	s.logger.WithField("url", url).Info("Downloading binary")
 
@@ -131,13 +131,11 @@ func getBinaryName() string {
 	return "contributoor"
 }
 
-func getBinaryURL() string {
-	// TODO: Replace with actual release URL pattern
+func (s *BinaryService) getBinaryURL() string {
 	arch := runtime.GOARCH
 	os := runtime.GOOS
-	version := "v0.1.0" // This should come from somewhere
+	version := s.config.Version
 
-	// Example URL pattern: https://github.com/org/repo/releases/download/v0.1.0/contributoor-{os}-{arch}
 	return fmt.Sprintf("https://github.com/ethpandaops/contributoor-installer-test/releases/download/%s/contributoor-%s-%s",
 		version, os, arch)
 }

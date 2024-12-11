@@ -16,9 +16,9 @@ const (
 type ContributoorConfig struct {
 	Title                 string         `yaml:"title"`
 	Version               string         `yaml:"version"`
-	ContributoorDirectory string         `yaml:"contributoorDirectory"`
+	ContributoorDirectory string         `yaml:"contributoor_directory"`
 	Network               *NetworkConfig `yaml:"network"`
-	RunMethod             string         `yaml:"runMethod"`
+	RunMethod             string         `yaml:"run_method"`
 }
 
 type NetworkConfig struct {
@@ -40,7 +40,7 @@ type Parameter struct {
 func NewContributoorConfig(dir string) *ContributoorConfig {
 	return &ContributoorConfig{
 		Title:                 "Contributoor",
-		Version:               "0.0.1",
+		Version:               "latest",
 		ContributoorDirectory: dir,
 		Network: &NetworkConfig{
 			Name: Parameter{

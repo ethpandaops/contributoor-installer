@@ -139,7 +139,10 @@ func (s *DockerService) stopContainers(dockerComposeFile string, cfgPath string)
 
 func (s *DockerService) startContainers(dockerComposeFile string, cfgPath string) error {
 	cmd := exec.Command("docker", "compose", "-f", dockerComposeFile, "up", "-d", "--pull", "always")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", cfgPath))
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", cfgPath),
+		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", s.config.Version),
+	)
 	if _, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("docker compose up failed: %w", err)
 	}
@@ -196,7 +199,11 @@ func (s *DockerService) checkForUpdates() error {
 	var hasUpdate bool
 
 	// Get current image info before pull
-	before, err := s.getImageInfo("ethpandaops/contributoor-test:latest")
+	imageTag := s.config.Version
+	if imageTag == "latest" {
+		imageTag = "latest"
+	}
+	before, err := s.getImageInfo(fmt.Sprintf("ethpandaops/contributoor-test:%s", imageTag))
 	if err != nil {
 		return err
 	}
