@@ -90,6 +90,10 @@ func installContributoor(c *cli.Context) error {
 		}
 	}
 
+	if c.IsSet("version") {
+		cfg.Version = c.String("version")
+	}
+
 	log.Info("Running installation wizard")
 
 	// Create and run the install wizard
