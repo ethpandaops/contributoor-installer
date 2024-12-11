@@ -30,6 +30,7 @@ archives:
       - README*
       - LICENSE*
       - install.sh
+      - docker-compose.yml
     format_overrides:
       - goos: windows
         format: zip

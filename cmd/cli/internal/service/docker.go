@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
@@ -148,13 +147,38 @@ func (s *DockerService) startContainers(dockerComposeFile string, cfgPath string
 }
 
 func (s *DockerService) getComposeFilePath() (string, error) {
-	_, currentFile, _, ok := runtime.Caller(0)
-	if !ok {
-		return "", fmt.Errorf("could not get current file path")
+	// Get the directory where the binary is located
+	ex, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("could not get executable path: %w", err)
+	}
+	binDir := filepath.Dir(ex)
+
+	// First check if docker-compose.yml exists next to binary (release mode)
+	composePath := filepath.Join(binDir, "docker-compose.yml")
+	if _, err := os.Stat(composePath); err == nil {
+		return composePath, nil
 	}
 
-	repoRoot := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(currentFile)))))
-	return filepath.Join(repoRoot, "docker-compose.yml"), nil
+	// If not found, try dev mode paths
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("could not get working directory: %w", err)
+	}
+
+	// Check current directory
+	composePath = filepath.Join(cwd, "docker-compose.yml")
+	if _, err := os.Stat(composePath); err == nil {
+		return composePath, nil
+	}
+
+	// Check one level up (in case we're in cmd/cli)
+	composePath = filepath.Join(cwd, "..", "..", "docker-compose.yml")
+	if _, err := os.Stat(composePath); err == nil {
+		return composePath, nil
+	}
+
+	return "", fmt.Errorf("docker-compose.yml not found in binary dir or repo root")
 }
 
 func (s *DockerService) getConfigPath() (string, error) {
