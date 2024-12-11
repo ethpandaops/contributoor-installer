@@ -6,7 +6,7 @@ import (
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/install"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/run"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/config"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -51,7 +51,7 @@ Authored by the ethPandaOps team
 	// Set before action to update config with version
 	app.Before = func(c *cli.Context) error {
 		if c.IsSet("version") {
-			cfg := config.NewContributoorConfig(c.String("config-path"))
+			cfg := internal.NewContributoorConfig(c.String("config-path"))
 			cfg.Version = c.String("version")
 		}
 		return nil
