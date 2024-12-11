@@ -1,6 +1,9 @@
 package wizard
 
 import (
+	"fmt"
+	"path/filepath"
+
 	config "github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
@@ -42,6 +45,12 @@ func (w *InstallWizard) Start() error {
 
 func (w *InstallWizard) OnComplete() error {
 	w.GetApp().Stop()
+
+	// Save config before starting services.
+	configPath := filepath.Join(w.Config.ContributoorDirectory, "contributoor.yaml")
+	if err := w.Config.WriteToFile(configPath); err != nil {
+		return fmt.Errorf("failed to write config: %w", err)
+	}
 
 	w.Logger.Info("Installation wizard complete")
 
