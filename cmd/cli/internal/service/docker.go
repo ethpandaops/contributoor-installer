@@ -148,21 +148,11 @@ func (s *DockerService) stopContainers(dockerComposeFile string, cfgPath string)
 }
 
 func (s *DockerService) startContainers(dockerComposeFile string, cfgPath string) error {
-	// Ensure we're using directory path, not file path
-	configDir := filepath.Dir(cfgPath)
-
 	cmd := exec.Command("docker", "compose", "-f", dockerComposeFile, "up", "-d", "--pull", "always")
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", configDir),
+		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", cfgPath),
 		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", s.config.Version),
 	)
-
-	// Log the command for debugging
-	s.logger.WithFields(logrus.Fields{
-		"compose_file": dockerComposeFile,
-		"config_path":  cfgPath,
-		"version":      s.config.Version,
-	}).Debug("Starting docker containers")
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("docker compose up failed: %w\nOutput: %s", err, string(output))
@@ -213,7 +203,12 @@ func (s *DockerService) getConfigPath() (string, error) {
 	}
 
 	// Expand home directory if needed
-	return homedir.Expand(absPath)
+	expandedPath, err := homedir.Expand(absPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to expand home directory: %w", err)
+	}
+
+	return expandedPath, nil
 }
 
 func (s *DockerService) checkForUpdates() error {

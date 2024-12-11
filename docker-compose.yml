@@ -5,5 +5,7 @@ services:
     image: ethpandaops/contributoor-test:${CONTRIBUTOOR_VERSION}
     command: ["sentry", "--config", "/config/contributoor.yaml"]
     volumes:
-      - ${CONTRIBUTOOR_CONFIG_PATH}:/config:ro
+      - ${CONTRIBUTOOR_CONFIG_PATH}/contributoor.yaml:/config/contributoor.yaml:ro
+    environment:
+      - CONTRIBUTOOR_CONFIG=/config/contributoor.yaml
     restart: always
