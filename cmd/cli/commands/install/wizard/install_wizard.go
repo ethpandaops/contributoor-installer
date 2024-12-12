@@ -62,8 +62,6 @@ func (w *InstallWizard) OnComplete() error {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 
-	w.Logger.Info("Installation wizard complete")
-
 	switch w.Config.RunMethod {
 	case config.RunMethodDocker:
 		dockerService := service.NewDockerService(w.Logger, w.Config)
