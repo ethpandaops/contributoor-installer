@@ -310,7 +310,10 @@ install_installer_binary() {
     rm -f "$CHECKSUMS_FILE"
     
     # Extract to bin directory
-    tar -xzf "$TEMP_ARCHIVE" -C "$CONTRIBUTOOR_BIN" & 
+    tar -xzf "$TEMP_ARCHIVE" -C "$CONTRIBUTOOR_BIN" &
+    spinner $!
+    wait $!
+
     if [ ! -f "$CONTRIBUTOOR_BIN/contributoor" ]; then
         fail "Failed to extract installer binary"
     fi
@@ -367,7 +370,10 @@ install_contributoor_binary() {
     rm -f "$CHECKSUMS_FILE"
     
     # Extract to bin directory
-    tar -xzf "$TEMP_ARCHIVE" -C "$CONTRIBUTOOR_BIN" & 
+    tar -xzf "$TEMP_ARCHIVE" -C "$CONTRIBUTOOR_BIN" &
+    spinner $!
+    wait $!
+
     if [ ! -f "$CONTRIBUTOOR_BIN/sentry" ]; then
         fail "Failed to extract contributoor binary:\n- Archive exists: $([ -f "$TEMP_ARCHIVE" ] && echo "yes" || echo "no")\n- Bin dir exists: $([ -d "$CONTRIBUTOOR_BIN" ] && echo "yes" || echo "no")\n- Bin dir contents:\n$(ls -la "$CONTRIBUTOOR_BIN")"
     fi
