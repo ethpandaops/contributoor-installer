@@ -36,7 +36,7 @@ func (s *BinaryService) Start() error {
 	if err != nil {
 		return fmt.Errorf("failed to expand config path: %w", err)
 	}
-	configPath := filepath.Join(expandedDir, "contributoor.yaml")
+	configPath := filepath.Join(expandedDir, "config.yaml")
 
 	s.logger.WithField("run_cmd", fmt.Sprintf("%s --config %s", binaryPath, configPath)).Info("Binary mode is still WIP, please execute run_cmd to start the service")
 

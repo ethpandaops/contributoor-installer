@@ -65,7 +65,7 @@ func installContributoor(c *cli.Context) error {
 
 	var (
 		cfg        *internal.ContributoorConfig
-		configPath = filepath.Join(expandedDir, "contributoor.yaml")
+		configPath = filepath.Join(expandedDir, "config.yaml")
 	)
 
 	exists, err := fileExists(configPath)

@@ -57,7 +57,7 @@ func (w *InstallWizard) OnComplete() error {
 	w.GetApp().Stop()
 
 	// Save config before starting services.
-	configPath := filepath.Join(w.Config.ContributoorDirectory, "contributoor.yaml")
+	configPath := filepath.Join(w.Config.ContributoorDirectory, "config.yaml")
 	if err := w.Config.WriteToFile(configPath); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}

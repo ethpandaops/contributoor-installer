@@ -52,7 +52,7 @@ func runContributoor(c *cli.Context) error {
 	}
 
 	// Check config file exists
-	configFile := filepath.Join(path, "contributoor.yaml")
+	configFile := filepath.Join(path, "config.yaml")
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		return fmt.Errorf("%sConfig file not found at [%s]. Please run 'contributoor install' first%s", colorRed, configFile, colorReset)
 	}
