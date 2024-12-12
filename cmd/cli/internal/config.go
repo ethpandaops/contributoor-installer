@@ -8,63 +8,20 @@ import (
 )
 
 const (
-	ContributorVersion = "e29c4ae125d4787e4b48c5787f0f4998c8db15c5"
-	RunMethodDocker    = "docker"
-	RunMethodBinary    = "binary"
+	RunMethodDocker = "docker"
+	RunMethodBinary = "binary"
 )
 
 type ContributoorConfig struct {
-	Title                 string         `yaml:"title"`
 	Version               string         `yaml:"version"`
 	ContributoorDirectory string         `yaml:"contributoorDirectory"`
-	Network               *NetworkConfig `yaml:"network"`
 	RunMethod             string         `yaml:"runMethod"`
+	Network               *NetworkConfig `yaml:"network"`
 }
 
 type NetworkConfig struct {
-	Name              Parameter `yaml:"name"`
-	BeaconNodeAddress Parameter `yaml:"beaconNodeAddress"`
-}
-
-// A parameter that can be configured by the user
-type Parameter struct {
-	ID                 string      `yaml:"id,omitempty"`
-	Name               string      `yaml:"name,omitempty"`
-	Description        string      `yaml:"description,omitempty"`
-	MaxLength          int         `yaml:"maxLength,omitempty"`
-	CanBeBlank         bool        `yaml:"canBeBlank,omitempty"`
-	OverwriteOnUpgrade bool        `yaml:"overwriteOnUpgrade,omitempty"`
-	Value              interface{} `yaml:"value,omitempty"`
-}
-
-func NewContributoorConfig(dir string) *ContributoorConfig {
-	return &ContributoorConfig{
-		Title:                 "Contributoor",
-		Version:               "latest",
-		ContributoorDirectory: dir,
-		Network: &NetworkConfig{
-			Name: Parameter{
-				ID:          "networkName",
-				Name:        "Network name",
-				Value:       "",
-				Description: "The name of the network",
-			},
-			BeaconNodeAddress: Parameter{
-				ID:          "beaconNodeAddress",
-				Name:        "Beacon node address",
-				Value:       "",
-				Description: "The address of the beacon node to attach to",
-			},
-		},
-		RunMethod: RunMethodDocker,
-	}
-}
-
-func (cfg *NetworkConfig) GetParameters() []*Parameter {
-	return []*Parameter{
-		&cfg.Name,
-		&cfg.BeaconNodeAddress,
-	}
+	Name              string `yaml:"name"`
+	BeaconNodeAddress string `yaml:"beaconNodeAddress"`
 }
 
 func LoadConfig(path string) (*ContributoorConfig, error) {

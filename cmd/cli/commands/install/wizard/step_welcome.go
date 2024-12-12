@@ -11,11 +11,11 @@ type WelcomeStep struct {
 }
 
 func NewWelcomeStep(w *InstallWizard) *WelcomeStep {
-	intro := getIntroText(w.freshInstall)
+	intro := "We'll walk you through the basic setup of contributoor.\n\n"
 	helperText := fmt.Sprintf("%s\n\nWelcome to the contributoor configuration wizard!\n\n%s\n\n", display.Logo, intro)
 	step := display.NewChoiceStep(w, display.ChoiceStepOptions{
 		Step:    1,
-		Total:   4,
+		Total:   3,
 		Title:   "Welcome",
 		Text:    helperText,
 		Choices: []string{"Quit", "Next"},
@@ -55,11 +55,4 @@ func (s *WelcomeStep) GetTitle() string {
 
 func (s *WelcomeStep) GetProgress() (int, int) {
 	return s.ChoiceStep.Step, s.ChoiceStep.Total
-}
-
-func getIntroText(freshInstall bool) string {
-	if freshInstall {
-		return "Since this is your first time configuring the contributoor, we'll walk you through the basic setup.\n\n"
-	}
-	return "You've already configured contributoor, so any changes you make will update your existing configuration.\n\n"
 }

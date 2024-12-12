@@ -36,20 +36,12 @@ func NewBinaryService(logger *logrus.Logger, cfg *internal.ContributoorConfig) *
 }
 
 func (s *BinaryService) Start() error {
-	hasUpdate, latestVersion, err := s.checkForUpdates()
-	if err != nil {
-		s.logger.Warnf("Failed to check for updates: %v", err)
-	} else if hasUpdate {
-		s.logger.Infof("New version %s available", latestVersion)
+	binaryPath := filepath.Join(s.config.ContributoorDirectory, "bin", "sentry")
+	if _, err := os.Stat(binaryPath); err != nil {
+		return fmt.Errorf("binary not found at %s - please reinstall", binaryPath)
 	}
 
-	binaryPath := filepath.Join(s.config.ContributoorDirectory, "bin", s.getBinaryName())
-	if _, err := os.Stat(binaryPath); err == nil {
-		s.logger.WithField("version", s.config.Version).Info("Binary already exists, skipping download")
-		return nil
-	}
-
-	return s.downloadAndInstallBinary()
+	return nil
 }
 
 func (s *BinaryService) verifyChecksum(binaryPath string) error {

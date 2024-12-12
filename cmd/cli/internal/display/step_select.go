@@ -3,6 +3,7 @@ package display
 import (
 	"fmt"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -31,6 +32,12 @@ func NewChoiceStep(wizard Wizard, opts ChoiceStepOptions) *ChoiceStep {
 	modal.SetText(opts.Text)
 	modal.SetTitle(title)
 	modal.AddButtons(opts.Choices)
+	modal.SetButtonStyle(tcell.StyleDefault.
+		Background(tcell.ColorDefault).
+		Foreground(tcell.ColorLightGray))
+	modal.SetButtonActivatedStyle(tcell.StyleDefault.
+		Background(tcell.Color46).
+		Foreground(tcell.ColorBlack))
 	modal.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if opts.OnSelect != nil {
 			opts.OnSelect(buttonIndex)

@@ -100,11 +100,16 @@ func (m *TextBoxModalLayout) setupForm(labels []string, maxLengths []int, regexe
 
 	form := NewForm()
 	form.SetButtonsAlign(tview.AlignCenter)
-	form.SetButtonBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
-	form.SetButtonTextColor(tview.Styles.PrimaryTextColor)
 	form.SetFieldBackgroundColor(tcell.ColorBlack)
 	form.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 	form.SetBorderPadding(0, 0, 0, 0)
+	form.SetLabelColor(tcell.ColorLightGray)
+	form.SetButtonStyle(tcell.StyleDefault.
+		Background(tcell.ColorDefault).
+		Foreground(tcell.ColorLightGray)).
+		SetButtonActivatedStyle(tcell.StyleDefault.
+			Background(tcell.Color46).
+			Foreground(tcell.ColorBlack))
 	m.Form = form
 
 	for i, label := range labels {
@@ -121,9 +126,23 @@ func (m *TextBoxModalLayout) setupForm(labels []string, maxLengths []int, regexe
 		}
 	}
 
+	m.Form.AddButton("Back", m.handleBack).
+		SetButtonStyle(tcell.StyleDefault.
+			Background(tcell.ColorDefault).
+			Foreground(tcell.ColorLightGray)).
+		SetButtonActivatedStyle(tcell.StyleDefault.
+			Background(tcell.Color46).
+			Foreground(tcell.ColorBlack))
+
 	m.Form.AddButton("Next", m.handleNext).
-		SetButtonTextColor(tcell.ColorLightGray).
+		SetButtonStyle(tcell.StyleDefault.
+			Background(tcell.ColorDefault).
+			Foreground(tcell.ColorLightGray)).
+		SetButtonActivatedStyle(tcell.StyleDefault.
+			Background(tcell.Color46).
+			Foreground(tcell.ColorBlack)).
 		SetButtonBackgroundActivatedColor(tcell.Color46).
+		SetButtonTextColor(tcell.ColorLightGray).
 		SetButtonTextActivatedColor(tcell.ColorBlack)
 
 	leftSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
@@ -185,6 +204,12 @@ func (m *TextBoxModalLayout) handleNext() {
 		text[label] = strings.TrimSpace(textbox.GetText())
 	}
 	m.Done(text)
+}
+
+func (m *TextBoxModalLayout) handleBack() {
+	if m.Back != nil {
+		m.Back()
+	}
 }
 
 func (m *TextBoxModalLayout) Focus() {

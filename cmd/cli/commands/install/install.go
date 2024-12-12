@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/install/wizard"
-	config "github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
@@ -34,12 +34,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			cli.StringFlag{
 				Name:  "version, v",
 				Usage: "The contributoor version to install",
-				Value: fmt.Sprintf("%s", config.ContributorVersion),
+				Value: "latest",
 			},
 			cli.StringFlag{
 				Name:  "run-method, r",
 				Usage: "The method to run contributoor",
-				Value: config.RunMethodDocker,
+				Value: internal.RunMethodDocker,
 			},
 		},
 	})
@@ -47,20 +47,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 func installContributoor(c *cli.Context) error {
 	var (
-		freshInstall bool
-		configDir    = c.GlobalString("config-path")
-		version      = c.String("version")
+		configDir = c.GlobalString("config-path")
 	)
 
 	log := c.App.Metadata["logger"].(*logrus.Logger)
-
-	if c.GlobalIsSet("config-path") {
-		log.Infof("Custom config path provided: %s", configDir)
-	}
-
-	if c.IsSet("version") {
-		log.Infof("Using provided version: %s", version)
-	}
 
 	// Expand the home directory if necessary. Takes care of paths provided with `~`.
 	expandedDir, err := homedir.Expand(configDir)
@@ -68,38 +58,48 @@ func installContributoor(c *cli.Context) error {
 		return fmt.Errorf("%sFailed to expand config path: %w%s", colorRed, err, colorReset)
 	}
 
-	// Create empty config or load existing
-	cfg := config.NewContributoorConfig(expandedDir)
-
-	configPath := filepath.Join(expandedDir, "contributoor.yaml")
-	if exists, err := fileExists(configPath); err != nil {
-		return err
-	} else {
-		freshInstall = !exists
-		if !freshInstall {
-			log.WithFields(logrus.Fields{
-				"path": configPath,
-			}).Infof("Existing config found")
-			if cfg, err = config.LoadConfig(configPath); err != nil {
-				return err
-			}
-		} else {
-			log.WithFields(logrus.Fields{
-				"path": configPath,
-			}).Info("Fresh install detected, creating new config")
-		}
+	// Log a warning if no config path is provided.
+	if !c.GlobalIsSet("config-path") {
+		log.Warnf("No config path provided, using default: %s", expandedDir)
 	}
 
-	// Set version from flag if provided
+	var (
+		cfg        *internal.ContributoorConfig
+		configPath = filepath.Join(expandedDir, "contributoor.yaml")
+	)
+
+	exists, err := fileExists(configPath)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return fmt.Errorf("%sMissing config file. Please run install.sh first.%s", colorRed, colorReset)
+	}
+
+	if cfg, err = internal.LoadConfig(configPath); err != nil {
+		return err
+	}
+
+	// If we've been given a version explicitly via flag, use that.
 	if c.IsSet("version") {
 		cfg.Version = c.String("version")
 	}
 
-	log.Info("Running installation wizard")
+	// If we've been given a run method explicitly via flag, use that.
+	if c.IsSet("run-method") {
+		cfg.RunMethod = c.String("run-method")
+	}
+
+	log.WithFields(logrus.Fields{
+		"config_path": cfg.ContributoorDirectory,
+		"version":     cfg.Version,
+		"run_method":  cfg.RunMethod,
+	}).Info("Running installation wizard")
 
 	// Create and run the install wizard
 	app := tview.NewApplication()
-	w := wizard.NewInstallWizard(log, app, cfg, freshInstall)
+	w := wizard.NewInstallWizard(log, app, cfg)
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("%sWizard error: %w%s", colorRed, err, colorReset)

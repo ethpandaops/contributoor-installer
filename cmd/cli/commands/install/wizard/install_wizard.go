@@ -13,21 +13,20 @@ import (
 
 type InstallWizard struct {
 	*display.BaseWizard
-	freshInstall bool
-	Config       *config.ContributoorConfig
+	Config    *config.ContributoorConfig
+	completed bool
 }
 
-func NewInstallWizard(log *logrus.Logger, app *tview.Application, cfg *config.ContributoorConfig, freshInstall bool) *InstallWizard {
+func NewInstallWizard(log *logrus.Logger, app *tview.Application, cfg *config.ContributoorConfig) *InstallWizard {
 	w := &InstallWizard{
-		BaseWizard:   display.NewBaseWizard(log, app),
-		Config:       cfg,
-		freshInstall: freshInstall,
+		BaseWizard: display.NewBaseWizard(log, app),
+		Config:     cfg,
+		completed:  false,
 	}
 
 	// Add install-specific steps
 	w.Steps = []display.WizardStep{
 		NewWelcomeStep(w),
-		NewModeStep(w),
 		NewNetworkStep(w),
 		NewFinishStep(w),
 	}
@@ -43,7 +42,18 @@ func (w *InstallWizard) Start() error {
 	return w.CurrentStep.Show()
 }
 
+func (w *InstallWizard) SetCompleted() {
+	w.completed = true
+}
+
 func (w *InstallWizard) OnComplete() error {
+	// Don't save config if installation was interrupted
+	if !w.completed {
+		w.Logger.Info("Installation was interrupted")
+
+		return nil
+	}
+
 	w.GetApp().Stop()
 
 	// Save config before starting services.

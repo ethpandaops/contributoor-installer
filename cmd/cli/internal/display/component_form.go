@@ -142,6 +142,22 @@ func (f *Form) SetButtonTextActivatedColor(color tcell.Color) *Form {
 	return f
 }
 
+// SetButtonStyle sets the style for all buttons in their normal state.
+func (f *Form) SetButtonStyle(style tcell.Style) *Form {
+	for _, button := range f.buttons {
+		button.SetStyle(style)
+	}
+	return f
+}
+
+// SetButtonActivatedStyle sets the style for all buttons in their activated state.
+func (f *Form) SetButtonActivatedStyle(style tcell.Style) *Form {
+	for _, button := range f.buttons {
+		button.SetActivatedStyle(style)
+	}
+	return f
+}
+
 // SetFocus shifts the focus to the form element with the given index, counting
 // non-button items first and buttons last. Note that this index is only used
 // when the form itself receives focus.

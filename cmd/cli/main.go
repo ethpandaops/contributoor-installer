@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/install"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/run"
@@ -20,6 +22,18 @@ Authored by the ethPandaOps team
 %s`, display.Logo, cli.AppHelpTemplate)
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
+
+	// Set up signal handling
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Handle cleanup on exit
+	go func() {
+		<-sigChan
+		logger.Info("Received exit signal")
+		cleanup(logger)
+		os.Exit(0)
+	}()
 
 	app := cli.NewApp()
 
@@ -45,11 +59,25 @@ Authored by the ethPandaOps team
 	install.RegisterCommands(app, "install", []string{"i"})
 	run.RegisterCommands(app, "run", []string{"r"})
 
+	// Handle normal exit
+	app.After = func(c *cli.Context) error {
+		cleanup(logger)
+		return nil
+	}
+
 	// Run application
 	fmt.Println("")
 	if err := app.Run(os.Args); err != nil {
-		fmt.Println(err)
+		logger.Error(err)
 	}
 	fmt.Println("")
 
+}
+
+func cleanup(log *logrus.Logger) {
+	// Add any cleanup tasks here
+	// - Save state
+	// - Close connections
+	// - Remove temp files
+	// etc.
 }

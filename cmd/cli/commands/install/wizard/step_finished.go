@@ -14,16 +14,17 @@ type FinishStep struct {
 func NewFinishStep(w *InstallWizard) *FinishStep {
 	step := &FinishStep{
 		wizard: w,
-		step:   4,
-		total:  4,
+		step:   3,
+		total:  3,
 	}
 
-	helperText := "All done! You're ready to run."
+	helperText := "Nice work!\n\nYou're all done and ready to run contributoor."
 
 	step.modal = tview.NewModal().
 		SetText(helperText).
 		AddButtons([]string{"Save and Exit"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			step.wizard.SetCompleted()
 			step.wizard.GetApp().Stop()
 		})
 
@@ -40,7 +41,7 @@ func (s *FinishStep) Next() (display.WizardStep, error) {
 }
 
 func (s *FinishStep) Previous() (display.WizardStep, error) {
-	return s.wizard.Steps[2], nil
+	return s.wizard.Steps[1], nil
 }
 
 func (s *FinishStep) GetTitle() string {
