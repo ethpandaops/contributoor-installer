@@ -8,6 +8,16 @@ import (
 	"strings"
 )
 
+const (
+	ColorReset     = "\033[0m"
+	ColorBold      = "\033[1m"
+	ColorRed       = "\033[31m"
+	ColorYellow    = "\033[33m"
+	ColorGreen     = "\033[32m"
+	ColorLightBlue = "\033[36m"
+	ClearLine      = "\033[2K"
+)
+
 // Prompt for user input
 func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt string) string {
 	// Print initial prompt

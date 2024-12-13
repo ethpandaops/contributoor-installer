@@ -7,20 +7,11 @@ import (
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/install/wizard"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/utils"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-)
-
-const (
-	colorReset     string = "\033[0m"
-	colorBold      string = "\033[1m"
-	colorRed       string = "\033[31m"
-	colorYellow    string = "\033[33m"
-	colorGreen     string = "\033[32m"
-	colorLightBlue string = "\033[36m"
-	clearLine      string = "\033[2K"
 )
 
 func RegisterCommands(app *cli.App, name string, aliases []string) {
@@ -55,7 +46,7 @@ func installContributoor(c *cli.Context) error {
 	// Expand the home directory if necessary
 	expandedDir, err := homedir.Expand(configDir)
 	if err != nil {
-		return fmt.Errorf("%sFailed to expand config path: %w%s", colorRed, err, colorReset)
+		return fmt.Errorf("%sFailed to expand config path: %w%s", utils.ColorRed, err, utils.ColorReset)
 	}
 
 	if !c.GlobalIsSet("config-path") {
@@ -69,7 +60,7 @@ func installContributoor(c *cli.Context) error {
 	}
 
 	if !exists {
-		return fmt.Errorf("%sMissing config file. Please run install.sh first.%s", colorRed, colorReset)
+		return fmt.Errorf("%sMissing config file. Please run install.sh first.%s", utils.ColorRed, utils.ColorReset)
 	}
 
 	configService, err := service.NewConfigService(log, configPath)
@@ -103,11 +94,11 @@ func installContributoor(c *cli.Context) error {
 	w := wizard.NewInstallWizard(log, app, configService)
 
 	if err := w.Start(); err != nil {
-		return fmt.Errorf("%sWizard error: %w%s", colorRed, err, colorReset)
+		return fmt.Errorf("%sWizard error: %w%s", utils.ColorRed, err, utils.ColorReset)
 	}
 
 	if err := app.Run(); err != nil {
-		return fmt.Errorf("%sDisplay error: %w%s", colorRed, err, colorReset)
+		return fmt.Errorf("%sDisplay error: %w%s", utils.ColorRed, err, utils.ColorReset)
 	}
 
 	return w.OnComplete()

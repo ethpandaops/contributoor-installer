@@ -4,23 +4,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
-)
-
-const (
-	colorReset     string = "\033[0m"
-	colorBold      string = "\033[1m"
-	colorRed       string = "\033[31m"
-	colorYellow    string = "\033[33m"
-	colorGreen     string = "\033[32m"
-	colorLightBlue string = "\033[36m"
-	clearLine      string = "\033[2K"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/utils"
 )
 
 func RegisterCommands(app *cli.App, name string, aliases []string) {
@@ -42,13 +32,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	})
 }
 
-func promptYesNo(prompt string) bool {
-	var response string
-	fmt.Printf("\n%s%s [y/N]: %s\n", colorYellow, prompt, colorReset)
-	fmt.Scanln(&response)
-	return strings.ToLower(response) == "y"
-}
-
 func updateContributoor(c *cli.Context) error {
 	configPath := c.GlobalString("config-path")
 	path, err := homedir.Expand(configPath)
@@ -59,16 +42,16 @@ func updateContributoor(c *cli.Context) error {
 	// Check directory exists
 	dirInfo, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		return fmt.Errorf("%sYour configured contributoor directory [%s] does not exist. Please run 'contributoor install' first%s", colorRed, path, colorReset)
+		return fmt.Errorf("%sYour configured contributoor directory [%s] does not exist. Please run 'contributoor install' first%s", utils.ColorRed, path, utils.ColorReset)
 	}
 	if !dirInfo.IsDir() {
-		return fmt.Errorf("%s[%s] is not a directory%s", colorRed, path, colorReset)
+		return fmt.Errorf("%s[%s] is not a directory%s", utils.ColorRed, path, utils.ColorReset)
 	}
 
 	// Check config file exists
 	configFile := filepath.Join(path, "config.yaml")
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		return fmt.Errorf("%sConfig file not found at [%s]. Please run 'contributoor install' first%s", colorRed, configFile, colorReset)
+		return fmt.Errorf("%sConfig file not found at [%s]. Please run 'contributoor install' first%s", utils.ColorRed, configFile, utils.ColorReset)
 	}
 
 	logger := c.App.Metadata["logger"].(*logrus.Logger)
@@ -90,9 +73,9 @@ func updateContributoor(c *cli.Context) error {
 		if tag == configService.Get().Version {
 			logger.Infof(
 				"%sContributoor is already running version %s%s",
-				colorGreen,
+				utils.ColorGreen,
 				tag,
-				colorReset,
+				utils.ColorReset,
 			)
 			return nil
 		}
@@ -105,9 +88,9 @@ func updateContributoor(c *cli.Context) error {
 		if !exists {
 			return fmt.Errorf(
 				"%sVersion %s not found. Use 'contributoor update' without --version to get the latest version%s",
-				colorRed,
+				utils.ColorRed,
 				tag,
-				colorReset,
+				utils.ColorReset,
 			)
 		}
 
@@ -125,8 +108,8 @@ func updateContributoor(c *cli.Context) error {
 		if tag == configService.Get().Version {
 			logger.Infof(
 				"%sContributoor is up to date%s",
-				colorGreen,
-				colorReset,
+				utils.ColorGreen,
+				utils.ColorReset,
 			)
 			return nil
 		}
@@ -167,7 +150,7 @@ func updateContributoor(c *cli.Context) error {
 		}
 
 		if running {
-			if promptYesNo("Service is running. Would you like to restart it with the new version?") {
+			if utils.Confirm("Service is running. Would you like to restart it with the new version?") {
 				if err := dockerService.Stop(); err != nil {
 					return fmt.Errorf("failed to stop service: %w", err)
 				}
@@ -178,14 +161,14 @@ func updateContributoor(c *cli.Context) error {
 				logger.Info("Service will continue running with the previous version until next restart")
 			}
 		} else {
-			if promptYesNo("Service is not running. Would you like to start it?") {
+			if utils.Confirm("Service is not running. Would you like to start it?") {
 				if err := dockerService.Start(); err != nil {
 					return fmt.Errorf("failed to start service: %w", err)
 				}
 			}
 		}
 
-		logger.Infof("%sContributoor updated successfully to version %s%s", colorGreen, configService.Get().Version, colorReset)
+		logger.Infof("%sContributoor updated successfully to version %s%s", utils.ColorGreen, configService.Get().Version, utils.ColorReset)
 	case service.RunMethodBinary:
 		binaryService := service.NewBinaryService(logger, configService)
 		if err := binaryService.Update(); err != nil {
