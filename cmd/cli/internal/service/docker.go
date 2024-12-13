@@ -7,34 +7,30 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 )
 
 type DockerService struct {
-	logger      *logrus.Logger
-	config      *internal.ContributoorConfig
-	composePath string
-	configPath  string
+	logger        *logrus.Logger
+	config        *ContributoorConfig
+	composePath   string
+	configPath    string
+	configService *ConfigService
 }
 
-func NewDockerService(logger *logrus.Logger, config *internal.ContributoorConfig) (*DockerService, error) {
+func NewDockerService(logger *logrus.Logger, configService *ConfigService) (*DockerService, error) {
 	composePath, err := findComposeFile()
 	if err != nil {
 		return nil, fmt.Errorf("failed to find docker-compose.yml: %w", err)
 	}
 
-	configPath, err := expandConfigPath(config.ContributoorDirectory)
-	if err != nil {
-		return nil, fmt.Errorf("failed to expand config path: %w", err)
-	}
-
 	return &DockerService{
-		logger:      logger,
-		config:      config,
-		composePath: composePath,
-		configPath:  configPath,
+		logger:        logger,
+		config:        configService.Get(),
+		composePath:   composePath,
+		configPath:    configService.configPath,
+		configService: configService,
 	}, nil
 }
 
@@ -103,8 +99,8 @@ func (s *DockerService) Update() error {
 
 func (s *DockerService) getComposeEnv() []string {
 	return append(os.Environ(),
-		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", s.configPath),
-		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", s.config.Version),
+		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", s.configService.GetConfigDir()),
+		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", s.configService.Get().Version),
 	)
 }
 

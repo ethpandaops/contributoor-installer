@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/install/wizard"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
@@ -39,7 +39,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			cli.StringFlag{
 				Name:  "run-method, r",
 				Usage: "The method to run contributoor",
-				Value: internal.RunMethodDocker,
+				Value: service.RunMethodDocker,
 			},
 		},
 	})
@@ -52,22 +52,17 @@ func installContributoor(c *cli.Context) error {
 
 	log := c.App.Metadata["logger"].(*logrus.Logger)
 
-	// Expand the home directory if necessary. Takes care of paths provided with `~`.
+	// Expand the home directory if necessary
 	expandedDir, err := homedir.Expand(configDir)
 	if err != nil {
 		return fmt.Errorf("%sFailed to expand config path: %w%s", colorRed, err, colorReset)
 	}
 
-	// Log a warning if no config path is provided.
 	if !c.GlobalIsSet("config-path") {
 		log.Warnf("No config path provided, using default: %s", expandedDir)
 	}
 
-	var (
-		cfg        *internal.ContributoorConfig
-		configPath = filepath.Join(expandedDir, "config.yaml")
-	)
-
+	configPath := filepath.Join(expandedDir, "config.yaml")
 	exists, err := fileExists(configPath)
 	if err != nil {
 		return err
@@ -77,29 +72,35 @@ func installContributoor(c *cli.Context) error {
 		return fmt.Errorf("%sMissing config file. Please run install.sh first.%s", colorRed, colorReset)
 	}
 
-	if cfg, err = internal.LoadConfig(configPath); err != nil {
+	configService, err := service.NewConfigService(log, configPath)
+	if err != nil {
 		return err
 	}
 
-	// If we've been given a version explicitly via flag, use that.
-	if c.IsSet("version") {
-		cfg.Version = c.String("version")
-	}
-
-	// If we've been given a run method explicitly via flag, use that.
-	if c.IsSet("run-method") {
-		cfg.RunMethod = c.String("run-method")
+	// Update config if flags are set
+	if c.IsSet("version") || c.IsSet("run-method") {
+		err = configService.Update(func(cfg *service.ContributoorConfig) {
+			if c.IsSet("version") {
+				cfg.Version = c.String("version")
+			}
+			if c.IsSet("run-method") {
+				cfg.RunMethod = c.String("run-method")
+			}
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	log.WithFields(logrus.Fields{
-		"config_path": cfg.ContributoorDirectory,
-		"version":     cfg.Version,
-		"run_method":  cfg.RunMethod,
+		"config_path": configService.Get().ContributoorDirectory,
+		"version":     configService.Get().Version,
+		"run_method":  configService.Get().RunMethod,
 	}).Info("Running installation wizard")
 
 	// Create and run the install wizard
 	app := tview.NewApplication()
-	w := wizard.NewInstallWizard(log, app, cfg)
+	w := wizard.NewInstallWizard(log, app, configService)
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("%sWizard error: %w%s", colorRed, err, colorReset)

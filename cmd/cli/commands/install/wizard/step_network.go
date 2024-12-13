@@ -3,8 +3,8 @@ package wizard
 import (
 	"fmt"
 
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
 	"github.com/rivo/tview"
 )
 
@@ -23,10 +23,12 @@ func NewNetworkStep(w *InstallWizard) *NetworkStep {
 		MaxLengths: []int{20, 100},
 		Regexes:    []string{"", ""},
 		OnDone: func(values map[string]string) {
-			w.Config.Network = &internal.NetworkConfig{
-				Name:              values["Network Name"],
-				BeaconNodeAddress: values["Beacon Node Address"],
-			}
+			w.UpdateConfig(func(cfg *service.ContributoorConfig) {
+				cfg.Network = &service.NetworkConfig{
+					Name:              values["Network Name"],
+					BeaconNodeAddress: values["Beacon Node Address"],
+				}
+			})
 
 			if next, err := w.CurrentStep.Next(); err == nil {
 				w.CurrentStep = next
@@ -52,13 +54,17 @@ func (s *NetworkStep) Show() error {
 func (s *NetworkStep) Next() (display.WizardStep, error) {
 	// Get InstallWizard instance
 	w := s.TextBoxStep.Wizard.(*InstallWizard)
+	cfg := w.GetConfig()
 
-	if w.Config.Network == nil {
-		w.Config.Network = &internal.NetworkConfig{}
+	if cfg.Network == nil {
+		w.UpdateConfig(func(cfg *service.ContributoorConfig) {
+			cfg.Network = &service.NetworkConfig{}
+		})
+		cfg = w.GetConfig()
 	}
 
 	// Validate network settings
-	if w.Config.Network.Name == "" {
+	if cfg.Network.Name == "" {
 		errorModal := tview.NewModal().
 			SetText("Error: Network name is required\n\nPlease enter a name for your network (e.g. mainnet, sepolia, etc.)").
 			AddButtons([]string{"OK"}).
@@ -69,7 +75,7 @@ func (s *NetworkStep) Next() (display.WizardStep, error) {
 		return nil, fmt.Errorf("network name is required")
 	}
 
-	if w.Config.Network.BeaconNodeAddress == "" {
+	if cfg.Network.BeaconNodeAddress == "" {
 		errorModal := tview.NewModal().
 			SetText("Error: Beacon node address is required\n\nPlease enter the address of your beacon node\n(e.g. http://localhost:5052)").
 			AddButtons([]string{"OK"}).

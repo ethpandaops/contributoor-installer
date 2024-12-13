@@ -9,7 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
 )
 
@@ -59,16 +58,16 @@ func stopContributoor(c *cli.Context) error {
 
 	logger := c.App.Metadata["logger"].(*logrus.Logger)
 
-	cfg, err := internal.LoadConfig(configFile)
+	configService, err := service.NewConfigService(logger, configFile)
 	if err != nil {
 		return err
 	}
 
-	switch cfg.RunMethod {
-	case internal.RunMethodDocker:
-		logger.WithField("version", cfg.Version).Info("Stopping Contributoor")
+	switch configService.Get().RunMethod {
+	case service.RunMethodDocker:
+		logger.WithField("version", configService.Get().Version).Info("Stopping Contributoor")
 
-		dockerService, err := service.NewDockerService(logger, cfg)
+		dockerService, err := service.NewDockerService(logger, configService)
 		if err != nil {
 			logger.Errorf("could not create docker service: %v", err)
 			return err
@@ -88,8 +87,8 @@ func stopContributoor(c *cli.Context) error {
 			logger.Errorf("could not stop service: %v", err)
 			return err
 		}
-	case internal.RunMethodBinary:
-		binaryService := service.NewBinaryService(logger, cfg)
+	case service.RunMethodBinary:
+		binaryService := service.NewBinaryService(logger, configService)
 		if err := binaryService.Stop(); err != nil {
 			logger.Errorf("could not stop service: %v", err)
 			return err

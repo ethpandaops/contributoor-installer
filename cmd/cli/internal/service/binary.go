@@ -5,24 +5,23 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 )
 
 type BinaryService struct {
 	logger *logrus.Logger
-	config *internal.ContributoorConfig
+	config *ContributoorConfig
 }
 
 type GithubRelease struct {
 	TagName string `json:"tag_name"`
 }
 
-func NewBinaryService(logger *logrus.Logger, cfg *internal.ContributoorConfig) *BinaryService {
+func NewBinaryService(logger *logrus.Logger, configService *ConfigService) *BinaryService {
 	return &BinaryService{
 		logger: logger,
-		config: cfg,
+		config: configService.Get(),
 	}
 }
 

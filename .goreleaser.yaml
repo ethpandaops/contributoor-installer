@@ -16,7 +16,6 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal.Version={{.Version}}
 
 archives:
   - format: tar.gz

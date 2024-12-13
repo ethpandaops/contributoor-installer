@@ -1,10 +1,6 @@
 package wizard
 
 import (
-	"fmt"
-	"path/filepath"
-
-	config "github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
 	"github.com/rivo/tview"
@@ -13,15 +9,15 @@ import (
 
 type InstallWizard struct {
 	*display.BaseWizard
-	Config    *config.ContributoorConfig
-	completed bool
+	configService *service.ConfigService
+	completed     bool
 }
 
-func NewInstallWizard(log *logrus.Logger, app *tview.Application, cfg *config.ContributoorConfig) *InstallWizard {
+func NewInstallWizard(log *logrus.Logger, app *tview.Application, configService *service.ConfigService) *InstallWizard {
 	w := &InstallWizard{
-		BaseWizard: display.NewBaseWizard(log, app),
-		Config:     cfg,
-		completed:  false,
+		BaseWizard:    display.NewBaseWizard(log, app),
+		configService: configService,
+		completed:     false,
 	}
 
 	// Add install-specific steps
@@ -38,6 +34,14 @@ func NewInstallWizard(log *logrus.Logger, app *tview.Application, cfg *config.Co
 	return w
 }
 
+func (w *InstallWizard) GetConfig() *service.ContributoorConfig {
+	return w.configService.Get()
+}
+
+func (w *InstallWizard) UpdateConfig(updates func(*service.ContributoorConfig)) error {
+	return w.configService.Update(updates)
+}
+
 func (w *InstallWizard) Start() error {
 	return w.CurrentStep.Show()
 }
@@ -50,21 +54,14 @@ func (w *InstallWizard) OnComplete() error {
 	// Don't save config if installation was interrupted
 	if !w.completed {
 		w.Logger.Info("Installation was interrupted")
-
 		return nil
 	}
 
 	w.GetApp().Stop()
 
-	// Save config before starting services.
-	configPath := filepath.Join(w.Config.ContributoorDirectory, "config.yaml")
-	if err := w.Config.WriteToFile(configPath); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
-	}
-
-	switch w.Config.RunMethod {
-	case config.RunMethodDocker:
-		dockerService, err := service.NewDockerService(w.Logger, w.Config)
+	switch w.configService.Get().RunMethod {
+	case service.RunMethodDocker:
+		dockerService, err := service.NewDockerService(w.Logger, w.configService)
 		if err != nil {
 			w.Logger.Errorf("could not create docker service: %v", err)
 			return err
@@ -74,8 +71,8 @@ func (w *InstallWizard) OnComplete() error {
 			w.Logger.Errorf("could not start service: %v", err)
 			return err
 		}
-	case config.RunMethodBinary:
-		binaryService := service.NewBinaryService(w.Logger, w.Config)
+	case service.RunMethodBinary:
+		binaryService := service.NewBinaryService(w.Logger, w.configService)
 		if err := binaryService.Start(); err != nil {
 			w.Logger.Errorf("could not start service: %v", err)
 			return err
