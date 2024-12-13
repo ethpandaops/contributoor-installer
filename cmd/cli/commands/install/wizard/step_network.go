@@ -8,10 +8,12 @@ import (
 	"github.com/rivo/tview"
 )
 
+// NetworkStep is the network step of the installation wizard.
 type NetworkStep struct {
 	*display.TextBoxStep
 }
 
+// NewNetworkStep creates a new network step.
 func NewNetworkStep(w *InstallWizard) *NetworkStep {
 	step := display.NewTextBoxStep(w, display.TextBoxStepOptions{
 		Step:       2,
@@ -57,14 +59,15 @@ func NewNetworkStep(w *InstallWizard) *NetworkStep {
 	return &NetworkStep{step}
 }
 
+// Show displays the network step.
 func (s *NetworkStep) Show() error {
 	s.Wizard.GetApp().SetRoot(s.Modal.BorderGrid, true)
 
 	return nil
 }
 
+// Next returns the next step.
 func (s *NetworkStep) Next() (display.WizardStep, error) {
-	// Get InstallWizard instance
 	w, ok := s.TextBoxStep.Wizard.(*InstallWizard)
 	if !ok {
 		return nil, fmt.Errorf("invalid wizard instance")
@@ -82,7 +85,6 @@ func (s *NetworkStep) Next() (display.WizardStep, error) {
 		cfg = w.GetConfig()
 	}
 
-	// Validate network settings
 	if cfg.Network.Name == "" {
 		errorModal := tview.NewModal().
 			SetText("Error: Network name is required\n\nPlease enter a name for your network (e.g. mainnet, sepolia, etc.)").
@@ -112,14 +114,7 @@ func (s *NetworkStep) Next() (display.WizardStep, error) {
 	return w.GetSteps()[2], nil
 }
 
+// Previous returns the previous step.
 func (s *NetworkStep) Previous() (display.WizardStep, error) {
 	return s.Wizard.GetSteps()[0], nil
-}
-
-func (s *NetworkStep) GetTitle() string {
-	return "Network Configuration"
-}
-
-func (s *NetworkStep) GetProgress() (int, int) {
-	return s.Step, s.Total
 }

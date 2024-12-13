@@ -6,6 +6,7 @@ import (
 	"github.com/ethpandaops/contributoor-installer-test/internal/display"
 )
 
+// WelcomeStep is the first step of the installation wizard.
 type WelcomeStep struct {
 	*display.ChoiceStep
 }
@@ -21,7 +22,6 @@ func NewWelcomeStep(w *InstallWizard) *WelcomeStep {
 		Choices: []string{"Quit", "Next"},
 		OnSelect: func(index int) {
 			if index == 1 {
-				// Get next step and show it
 				if next, err := w.CurrentStep.Next(); err == nil {
 					w.CurrentStep = next
 					if err := w.CurrentStep.Show(); err != nil {
@@ -37,24 +37,19 @@ func NewWelcomeStep(w *InstallWizard) *WelcomeStep {
 	return &WelcomeStep{step}
 }
 
+// Show displays the welcome step.
 func (s *WelcomeStep) Show() error {
 	s.ChoiceStep.Wizard.GetApp().SetRoot(s.ChoiceStep.Modal, true)
 
 	return nil
 }
 
+// Next returns the next step.
 func (s *WelcomeStep) Next() (display.WizardStep, error) {
 	return s.ChoiceStep.Wizard.GetSteps()[1], nil
 }
 
+// Previous returns the previous step.
 func (s *WelcomeStep) Previous() (display.WizardStep, error) {
 	return nil, nil //nolint:nilnil // No previous step.
-}
-
-func (s *WelcomeStep) GetTitle() string {
-	return "Welcome"
-}
-
-func (s *WelcomeStep) GetProgress() (int, int) {
-	return s.ChoiceStep.Step, s.ChoiceStep.Total
 }

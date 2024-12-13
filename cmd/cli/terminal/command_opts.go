@@ -1,17 +1,8 @@
 package terminal
 
 import (
-	"fmt"
-
-	"github.com/ethpandaops/contributoor-installer-test/internal/display"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 )
-
-var AppHelpTemplate = fmt.Sprintf(`%s
-Authored by the ethPandaOps team
-
-%s`, display.Logo, cli.AppHelpTemplate)
 
 // CommandOpts contains options for registering CLI commands.
 type CommandOpts struct {
@@ -22,6 +13,19 @@ type CommandOpts struct {
 
 // CommandOption defines a function that configures CommandOpts.
 type CommandOption func(*CommandOpts)
+
+// NewCommandOpts creates a new CommandOpts with the given options.
+func NewCommandOpts(options ...CommandOption) *CommandOpts {
+	opts := &CommandOpts{
+		logger: logrus.New(),
+	}
+
+	for _, option := range options {
+		option(opts)
+	}
+
+	return opts
+}
 
 // WithLogger sets the logger for the command.
 func WithLogger(logger *logrus.Logger) CommandOption {
@@ -42,19 +46,6 @@ func WithAliases(aliases []string) CommandOption {
 	return func(opts *CommandOpts) {
 		opts.aliases = aliases
 	}
-}
-
-// NewCommandOpts creates a new CommandOpts with the given options.
-func NewCommandOpts(options ...CommandOption) *CommandOpts {
-	opts := &CommandOpts{
-		logger: logrus.New(), // Default logger
-	}
-
-	for _, option := range options {
-		option(opts)
-	}
-
-	return opts
 }
 
 func (o *CommandOpts) Name() string {

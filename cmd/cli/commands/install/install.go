@@ -2,13 +2,10 @@ package install
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/install/wizard"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/terminal"
 	"github.com/ethpandaops/contributoor-installer-test/internal/service"
-	"github.com/mitchellh/go-homedir"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -39,40 +36,24 @@ func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
 }
 
 func installContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
-	var (
-		configDir = c.GlobalString("config-path")
-		log       = opts.Logger()
-	)
-
-	// Expand the home directory if necessary
-	expandedDir, err := homedir.Expand(configDir)
-	if err != nil {
-		return fmt.Errorf("%sFailed to expand config path: %w%s", terminal.ColorRed, err, terminal.ColorReset)
-	}
+	log := opts.Logger()
 
 	if !c.GlobalIsSet("config-path") {
-		log.Warnf("No config path provided, using default: %s", expandedDir)
+		log.WithField("config_path", c.GlobalString("config-path")).Warnf("No config path provided, using default")
 	}
 
-	configPath := filepath.Join(expandedDir, "config.yaml")
-
-	exists, err := fileExists(configPath)
+	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
-		return err
-	}
+		if _, ok := err.(*service.ConfigNotFoundError); ok {
+			return fmt.Errorf("%sMissing config file. Please run install.sh first.%s", terminal.ColorRed, terminal.ColorReset)
+		}
 
-	if !exists {
-		return fmt.Errorf("%sMissing config file. Please run install.sh first.%s", terminal.ColorRed, terminal.ColorReset)
-	}
-
-	configService, err := service.NewConfigService(log, configPath)
-	if err != nil {
-		return err
+		return fmt.Errorf("%sError loading config: %v%s", terminal.ColorRed, err, terminal.ColorReset)
 	}
 
 	// Update config if flags are set
 	if c.IsSet("version") || c.IsSet("run-method") {
-		err = configService.Update(func(cfg *service.ContributoorConfig) {
+		if err := configService.Update(func(cfg *service.ContributoorConfig) {
 			if c.IsSet("version") {
 				cfg.Version = c.String("version")
 			}
@@ -80,9 +61,8 @@ func installContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 			if c.IsSet("run-method") {
 				cfg.RunMethod = c.String("run-method")
 			}
-		})
-		if err != nil {
-			return err
+		}); err != nil {
+			return fmt.Errorf("%sError updating config: %v%s", terminal.ColorRed, err, terminal.ColorReset)
 		}
 	}
 
@@ -94,9 +74,9 @@ func installContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 
 	// Create and run the install wizard
 	app := tview.NewApplication()
-	w := wizard.NewInstallWizard(log, app, configService)
+	wiz := wizard.NewInstallWizard(log, app, configService)
 
-	if err := w.Start(); err != nil {
+	if err := wiz.Start(); err != nil {
 		return fmt.Errorf("%sWizard error: %w%s", terminal.ColorRed, err, terminal.ColorReset)
 	}
 
@@ -104,14 +84,5 @@ func installContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		return fmt.Errorf("%sDisplay error: %w%s", terminal.ColorRed, err, terminal.ColorReset)
 	}
 
-	return w.OnComplete()
-}
-
-func fileExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-
-	return true, nil
+	return wiz.OnComplete()
 }

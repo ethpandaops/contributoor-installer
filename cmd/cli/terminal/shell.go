@@ -6,6 +6,9 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/ethpandaops/contributoor-installer-test/internal/display"
+	"github.com/urfave/cli"
 )
 
 const (
@@ -18,12 +21,16 @@ const (
 	ClearLine      = "\033[2K"
 )
 
-// Prompt for user input.
+// AppHelpTemplate is the help template for the CLI.
+var AppHelpTemplate = fmt.Sprintf(`%s
+Authored by the ethPandaOps team
+
+%s`, display.Logo, cli.AppHelpTemplate)
+
+// Prompt will prompt the user for input and validate the input against the expected format.
 func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt string) string {
-	// Print initial prompt
 	fmt.Println(initialPrompt)
 
-	// Get valid user input
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan(); !regexp.MustCompile(expectedFormat).MatchString(scanner.Text()); scanner.Scan() {
 		fmt.Println("")
@@ -32,7 +39,6 @@ func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt s
 
 	fmt.Println("")
 
-	// Return user input
 	return scanner.Text()
 }
 

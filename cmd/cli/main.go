@@ -19,7 +19,6 @@ func main() {
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 
-	// Set up signal handling
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -35,8 +34,6 @@ func main() {
 	app.Name = "contributoor"
 	app.Usage = "Xatu Contributoor CLI"
 	app.Copyright = "(c) 2024 ethPandaOps"
-
-	// Set application flags
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "config-path, c",
@@ -45,7 +42,6 @@ func main() {
 		},
 	}
 
-	// Register commands
 	install.RegisterCommands(app, terminal.NewCommandOpts(
 		terminal.WithName("install"),
 		terminal.WithLogger(log),
@@ -72,7 +68,6 @@ func main() {
 		return nil
 	}
 
-	// Boot!
 	fmt.Println("")
 
 	if err := app.Run(os.Args); err != nil {

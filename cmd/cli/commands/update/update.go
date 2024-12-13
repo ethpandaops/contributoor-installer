@@ -2,16 +2,14 @@ package update
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
-	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/terminal"
 	"github.com/ethpandaops/contributoor-installer-test/internal/service"
 )
 
+// RegisterCommands registers the update command.
 func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:      opts.Name(),
@@ -31,57 +29,31 @@ func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
 	})
 }
 
+// updateContributoor updates contributoor to the latest version (based on run method configured in config.yaml).
 func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 	log := opts.Logger()
-	configPath := c.GlobalString("config-path")
 
-	path, err := homedir.Expand(configPath)
+	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
-		return fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
-	}
+		if _, ok := err.(*service.ConfigNotFoundError); ok {
+			return fmt.Errorf("%s%v%s", terminal.ColorRed, err, terminal.ColorReset)
+		}
 
-	// Check directory exists
-	dirInfo, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("%sYour configured contributoor directory [%s] does not exist. Please run 'contributoor install' first%s", terminal.ColorRed, path, terminal.ColorReset)
-	}
-
-	if !dirInfo.IsDir() {
-		return fmt.Errorf("%s[%s] is not a directory%s", terminal.ColorRed, path, terminal.ColorReset)
-	}
-
-	// Check config file exists
-	configFile := filepath.Join(path, "config.yaml")
-	if _, e := os.Stat(configFile); os.IsNotExist(e) {
-		return fmt.Errorf("%sConfig file not found at [%s]. Please run 'contributoor install' first%s", terminal.ColorRed, configFile, terminal.ColorReset)
-	}
-
-	configService, err := service.NewConfigService(log, configPath)
-	if err != nil {
-		return err
+		return fmt.Errorf("%sError loading config: %v%s", terminal.ColorRed, err, terminal.ColorReset)
 	}
 
 	log.WithField("version", configService.Get().Version).Info("Current version")
 
 	github := service.NewGitHubService("ethpandaops", "contributoor-test")
 
-	// Update version in config if specified
+	// Determine target version
+	var targetVersion string
 	if c.IsSet("version") {
-		tag := c.String("version")
-		log.WithField("version", tag).Info("Update version provided")
+		targetVersion = c.String("version")
 
-		if tag == configService.Get().Version {
-			log.Infof(
-				"%sContributoor is already running version %s%s",
-				terminal.ColorGreen,
-				tag,
-				terminal.ColorReset,
-			)
+		log.WithField("version", targetVersion).Info("Update version provided")
 
-			return nil
-		}
-
-		exists, err := github.VersionExists(tag)
+		exists, err := github.VersionExists(targetVersion)
 		if err != nil {
 			return fmt.Errorf("failed to check version: %w", err)
 		}
@@ -90,43 +62,50 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 			return fmt.Errorf(
 				"%sVersion %s not found. Use 'contributoor update' without --version to get the latest version%s",
 				terminal.ColorRed,
-				tag,
+				targetVersion,
 				terminal.ColorReset,
 			)
 		}
-
-		if err := configService.Update(func(cfg *service.ContributoorConfig) {
-			cfg.Version = tag
-		}); err != nil {
-			return fmt.Errorf("failed to update config version: %w", err)
-		}
 	} else {
-		tag, err := github.GetLatestVersion()
+		var err error
+		targetVersion, err = github.GetLatestVersion()
 		if err != nil {
 			return fmt.Errorf("failed to get latest version: %w", err)
 		}
 
-		log.WithField("version", tag).Info("Latest version detected")
-
-		if tag == configService.Get().Version {
-			log.Infof(
-				"%sContributoor is up to date%s",
-				terminal.ColorGreen,
-				terminal.ColorReset,
-			)
-
-			return nil
-		}
-
-		if err := configService.Update(func(cfg *service.ContributoorConfig) {
-			cfg.Version = tag
-		}); err != nil {
-			return fmt.Errorf("failed to update config version: %w", err)
-		}
+		log.WithField("version", targetVersion).Info("Latest version detected")
 	}
 
-	// Save the updated config
-	if err := service.WriteConfig(configFile, configService.Get()); err != nil {
+	// Check if update is even needed.
+	if targetVersion == configService.Get().Version {
+		if c.IsSet("version") {
+			log.Infof(
+				"%sContributoor is already running version %s%s",
+				terminal.ColorGreen,
+				targetVersion,
+				terminal.ColorReset,
+			)
+		} else {
+			log.Infof(
+				"%sContributoor is up to date at version %s%s",
+				terminal.ColorGreen,
+				targetVersion,
+				terminal.ColorReset,
+			)
+		}
+
+		return nil
+	}
+
+	// Update config version.
+	if err := configService.Update(func(cfg *service.ContributoorConfig) {
+		cfg.Version = targetVersion
+	}); err != nil {
+		return fmt.Errorf("failed to update config version: %w", err)
+	}
+
+	// Save the updated config.
+	if err := configService.Save(); err != nil {
 		log.Errorf("could not save updated config: %v", err)
 
 		return err
@@ -186,8 +165,7 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 			return err
 		}
 
-		// Save the updated config back to file
-		if err := service.WriteConfig(configFile, configService.Get()); err != nil {
+		if err := configService.Save(); err != nil {
 			log.Errorf("could not save updated config: %v", err)
 
 			return err
