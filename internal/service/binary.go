@@ -14,10 +14,6 @@ type BinaryService struct {
 	config *ContributoorConfig
 }
 
-type GithubRelease struct {
-	TagName string `json:"tag_name"`
-}
-
 func NewBinaryService(logger *logrus.Logger, configService *ConfigService) *BinaryService {
 	return &BinaryService{
 		logger: logger,
@@ -35,6 +31,7 @@ func (s *BinaryService) Start() error {
 	if err != nil {
 		return fmt.Errorf("failed to expand config path: %w", err)
 	}
+
 	configPath := filepath.Join(expandedDir, "config.yaml")
 
 	s.logger.WithField("run_cmd", fmt.Sprintf("%s --config %s", binaryPath, configPath)).Info("Binary mode is still WIP, please execute run_cmd to start the service")

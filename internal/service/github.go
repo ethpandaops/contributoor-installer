@@ -4,34 +4,49 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
+)
+
+const (
+	githubAPITimeout = 10 * time.Second
+	githubAPIHost    = "api.github.com"
 )
 
 type GitHubService struct {
-	owner string
-	repo  string
+	owner  string
+	repo   string
+	client *http.Client
 }
 
 type GitHubRelease struct {
-	TagName string `json:"tag_name"`
+	TagName string `json:"tag_name"` //nolint:tagliatelle // Upstream response doesnt camelCase.
 }
 
 func NewGitHubService(owner, repo string) *GitHubService {
 	return &GitHubService{
 		owner: owner,
 		repo:  repo,
+		client: &http.Client{
+			Timeout: githubAPITimeout,
+		},
 	}
 }
 
-// GetLatestVersion returns the latest version tag (e.g., "0.0.1") from GitHub releases
+// GetLatestVersion returns the latest version tag (e.g., "0.0.1") from GitHub releases.
 func (s *GitHubService) GetLatestVersion() (string, error) {
-	// Fetch releases from GitHub API
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", s.owner, s.repo)
-	resp, err := http.Get(url)
+	u, err := validateGitHubURL(s.owner, s.repo)
+	if err != nil {
+		return "", fmt.Errorf("invalid GitHub URL: %w", err)
+	}
+
+	resp, err := s.client.Get(u.String())
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch releases: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -44,8 +59,10 @@ func (s *GitHubService) GetLatestVersion() (string, error) {
 	}
 
 	// Find highest version tag
-	var latestVersion string
-	var latestParts []int
+	var (
+		latestVersion string
+		latestParts   []int
+	)
 
 	for _, release := range releases {
 		// Skip empty tags
@@ -61,11 +78,13 @@ func (s *GitHubService) GetLatestVersion() (string, error) {
 
 		// Convert parts to integers
 		var versionParts []int
+
 		for _, part := range parts {
 			num, err := strconv.Atoi(part)
 			if err != nil {
 				continue
 			}
+
 			versionParts = append(versionParts, num)
 		}
 
@@ -74,6 +93,7 @@ func (s *GitHubService) GetLatestVersion() (string, error) {
 			if latestVersion == "" {
 				latestVersion = release.TagName
 				latestParts = versionParts
+
 				continue
 			}
 
@@ -82,6 +102,7 @@ func (s *GitHubService) GetLatestVersion() (string, error) {
 				if versionParts[i] > latestParts[i] {
 					latestVersion = release.TagName
 					latestParts = versionParts
+
 					break
 				} else if versionParts[i] < latestParts[i] {
 					break
@@ -97,14 +118,18 @@ func (s *GitHubService) GetLatestVersion() (string, error) {
 	return strings.TrimPrefix(latestVersion, "v"), nil
 }
 
-// VersionExists checks if a specific version exists in the GitHub releases
+// VersionExists checks if a specific version exists in the GitHub releases.
 func (s *GitHubService) VersionExists(version string) (bool, error) {
-	// Fetch releases from GitHub API
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", s.owner, s.repo)
-	resp, err := http.Get(url)
+	u, err := validateGitHubURL(s.owner, s.repo)
+	if err != nil {
+		return false, fmt.Errorf("invalid GitHub URL: %w", err)
+	}
+
+	resp, err := s.client.Get(u.String())
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch releases: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -130,4 +155,27 @@ func (s *GitHubService) VersionExists(version string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func validateGitHubURL(owner, repo string) (*url.URL, error) {
+	if owner == "" || repo == "" {
+		return nil, fmt.Errorf("owner and repo cannot be empty")
+	}
+
+	if strings.ContainsAny(owner+repo, "/?#[]@!$&'()*+,;=") {
+		return nil, fmt.Errorf("invalid owner or repo name")
+	}
+
+	urlStr := fmt.Sprintf("https://%s/repos/%s/%s/releases", githubAPIHost, owner, repo)
+
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URL: %w", err)
+	}
+
+	if u.Host != githubAPIHost {
+		return nil, fmt.Errorf("invalid GitHub API host")
+	}
+
+	return u, nil
 }

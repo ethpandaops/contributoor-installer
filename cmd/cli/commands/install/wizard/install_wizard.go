@@ -55,6 +55,7 @@ func (w *InstallWizard) OnComplete() error {
 	// Don't save config if installation was interrupted
 	if !w.completed {
 		w.Logger.Info("Installation was interrupted")
+
 		return nil
 	}
 

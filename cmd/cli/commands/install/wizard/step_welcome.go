@@ -24,7 +24,9 @@ func NewWelcomeStep(w *InstallWizard) *WelcomeStep {
 				// Get next step and show it
 				if next, err := w.CurrentStep.Next(); err == nil {
 					w.CurrentStep = next
-					w.CurrentStep.Show()
+					if err := w.CurrentStep.Show(); err != nil {
+						w.Logger.Error(err)
+					}
 				}
 			} else {
 				w.GetApp().Stop()
@@ -37,6 +39,7 @@ func NewWelcomeStep(w *InstallWizard) *WelcomeStep {
 
 func (s *WelcomeStep) Show() error {
 	s.ChoiceStep.Wizard.GetApp().SetRoot(s.ChoiceStep.Modal, true)
+
 	return nil
 }
 
@@ -45,8 +48,7 @@ func (s *WelcomeStep) Next() (display.WizardStep, error) {
 }
 
 func (s *WelcomeStep) Previous() (display.WizardStep, error) {
-	// This is the first step, so no previous
-	return nil, nil
+	return nil, nil //nolint:nilnil // No previous step.
 }
 
 func (s *WelcomeStep) GetTitle() string {

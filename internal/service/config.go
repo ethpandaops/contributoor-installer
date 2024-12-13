@@ -1,58 +1,12 @@
 /*
-	Package service provides the configuration management system for Contributoor.
+Package service provides the configuration management system for Contributoor.
+It handles loading, saving, and migrating user configurations while preserving
+user settings during updates. This is necessary to handle scenarios like:
 
-	Config Service Overview:
-	----------------------
-	The ConfigService handles loading, saving, and migrating user configurations
-	while preserving user settings during updates. This is necessary to handle
-	scenarios like:
-
-	- Adding new config fields in newer versions
-	- Changing the format/structure of existing fields
-	- Preserving user customizations during updates
-	- Ensuring safe atomic writes of config files
-
-How It Works:
--------------
-1. Loading Config:
-
-  - Service loads user's existing config file
-  - Creates new config with latest defaults
-  - Merges user's settings into new config
-  - Detects version differences
-
-2. Version Migration (e.g., 0.0.1 -> 0.0.2):
-  - Runs version-specific migrations
-  - Transforms old values if needed
-  - Adds new fields with defaults
-  - Preserves user's custom settings
-
-3. Saving Config:
-  - Writes to temporary file first
-  - Uses atomic rename for safety
-  - Prevents corruption during writes
-
-Example Migration:
-----------------
-Starting with user's v0.0.1 config:
-
-	version: "0.0.1"
-	network:
-	  name: "mainnet"
-
-When v0.0.2 adds a new field:
-
-	version: "0.0.2"
-	network:
-	  name: "mainnet"
-	logLevel: "info"  # New field
-
-The service will:
-1. Load user's 0.0.1 config
-2. Create new 0.0.2 config with defaults
-3. Merge: Keep user's network name, add logLevel default
-4. Run migrations if needed
-5. Save updated config atomically
+- Adding new config fields in newer versions
+- Changing the format/structure of existing fields
+- Preserving user customizations during updates
+- Ensuring safe atomic writes of config files
 */
 package service
 
@@ -124,7 +78,7 @@ func NewConfigService(logger *logrus.Logger, configPath string) (*ConfigService,
 	// Check if config needs migration by comparing versions
 	if oldConfig.Version != newConfig.Version {
 		// Perform version-specific migrations
-		if err := migrateConfig(logger, newConfig, oldConfig); err != nil {
+		if err := migrateConfig(newConfig, oldConfig); err != nil {
 			return nil, fmt.Errorf("failed to migrate config: %w", err)
 		}
 
@@ -156,17 +110,20 @@ func (s *ConfigService) Update(updates func(*ContributoorConfig)) error {
 	tmpPath := s.configPath + ".tmp"
 	if err := WriteConfig(tmpPath, &updatedConfig); err != nil {
 		os.Remove(tmpPath)
+
 		return err
 	}
 
 	// Atomic rename
 	if err := os.Rename(tmpPath, s.configPath); err != nil {
 		os.Remove(tmpPath)
+
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
 	// Update internal state
 	s.config = &updatedConfig
+
 	return nil
 }
 
@@ -179,8 +136,7 @@ func (s *ConfigService) Get() *ContributoorConfig {
 }
 
 func WriteConfig(path string, cfg *ContributoorConfig) error {
-	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
@@ -189,7 +145,7 @@ func WriteConfig(path string, cfg *ContributoorConfig) error {
 		return fmt.Errorf("error marshaling config: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0600); err != nil {
 		return fmt.Errorf("error writing config file: %w", err)
 	}
 
@@ -211,20 +167,23 @@ func (s *ConfigService) validate(cfg *ContributoorConfig) error {
 	if cfg.Version == "" {
 		return fmt.Errorf("version is required")
 	}
+
 	if cfg.ContributoorDirectory == "" {
 		return fmt.Errorf("contributoorDirectory is required")
 	}
+
 	if cfg.RunMethod != RunMethodDocker && cfg.RunMethod != RunMethodBinary {
 		return fmt.Errorf("invalid runMethod: %s", cfg.RunMethod)
 	}
+
 	return nil
 }
 
-// mergeConfig merges old config values into new config
-func mergeConfig(new, old *ContributoorConfig) error {
+// mergeConfig merges old config values into new config.
+func mergeConfig(target, source *ContributoorConfig) error {
 	// Use reflection to copy non-zero values from old to new
-	newVal := reflect.ValueOf(new).Elem()
-	oldVal := reflect.ValueOf(old).Elem()
+	newVal := reflect.ValueOf(target).Elem()
+	oldVal := reflect.ValueOf(source).Elem()
 
 	for i := 0; i < newVal.NumField(); i++ {
 		newField := newVal.Field(i)
@@ -238,16 +197,19 @@ func mergeConfig(new, old *ContributoorConfig) error {
 	return nil
 }
 
-// migrateConfig handles version-specific migrations
-func migrateConfig(logger *logrus.Logger, new, old *ContributoorConfig) error {
-	switch old.Version {
-	case "0.0.1":
-		// For example, 0.0.1 -> 0.0.2, we might want to migrate the network name.
-		// oldName := old.Network.Name
-		// new.Network.Name = old.Network.Name + "_migrated"
-		//
-		// Or perhaps we want to populate a new default value for a new field.
-		// new.Foo = "bar"
-	}
+// migrateConfig handles version-specific migrations.
+
+func migrateConfig(target, source *ContributoorConfig) error {
+	/*
+		switch source.Version {
+			case "0.0.1":
+				For example, 0.0.1 -> 0.0.2, we might want to migrate the network name.
+				oldName := old.Network.Name
+				new.Network.Name = old.Network.Name + "_migrated"
+
+			Or perhaps we want to populate a new default value for a new field.
+			new.Foo = "bar"
+		}
+	*/
 	return nil
 }

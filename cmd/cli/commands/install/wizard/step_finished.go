@@ -1,8 +1,6 @@
 package wizard
 
 import (
-	"fmt"
-
 	"github.com/ethpandaops/contributoor-installer-test/internal/display"
 	"github.com/rivo/tview"
 )
@@ -20,8 +18,8 @@ func NewFinishStep(w *InstallWizard) *FinishStep {
 		total:  3,
 	}
 
-	helperText := fmt.Sprintf(`Nice work!
-You're all done and ready to run contributoor.`)
+	helperText := `Nice work!
+You're all done and ready to run contributoor.`
 
 	step.modal = tview.NewModal().
 		SetText(helperText).
@@ -36,11 +34,12 @@ You're all done and ready to run contributoor.`)
 
 func (s *FinishStep) Show() error {
 	s.wizard.GetApp().SetRoot(s.modal, true)
+
 	return nil
 }
 
 func (s *FinishStep) Next() (display.WizardStep, error) {
-	return nil, nil // Last step
+	return nil, nil //nolint:nilnil // No next step.
 }
 
 func (s *FinishStep) Previous() (display.WizardStep, error) {

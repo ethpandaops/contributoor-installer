@@ -67,6 +67,7 @@ func NewTextBoxStep(w Wizard, opts TextBoxStepOptions) *TextBoxStep {
 
 func (s *TextBoxStep) Show() error {
 	s.showImpl(s.Modal)
+
 	return nil
 }
 

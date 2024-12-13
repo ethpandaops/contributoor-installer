@@ -55,6 +55,7 @@ func installContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 	}
 
 	configPath := filepath.Join(expandedDir, "config.yaml")
+
 	exists, err := fileExists(configPath)
 	if err != nil {
 		return err
@@ -75,6 +76,7 @@ func installContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 			if c.IsSet("version") {
 				cfg.Version = c.String("version")
 			}
+
 			if c.IsSet("run-method") {
 				cfg.RunMethod = c.String("run-method")
 			}
@@ -110,5 +112,6 @@ func fileExists(path string) (bool, error) {
 	if os.IsNotExist(err) {
 		return false, nil
 	}
+
 	return true, nil
 }

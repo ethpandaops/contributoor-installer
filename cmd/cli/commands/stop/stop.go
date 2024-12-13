@@ -26,6 +26,7 @@ func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
 func stopContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 	log := opts.Logger()
 	configPath := c.GlobalString("config-path")
+
 	path, err := homedir.Expand(configPath)
 	if err != nil {
 		return fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
@@ -36,13 +37,14 @@ func stopContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 	if os.IsNotExist(err) {
 		return fmt.Errorf("%sYour configured contributoor directory [%s] does not exist. Please run 'contributoor install' first%s", terminal.ColorRed, path, terminal.ColorReset)
 	}
+
 	if !dirInfo.IsDir() {
 		return fmt.Errorf("%s[%s] is not a directory%s", terminal.ColorRed, path, terminal.ColorReset)
 	}
 
 	// Check config file exists
 	configFile := filepath.Join(path, "config.yaml")
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+	if _, e := os.Stat(configFile); os.IsNotExist(e) {
 		return fmt.Errorf("%sConfig file not found at [%s]. Please run 'contributoor install' first%s", terminal.ColorRed, configFile, terminal.ColorReset)
 	}
 
@@ -58,6 +60,7 @@ func stopContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		dockerService, err := service.NewDockerService(log, configService)
 		if err != nil {
 			log.Errorf("could not create docker service: %v", err)
+
 			return err
 		}
 
@@ -65,20 +68,24 @@ func stopContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		running, err := dockerService.IsRunning()
 		if err != nil {
 			log.Errorf("could not check service status: %v", err)
+
 			return err
 		}
+
 		if !running {
 			return fmt.Errorf("%sContributoor is not running. Use 'contributoor start' to start it%s", terminal.ColorRed, terminal.ColorReset)
 		}
 
 		if err := dockerService.Stop(); err != nil {
 			log.Errorf("could not stop service: %v", err)
+
 			return err
 		}
 	case service.RunMethodBinary:
 		binaryService := service.NewBinaryService(log, configService)
 		if err := binaryService.Stop(); err != nil {
 			log.Errorf("could not stop service: %v", err)
+
 			return err
 		}
 	}

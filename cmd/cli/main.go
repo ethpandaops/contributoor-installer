@@ -15,7 +15,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-// Run
 func main() {
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
@@ -75,8 +74,10 @@ func main() {
 
 	// Boot!
 	fmt.Println("")
+
 	if err := app.Run(os.Args); err != nil {
 		log.Error(err)
 	}
+
 	fmt.Println("")
 }

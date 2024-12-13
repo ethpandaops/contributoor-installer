@@ -7,7 +7,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-// ChoiceStep is a generic wizard step that presents choices to the user
+// ChoiceStep is a generic wizard step that presents choices to the user.
 type ChoiceStep struct {
 	Wizard      Wizard
 	Modal       *tview.Modal
@@ -16,7 +16,7 @@ type ChoiceStep struct {
 	onSelect    func(index int)
 }
 
-// NewChoiceStep creates a new choice step
+// NewChoiceStep creates a new choice step.
 func NewChoiceStep(wizard Wizard, opts ChoiceStepOptions) *ChoiceStep {
 	step := &ChoiceStep{
 		Wizard:   wizard,
@@ -45,10 +45,11 @@ func NewChoiceStep(wizard Wizard, opts ChoiceStepOptions) *ChoiceStep {
 	})
 
 	step.Modal = modal
+
 	return step
 }
 
-// ChoiceStepOptions configures a choice step
+// ChoiceStepOptions configures a choice step.
 type ChoiceStepOptions struct {
 	Step     int
 	Total    int
@@ -58,9 +59,10 @@ type ChoiceStepOptions struct {
 	OnSelect func(index int)
 }
 
-// WizardStep interface implementation
+// WizardStep interface implementation.
 func (s *ChoiceStep) Show() error {
 	s.Wizard.GetApp().SetRoot(s.Modal, true)
+
 	return nil
 }
 
@@ -69,7 +71,7 @@ func (s *ChoiceStep) Next() (WizardStep, error) {
 }
 
 func (s *ChoiceStep) Previous() (WizardStep, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // No previous step.
 }
 
 func (s *ChoiceStep) GetTitle() string {

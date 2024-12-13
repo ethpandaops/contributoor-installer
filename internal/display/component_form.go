@@ -81,6 +81,7 @@ func NewForm() *Form {
 // layouts.
 func (f *Form) SetItemPadding(padding int) *Form {
 	f.itemPadding = padding
+
 	return f
 }
 
@@ -90,55 +91,64 @@ func (f *Form) SetItemPadding(padding int) *Form {
 // enough space.
 func (f *Form) SetHorizontal(horizontal bool) *Form {
 	f.horizontal = horizontal
+
 	return f
 }
 
 // SetLabelColor sets the color of the labels.
 func (f *Form) SetLabelColor(color tcell.Color) *Form {
 	f.labelColor = color
+
 	return f
 }
 
 // SetFieldBackgroundColor sets the background color of the input areas.
 func (f *Form) SetFieldBackgroundColor(color tcell.Color) *Form {
 	f.fieldBackgroundColor = color
+
 	return f
 }
 
 // SetFieldTextColor sets the text color of the input areas.
 func (f *Form) SetFieldTextColor(color tcell.Color) *Form {
 	f.fieldTextColor = color
+
 	return f
 }
 
 // SetButtonsAlign sets how the buttons align horizontally, one of AlignLeft
-// (the default), AlignCenter, and AlignRight. This is only
+// (the default), AlignCenter, and AlignRight.
 func (f *Form) SetButtonsAlign(align int) *Form {
 	f.buttonsAlign = align
+
 	return f
 }
 
 // SetButtonBackgroundColor sets the background color of the buttons.
 func (f *Form) SetButtonBackgroundColor(color tcell.Color) *Form {
 	f.buttonBackgroundColor = color
+
 	return f
 }
 
 // SetButtonTextColor sets the color of the button texts.
 func (f *Form) SetButtonTextColor(color tcell.Color) *Form {
 	f.buttonTextColor = color
+
 	return f
 }
 
 // SetButtonBackgroundActivatedColor sets the background color of the buttons when activated.
 func (f *Form) SetButtonBackgroundActivatedColor(color tcell.Color) *Form {
 	f.buttonBackgroundActivatedColor = color
+
 	return f
 }
 
 // SetButtonTextActivatedColor sets the color of the button texts when activated.
 func (f *Form) SetButtonTextActivatedColor(color tcell.Color) *Form {
 	f.buttonTextActivatedColor = color
+
 	return f
 }
 
@@ -147,6 +157,7 @@ func (f *Form) SetButtonStyle(style tcell.Style) *Form {
 	for _, button := range f.buttons {
 		button.SetStyle(style)
 	}
+
 	return f
 }
 
@@ -155,6 +166,7 @@ func (f *Form) SetButtonActivatedStyle(style tcell.Style) *Form {
 	for _, button := range f.buttons {
 		button.SetActivatedStyle(style)
 	}
+
 	return f
 }
 
@@ -169,9 +181,11 @@ func (f *Form) SetFocus(index int) *Form {
 	} else {
 		f.focusedElement = index
 	}
+
 	if f.changed != nil {
 		f.changed(f.focusedElement)
 	}
+
 	return f
 }
 
@@ -187,6 +201,7 @@ func (f *Form) AddInputField(label, value string, fieldWidth int, accept func(te
 		SetFieldWidth(fieldWidth).
 		SetAcceptanceFunc(accept).
 		SetChangedFunc(changed))
+
 	return f
 }
 
@@ -200,12 +215,14 @@ func (f *Form) AddPasswordField(label, value string, fieldWidth int, mask rune, 
 	if mask == 0 {
 		mask = '*'
 	}
+
 	f.items = append(f.items, tview.NewInputField().
 		SetLabel(label).
 		SetText(value).
 		SetFieldWidth(fieldWidth).
 		SetMaskCharacter(mask).
 		SetChangedFunc(changed))
+
 	return f
 }
 
@@ -218,6 +235,7 @@ func (f *Form) AddDropDown(label string, options []string, initialOption int, se
 		SetLabel(label).
 		SetOptions(options, selected).
 		SetCurrentOption(initialOption))
+
 	return f
 }
 
@@ -229,6 +247,7 @@ func (f *Form) AddCheckbox(label string, checked bool, changed func(checked bool
 		SetLabel(label).
 		SetChecked(checked).
 		SetChangedFunc(changed))
+
 	return f
 }
 
@@ -236,6 +255,7 @@ func (f *Form) AddCheckbox(label string, checked bool, changed func(checked bool
 // when the user selects this button. It may be nil.
 func (f *Form) AddButton(label string, selected func()) *Form {
 	f.buttons = append(f.buttons, tview.NewButton(label).SetSelectedFunc(selected))
+
 	return f
 }
 
@@ -250,6 +270,7 @@ func (f *Form) GetButton(index int) *tview.Button {
 // for the button that was added first.
 func (f *Form) RemoveButton(index int) *Form {
 	f.buttons = append(f.buttons[:index], f.buttons[index+1:]...)
+
 	return f
 }
 
@@ -267,6 +288,7 @@ func (f *Form) GetButtonIndex(label string) int {
 			return index
 		}
 	}
+
 	return -1
 }
 
@@ -274,16 +296,20 @@ func (f *Form) GetButtonIndex(label string) int {
 // specified.
 func (f *Form) Clear(includeButtons bool) *Form {
 	f.items = nil
+
 	if includeButtons {
 		f.ClearButtons()
 	}
+
 	f.focusedElement = 0
+
 	return f
 }
 
 // ClearButtons removes all buttons from the form.
 func (f *Form) ClearButtons() *Form {
 	f.buttons = nil
+
 	return f
 }
 
@@ -299,6 +325,7 @@ func (f *Form) ClearButtons() *Form {
 //   - The field background color
 func (f *Form) AddFormItem(item tview.FormItem) *Form {
 	f.items = append(f.items, item)
+
 	return f
 }
 
@@ -320,6 +347,7 @@ func (f *Form) GetFormItem(index int) tview.FormItem {
 // not included.
 func (f *Form) RemoveFormItem(index int) *Form {
 	f.items = append(f.items[:index], f.items[index+1:]...)
+
 	return f
 }
 
@@ -332,6 +360,7 @@ func (f *Form) GetFormItemByLabel(label string) tview.FormItem {
 			return item
 		}
 	}
+
 	return nil
 }
 
@@ -344,6 +373,7 @@ func (f *Form) GetFormItemIndex(label string) int {
 			return index
 		}
 	}
+
 	return -1
 }
 
@@ -354,9 +384,11 @@ func (f *Form) GetFocusedItemIndex() (formItem, button int) {
 	if index < 0 {
 		return -1, -1
 	}
+
 	if index < len(f.items) {
 		return index, -1
 	}
+
 	return -1, index - len(f.items)
 }
 
@@ -364,6 +396,7 @@ func (f *Form) GetFocusedItemIndex() (formItem, button int) {
 // key.
 func (f *Form) SetCancelFunc(callback func()) *Form {
 	f.cancel = callback
+
 	return f
 }
 
@@ -371,10 +404,13 @@ func (f *Form) SetCancelFunc(callback func()) *Form {
 // another field in the form.
 func (f *Form) SetChangedFunc(callback func(index int)) *Form {
 	f.changed = callback
+
 	return f
 }
 
 // Draw draws this primitive onto the screen.
+//
+//nolint:gocyclo // complexity is complex.
 func (f *Form) Draw(screen tcell.Screen) {
 	f.Box.DrawForSubclass(screen, f)
 
@@ -392,26 +428,34 @@ func (f *Form) Draw(screen tcell.Screen) {
 
 	// Find the longest label.
 	var maxLabelWidth int
+
 	for _, item := range f.items {
 		labelWidth := tview.TaggedStringWidth(item.GetLabel())
 		if labelWidth > maxLabelWidth {
 			maxLabelWidth = labelWidth
 		}
 	}
+
 	maxLabelWidth++ // Add one space.
 
 	// Calculate positions of form items.
-	positions := make([]struct{ x, y, width, height int }, len(f.items)+len(f.buttons))
-	var focusedPosition struct{ x, y, width, height int }
+	var (
+		positions       = make([]struct{ x, y, width, height int }, len(f.items)+len(f.buttons))
+		focusedPosition struct{ x, y, width, height int }
+	)
+
 	for index, item := range f.items {
 		// Calculate the space needed.
 		labelWidth := tview.TaggedStringWidth(item.GetLabel())
+
 		var itemWidth int
+
 		if f.horizontal {
 			fieldWidth := item.GetFieldWidth()
 			if fieldWidth == 0 {
 				fieldWidth = tview.DefaultFormFieldWidth
 			}
+
 			labelWidth++
 			itemWidth = labelWidth + fieldWidth
 		} else {
@@ -430,6 +474,7 @@ func (f *Form) Draw(screen tcell.Screen) {
 		if x+itemWidth >= rightLimit {
 			itemWidth = rightLimit - x
 		}
+
 		item.SetFormAttributes(
 			labelWidth,
 			f.labelColor,
@@ -443,6 +488,7 @@ func (f *Form) Draw(screen tcell.Screen) {
 		positions[index].y = y
 		positions[index].width = itemWidth
 		positions[index].height = 1
+
 		if item.HasFocus() {
 			focusedPosition = positions[index]
 		}
@@ -458,11 +504,13 @@ func (f *Form) Draw(screen tcell.Screen) {
 	// How wide are the buttons?
 	buttonWidths := make([]int, len(f.buttons))
 	buttonsWidth := 0
+
 	for index, button := range f.buttons {
 		w := tview.TaggedStringWidth(button.GetLabel()) + 4
 		buttonWidths[index] = w
 		buttonsWidth += w + 1
 	}
+
 	buttonsWidth--
 
 	// Where do we place them?
@@ -483,6 +531,7 @@ func (f *Form) Draw(screen tcell.Screen) {
 	for index, button := range f.buttons {
 		space := rightLimit - x
 		buttonWidth := buttonWidths[index]
+
 		if f.horizontal {
 			if space < buttonWidth-4 {
 				x = startX
@@ -494,9 +543,11 @@ func (f *Form) Draw(screen tcell.Screen) {
 				break // No space for this button anymore.
 			}
 		}
+
 		if buttonWidth > space {
 			buttonWidth = space
 		}
+
 		button.SetLabelColor(f.buttonTextColor).
 			SetBackgroundColor(f.buttonBackgroundColor)
 
@@ -576,19 +627,23 @@ func (f *Form) Draw(screen tcell.Screen) {
 func (f *Form) Focus(delegate func(p tview.Primitive)) {
 	if len(f.items)+len(f.buttons) == 0 {
 		f.Box.Focus(delegate)
+
 		return
 	}
+
 	f.Blur()
 
 	// Hand on the focus to one of our child elements.
 	if f.focusedElement < 0 || f.focusedElement >= len(f.items)+len(f.buttons) {
 		f.focusedElement = 0
 	}
+
 	handler := func(key tcell.Key) {
 		switch key {
 		case tcell.KeyTab, tcell.KeyEnter:
 			f.focusedElement++
 			f.Focus(delegate)
+
 			if f.changed != nil {
 				f.changed(f.focusedElement)
 			}
@@ -597,7 +652,9 @@ func (f *Form) Focus(delegate func(p tview.Primitive)) {
 			if f.focusedElement < 0 {
 				f.focusedElement = len(f.items) + len(f.buttons) - 1
 			}
+
 			f.Focus(delegate)
+
 			if f.changed != nil {
 				f.changed(f.focusedElement)
 			}
@@ -629,6 +686,7 @@ func (f *Form) HasFocus() bool {
 	if f.focusIndex() >= 0 {
 		return true
 	}
+
 	return f.Box.HasFocus()
 }
 
@@ -641,11 +699,13 @@ func (f *Form) focusIndex() int {
 			return index
 		}
 	}
+
 	for index, button := range f.buttons {
 		if button.HasFocus() {
 			return len(f.items) + index
 		}
 	}
+
 	return -1
 }
 
@@ -666,13 +726,14 @@ func (f *Form) MouseHandler() func(action tview.MouseAction, event *tcell.EventM
 		for _, item := range f.items {
 			consumed, capture = item.MouseHandler()(action, event, setFocus)
 			if consumed {
-				return
+				return consumed, capture
 			}
 		}
+
 		for _, button := range f.buttons {
 			consumed, capture = button.MouseHandler()(action, event, setFocus)
 			if consumed {
-				return
+				return consumed, capture
 			}
 		}
 
@@ -682,7 +743,7 @@ func (f *Form) MouseHandler() func(action tview.MouseAction, event *tcell.EventM
 			consumed = true
 		}
 
-		return
+		return consumed, capture
 	})
 }
 
@@ -693,6 +754,7 @@ func (f *Form) InputHandler() func(event *tcell.EventKey, setFocus func(p tview.
 			if item != nil && item.HasFocus() {
 				if handler := item.InputHandler(); handler != nil {
 					handler(event, setFocus)
+
 					return
 				}
 			}
@@ -702,6 +764,7 @@ func (f *Form) InputHandler() func(event *tcell.EventKey, setFocus func(p tview.
 			if button.HasFocus() {
 				if handler := button.InputHandler(); handler != nil {
 					handler(event, setFocus)
+
 					return
 				}
 			}

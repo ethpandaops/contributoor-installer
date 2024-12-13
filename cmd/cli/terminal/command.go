@@ -57,7 +57,6 @@ func NewCommandOpts(options ...CommandOption) *CommandOpts {
 	return opts
 }
 
-// Getters since fields are now private
 func (o *CommandOpts) Name() string {
 	return o.name
 }

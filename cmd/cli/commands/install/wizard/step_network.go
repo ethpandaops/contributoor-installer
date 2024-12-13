@@ -23,43 +23,62 @@ func NewNetworkStep(w *InstallWizard) *NetworkStep {
 		MaxLengths: []int{20, 100},
 		Regexes:    []string{"", ""},
 		OnDone: func(values map[string]string) {
-			w.UpdateConfig(func(cfg *service.ContributoorConfig) {
+			if err := w.UpdateConfig(func(cfg *service.ContributoorConfig) {
 				cfg.Network = &service.NetworkConfig{
 					Name:              values["Network Name"],
 					BeaconNodeAddress: values["Beacon Node Address"],
 				}
-			})
+			}); err != nil {
+				w.Logger.Error(err)
+
+				return
+			}
 
 			if next, err := w.CurrentStep.Next(); err == nil {
 				w.CurrentStep = next
-				w.CurrentStep.Show()
+
+				if err := w.CurrentStep.Show(); err != nil {
+					w.Logger.Error(err)
+				}
 			}
 		},
 		OnBack: func() {
 			if prev, err := w.CurrentStep.Previous(); err == nil {
 				w.CurrentStep = prev
-				w.CurrentStep.Show()
+
+				if err := w.CurrentStep.Show(); err != nil {
+					w.Logger.Error(err)
+				}
 			}
 		},
 		PageID: "network",
 	})
+
 	return &NetworkStep{step}
 }
 
 func (s *NetworkStep) Show() error {
 	s.Wizard.GetApp().SetRoot(s.Modal.BorderGrid, true)
+
 	return nil
 }
 
 func (s *NetworkStep) Next() (display.WizardStep, error) {
 	// Get InstallWizard instance
-	w := s.TextBoxStep.Wizard.(*InstallWizard)
+	w, ok := s.TextBoxStep.Wizard.(*InstallWizard)
+	if !ok {
+		return nil, fmt.Errorf("invalid wizard instance")
+	}
+
 	cfg := w.GetConfig()
 
 	if cfg.Network == nil {
-		w.UpdateConfig(func(cfg *service.ContributoorConfig) {
+		if err := w.UpdateConfig(func(cfg *service.ContributoorConfig) {
 			cfg.Network = &service.NetworkConfig{}
-		})
+		}); err != nil {
+			return nil, err
+		}
+
 		cfg = w.GetConfig()
 	}
 
@@ -71,7 +90,9 @@ func (s *NetworkStep) Next() (display.WizardStep, error) {
 			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 				s.TextBoxStep.Wizard.GetApp().SetRoot(s.Modal.BorderGrid, true)
 			})
+
 		s.TextBoxStep.Wizard.GetApp().SetRoot(errorModal, true)
+
 		return nil, fmt.Errorf("network name is required")
 	}
 
@@ -82,7 +103,9 @@ func (s *NetworkStep) Next() (display.WizardStep, error) {
 			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 				s.TextBoxStep.Wizard.GetApp().SetRoot(s.Modal.BorderGrid, true)
 			})
+
 		s.TextBoxStep.Wizard.GetApp().SetRoot(errorModal, true)
+
 		return nil, fmt.Errorf("beacon node address is required")
 	}
 

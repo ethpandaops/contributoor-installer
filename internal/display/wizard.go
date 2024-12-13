@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// WizardStep represents a single step in a wizard
+// WizardStep represents a single step in a wizard.
 type WizardStep interface {
 	Show() error
 	Next() (WizardStep, error)
@@ -17,7 +17,7 @@ type WizardStep interface {
 	GetProgress() (current, total int)
 }
 
-// Wizard defines the interface for command wizards
+// Wizard defines the interface for command wizards.
 type Wizard interface {
 	// Start begins the wizard flow
 	Start() error
@@ -33,7 +33,7 @@ type Wizard interface {
 	OnComplete() error
 }
 
-// BaseWizard provides common wizard functionality
+// BaseWizard provides common wizard functionality.
 type BaseWizard struct {
 	App         *tview.Application
 	Pages       *tview.Pages
@@ -64,6 +64,7 @@ func NewBaseWizard(log *logrus.Logger, app *tview.Application) *BaseWizard {
 
 	// Add padding
 	padding := tview.NewBox().SetBackgroundColor(tcell.ColorBlack)
+
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 5; j++ {
 			grid.AddItem(padding, j, i, 1, 1, 0, 0, false)

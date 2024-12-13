@@ -1,7 +1,6 @@
 package display
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -110,14 +109,17 @@ func (m *TextBoxModalLayout) setupForm(labels []string, maxLengths []int, regexe
 		SetButtonActivatedStyle(tcell.StyleDefault.
 			Background(tcell.Color46).
 			Foreground(tcell.ColorBlack))
+
 	m.Form = form
 
 	for i, label := range labels {
 		textbox := tview.NewInputField().SetLabel(label)
 		maxLength := maxLengths[i]
+
 		textbox.SetAcceptanceFunc(func(textToCheck string, lastChar rune) bool {
 			return maxLength <= 0 || len(textToCheck) <= maxLength
 		})
+
 		m.Form.AddFormItem(textbox)
 		m.TextBoxes[label] = textbox
 
@@ -156,53 +158,16 @@ func (m *TextBoxModalLayout) setupForm(labels []string, maxLengths []int, regexe
 	return len(labels)*2 + 1
 }
 
-func (m *TextBoxModalLayout) setupNavigation() {
-	navString1 := "Arrow keys: Navigate     Space/Enter: Select"
-	navTextView1 := tview.NewTextView().
-		SetDynamicColors(false).
-		SetRegions(false).
-		SetWrap(false)
-	fmt.Fprint(navTextView1, navString1)
-
-	navString2 := "Esc: Go Back     Ctrl+C: Quit without Saving"
-	navTextView2 := tview.NewTextView().
-		SetDynamicColors(false).
-		SetRegions(false).
-		SetWrap(false)
-	fmt.Fprint(navTextView2, navString2)
-
-	navBar := tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(tview.NewFlex().
-			AddItem(tview.NewBox(), 0, 1, false).
-			AddItem(navTextView1, len(navString1), 1, false).
-			AddItem(tview.NewBox(), 0, 1, false),
-			1, 1, false).
-		AddItem(tview.NewFlex().
-			AddItem(tview.NewBox(), 0, 1, false).
-			AddItem(navTextView2, len(navString2), 1, false).
-			AddItem(tview.NewBox(), 0, 1, false),
-			1, 1, false)
-
-	m.BorderGrid.AddItem(navBar, 3, 1, 1, 1, 0, 0, true)
-
-	m.ControlGrid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEscape && m.Back != nil {
-			m.Back()
-			return nil
-		}
-		return event
-	})
-}
-
 func (m *TextBoxModalLayout) handleNext() {
 	if m.Done == nil {
 		return
 	}
+
 	text := make(map[string]string)
 	for label, textbox := range m.TextBoxes {
 		text[label] = strings.TrimSpace(textbox.GetText())
 	}
+
 	m.Done(text)
 }
 

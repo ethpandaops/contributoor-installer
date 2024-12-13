@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,18 +24,22 @@ func NewDockerService(logger *logrus.Logger, configService *ConfigService) (*Doc
 		return nil, fmt.Errorf("failed to find docker-compose.yml: %w", err)
 	}
 
+	if err := validateComposePath(composePath); err != nil {
+		return nil, fmt.Errorf("invalid docker-compose file: %w", err)
+	}
+
 	return &DockerService{
 		logger:        logger,
 		config:        configService.Get(),
-		composePath:   composePath,
+		composePath:   filepath.Clean(composePath),
 		configPath:    configService.configPath,
 		configService: configService,
 	}, nil
 }
 
-// Start starts the docker container using docker-compose
+// Start starts the docker container using docker-compose.
 func (s *DockerService) Start() error {
-	cmd := exec.Command("docker", "compose", "-f", s.composePath, "up", "-d", "--pull", "always")
+	cmd := exec.Command("docker", "compose", "-f", s.composePath, "up", "-d", "--pull", "always") //nolint:gosec // validateComposePath() and filepath.Clean() in-use.
 	cmd.Env = s.getComposeEnv()
 
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -44,17 +47,19 @@ func (s *DockerService) Start() error {
 	}
 
 	s.logger.Info("Service started successfully")
+
 	return nil
 }
 
-// Stop stops and removes the docker container using docker-compose
+// Stop stops and removes the docker container using docker-compose.
 func (s *DockerService) Stop() error {
 	// Stop and remove containers, volumes, and networks
+	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
 	cmd := exec.Command("docker", "compose", "-f", s.composePath, "down",
-		"--remove-orphans", // Remove containers not defined in compose
-		"-v",               // Remove volumes
-		"--rmi", "local",   // Remove local images
-		"--timeout", "30") // Wait up to 30 seconds before force killing
+		"--remove-orphans",
+		"-v",
+		"--rmi", "local",
+		"--timeout", "30")
 	cmd.Env = s.getComposeEnv()
 
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -62,12 +67,13 @@ func (s *DockerService) Stop() error {
 	}
 
 	s.logger.Info("Service stopped and cleaned up successfully")
+
 	return nil
 }
 
-// IsRunning checks if the docker container is running
+// IsRunning checks if the docker container is running.
 func (s *DockerService) IsRunning() (bool, error) {
-	cmd := exec.Command("docker", "compose", "-f", s.composePath, "ps", "--format", "{{.State}}")
+	cmd := exec.Command("docker", "compose", "-f", s.composePath, "ps", "--format", "{{.State}}") //nolint:gosec // validateComposePath() and filepath.Clean() in-use.
 	cmd.Env = s.getComposeEnv()
 
 	output, err := cmd.Output()
@@ -85,15 +91,16 @@ func (s *DockerService) IsRunning() (bool, error) {
 	return false, nil
 }
 
-// Update pulls the latest image and restarts the container
+// Update pulls the latest image and restarts the container.
 func (s *DockerService) Update() error {
-	// Pull image
+	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
 	cmd := exec.Command("docker", "pull", fmt.Sprintf("ethpandaops/contributoor-test:%s", s.config.Version))
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to pull image: %w\nOutput: %s", err, string(output))
 	}
 
 	s.logger.WithField("version", s.config.Version).Info("Image updated successfully")
+
 	return nil
 }
 
@@ -110,11 +117,12 @@ func findComposeFile() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("could not get executable path: %w", err)
 	}
+
 	binDir := filepath.Dir(ex)
 
 	// Check release mode (next to binary)
 	composePath := filepath.Join(binDir, "docker-compose.yml")
-	if _, err := os.Stat(composePath); err == nil {
+	if _, e := os.Stat(composePath); e == nil {
 		return composePath, nil
 	}
 
@@ -137,18 +145,28 @@ func findComposeFile() (string, error) {
 	return "", fmt.Errorf("docker-compose.yml not found")
 }
 
-func expandConfigPath(path string) (string, error) {
-	// Get absolute path
+func validateComposePath(path string) error {
+	// Check if path exists and is a regular file
+	fi, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("invalid compose file path: %w", err)
+	}
+
+	if fi.IsDir() {
+		return fmt.Errorf("compose path is a directory, not a file")
+	}
+
+	// Ensure absolute path
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to get absolute path: %w", err)
+		return fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
-	// Expand home directory
-	expandedPath, err := homedir.Expand(absPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to expand home directory: %w", err)
+	// Verify file extension
+	if !strings.HasSuffix(strings.ToLower(absPath), ".yml") &&
+		!strings.HasSuffix(strings.ToLower(absPath), ".yaml") {
+		return fmt.Errorf("compose file must have .yml or .yaml extension")
 	}
 
-	return expandedPath, nil
+	return nil
 }
