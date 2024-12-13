@@ -10,44 +10,32 @@ import (
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/start"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/stop"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/update"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/utils"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/terminal"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
 // Run
 func main() {
-	// Add logo to application help template
-	cli.AppHelpTemplate = fmt.Sprintf(`%s
-Authored by the ethPandaOps team
-
-%s`, display.Logo, cli.AppHelpTemplate)
-	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
+	log := logrus.New()
+	log.SetLevel(logrus.DebugLevel)
 
 	// Set up signal handling
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Handle cleanup on exit
+	// Handle cleanup on exit.
 	go func() {
 		<-sigChan
-		logger.Info("Received exit signal")
-		cleanup(logger)
+		log.Info("Received exit signal")
 		os.Exit(0)
 	}()
 
+	cli.AppHelpTemplate = terminal.AppHelpTemplate
 	app := cli.NewApp()
-
-	// Set application info
 	app.Name = "contributoor"
 	app.Usage = "Xatu Contributoor CLI"
 	app.Copyright = "(c) 2024 ethPandaOps"
-
-	// Initialize app metadata
-	app.Metadata = make(map[string]interface{})
-	app.Metadata["logger"] = logger // Attach the logger
 
 	// Set application flags
 	app.Flags = []cli.Flag{
@@ -59,46 +47,36 @@ Authored by the ethPandaOps team
 	}
 
 	// Register commands
-	install.RegisterCommands(app, utils.NewCommandOpts(
-		utils.WithName("install"),
-		utils.WithLogger(logger),
-		utils.WithAliases([]string{"i"}),
+	install.RegisterCommands(app, terminal.NewCommandOpts(
+		terminal.WithName("install"),
+		terminal.WithLogger(log),
+		terminal.WithAliases([]string{"i"}),
 	))
 
-	start.RegisterCommands(app, utils.NewCommandOpts(
-		utils.WithName("start"),
-		utils.WithLogger(logger),
+	start.RegisterCommands(app, terminal.NewCommandOpts(
+		terminal.WithName("start"),
+		terminal.WithLogger(log),
 	))
 
-	stop.RegisterCommands(app, utils.NewCommandOpts(
-		utils.WithName("stop"),
-		utils.WithLogger(logger),
+	stop.RegisterCommands(app, terminal.NewCommandOpts(
+		terminal.WithName("stop"),
+		terminal.WithLogger(log),
 	))
 
-	update.RegisterCommands(app, utils.NewCommandOpts(
-		utils.WithName("update"),
-		utils.WithLogger(logger),
+	update.RegisterCommands(app, terminal.NewCommandOpts(
+		terminal.WithName("update"),
+		terminal.WithLogger(log),
 	))
 
-	// Handle normal exit
+	// Handle normal exit.
 	app.After = func(c *cli.Context) error {
-		cleanup(logger)
 		return nil
 	}
 
-	// Run application
+	// Boot!
 	fmt.Println("")
 	if err := app.Run(os.Args); err != nil {
-		logger.Error(err)
+		log.Error(err)
 	}
 	fmt.Println("")
-
-}
-
-func cleanup(log *logrus.Logger) {
-	// Add any cleanup tasks here
-	// - Save state
-	// - Close connections
-	// - Remove temp files
-	// etc.
 }

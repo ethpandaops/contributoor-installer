@@ -1,8 +1,17 @@
-package utils
+package terminal
 
 import (
+	"fmt"
+
+	"github.com/ethpandaops/contributoor-installer-test/internal/display"
 	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
+
+var AppHelpTemplate = fmt.Sprintf(`%s
+Authored by the ethPandaOps team
+
+%s`, display.Logo, cli.AppHelpTemplate)
 
 // CommandOpts contains options for registering CLI commands.
 type CommandOpts struct {

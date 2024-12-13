@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/install/wizard"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/utils"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer-test/internal/service"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
-func RegisterCommands(app *cli.App, opts *utils.CommandOpts) {
+func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:      opts.Name(),
 		Aliases:   opts.Aliases(),
@@ -38,7 +38,7 @@ func RegisterCommands(app *cli.App, opts *utils.CommandOpts) {
 	})
 }
 
-func installContributoor(c *cli.Context, opts *utils.CommandOpts) error {
+func installContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 	var (
 		configDir = c.GlobalString("config-path")
 		log       = opts.Logger()
@@ -47,7 +47,7 @@ func installContributoor(c *cli.Context, opts *utils.CommandOpts) error {
 	// Expand the home directory if necessary
 	expandedDir, err := homedir.Expand(configDir)
 	if err != nil {
-		return fmt.Errorf("%sFailed to expand config path: %w%s", utils.ColorRed, err, utils.ColorReset)
+		return fmt.Errorf("%sFailed to expand config path: %w%s", terminal.ColorRed, err, terminal.ColorReset)
 	}
 
 	if !c.GlobalIsSet("config-path") {
@@ -61,7 +61,7 @@ func installContributoor(c *cli.Context, opts *utils.CommandOpts) error {
 	}
 
 	if !exists {
-		return fmt.Errorf("%sMissing config file. Please run install.sh first.%s", utils.ColorRed, utils.ColorReset)
+		return fmt.Errorf("%sMissing config file. Please run install.sh first.%s", terminal.ColorRed, terminal.ColorReset)
 	}
 
 	configService, err := service.NewConfigService(log, configPath)
@@ -95,11 +95,11 @@ func installContributoor(c *cli.Context, opts *utils.CommandOpts) error {
 	w := wizard.NewInstallWizard(log, app, configService)
 
 	if err := w.Start(); err != nil {
-		return fmt.Errorf("%sWizard error: %w%s", utils.ColorRed, err, utils.ColorReset)
+		return fmt.Errorf("%sWizard error: %w%s", terminal.ColorRed, err, terminal.ColorReset)
 	}
 
 	if err := app.Run(); err != nil {
-		return fmt.Errorf("%sDisplay error: %w%s", utils.ColorRed, err, utils.ColorReset)
+		return fmt.Errorf("%sDisplay error: %w%s", terminal.ColorRed, err, terminal.ColorReset)
 	}
 
 	return w.OnComplete()

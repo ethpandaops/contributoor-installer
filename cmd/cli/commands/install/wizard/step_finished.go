@@ -3,7 +3,7 @@ package wizard
 import (
 	"fmt"
 
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
+	"github.com/ethpandaops/contributoor-installer-test/internal/display"
 	"github.com/rivo/tview"
 )
 

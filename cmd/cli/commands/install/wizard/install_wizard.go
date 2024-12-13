@@ -1,9 +1,9 @@
 package wizard
 
 import (
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/utils"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer-test/internal/display"
+	"github.com/ethpandaops/contributoor-installer-test/internal/service"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 )
@@ -60,7 +60,7 @@ func (w *InstallWizard) OnComplete() error {
 
 	w.GetApp().Stop()
 
-	w.Logger.Infof("%sInstallation complete. You can now run 'contributoor start'.%s", utils.ColorGreen, utils.ColorReset)
+	w.Logger.Infof("%sInstallation complete. You can now run 'contributoor start'.%s", terminal.ColorGreen, terminal.ColorReset)
 
 	return nil
 }
