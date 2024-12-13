@@ -62,7 +62,7 @@ spinner() {
 
 fail() {
     MESSAGE=$1
-    printf "\n${COLOR_RED}**ERROR**\n%s${COLOR_RESET}\n" "$MESSAGE" >&2
+    printf "\n${COLOR_RED}**ERROR**\n%b${COLOR_RESET}\n" "$MESSAGE" >&2
     exit 1
 }
 
@@ -197,7 +197,17 @@ setup_installer() {
     rm -f "$temp_archive"
 }
 
-setup_contributoor() {
+setup_docker_contributoor() {
+    docker system prune -f >/dev/null 2>&1 || true
+
+    docker pull "ethpandaops/contributoor-test:${VERSION}" >/dev/null 2>&1 &
+    spinner $!
+    wait $!
+    [ $? -ne 0 ] && fail "Failed to pull docker image"
+    success "Pulled docker image: ethpandaops/contributoor-test:${VERSION}"
+}
+
+setup_binary_contributoor() {
     local temp_archive=$(mktemp)
     local checksums_url="https://github.com/ethpandaops/contributoor-test/releases/download/v${VERSION}/contributoor-test_${VERSION}_checksums.txt"
     local checksums_file=$(mktemp)
@@ -270,14 +280,49 @@ validate_version() {
 
     if ! echo "$releases" | grep -q "\"tag_name\": *\"v\{0,1\}${version}\""; then
         local available_versions=$(echo "$releases" | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4 | sed 's/^v//' | head -n 5 | tr '\n' ', ' | sed 's/,$//')
-        success "Last 5 available versions: ${available_versions}"
-        fail "Provided version ${version} not found"
+        fail "Last 5 available versions: ${available_versions}\nProvided version ${version} not found"
     fi
 }
 
 ###############################################################################
 # Main Installation Flow
 ###############################################################################
+
+update_config_file() {
+    local config_file="$1"
+    local temp_config=$(mktemp)
+
+    # If config exists, read it into temp file
+    if [ -f "$config_file" ]; then
+        cp "$config_file" "$temp_config"
+    else
+        touch "$temp_config"
+    fi
+
+    # Update only the fields we care about, preserving the rest
+    {
+        # Add newline if needed
+        [ -s "$temp_config" ] && [ "$(tail -c1 "$temp_config" | wc -l)" -eq 0 ] && echo >> "$temp_config"
+        
+        # Remove fields we want to update - compatible with BSD and GNU sed
+        sed -e '/^version:/d' \
+            -e '/^contributoorDirectory:/d' \
+            -e '/^runMethod:/d' \
+            "$temp_config" > "${temp_config}.tmp" && mv "${temp_config}.tmp" "$temp_config"
+        
+        # Add our fields
+        cat >> "$temp_config" << EOF
+version: ${VERSION}
+contributoorDirectory: ${CONTRIBUTOOR_PATH}
+runMethod: ${INSTALL_MODE}
+EOF
+
+        mv "$temp_config" "$config_file"
+    } || {
+        rm -f "$temp_config" "${temp_config}.tmp"
+        fail "Failed to update configuration file"
+    }
+}
 
 main() {
     # Parse arguments
@@ -382,25 +427,24 @@ main() {
     chmod -R 755 "$CONTRIBUTOOR_BIN"
     success "bin directory: $CONTRIBUTOOR_BIN" 
 
-    # Installation
+    # Prepare installation for the mode selected.
+    # If binary, download the contributoor binary.
+    # If docker, pull the docker image.
+    # Makes life easier later on having everything ready.
     progress 6 "Preparing installation"
     setup_installer
-    [ "$INSTALL_MODE" = "binary" ] && setup_contributoor
+    [ "$INSTALL_MODE" = "binary" ] && setup_binary_contributoor
 
     # Docker cleanup if needed
     if [ "$INSTALL_MODE" = "docker" ] && command -v docker >/dev/null 2>&1; then
-        docker system prune -f >/dev/null 2>&1 || true
+        setup_docker_contributoor
     fi
 
     # Configuration
     progress 7 "Writing configuration"
     local config_file="$CONTRIBUTOOR_PATH/config.yaml"
-    cat > "$config_file" << EOF
-version: ${VERSION}
-contributoorDirectory: ${CONTRIBUTOOR_PATH}
-runMethod: ${INSTALL_MODE}
-EOF
-    success "Created config: $config_file"
+    update_config_file "$config_file"
+    success "Updated config: $config_file"
 
     # Run installer
     progress 8 "Run install wizard"
