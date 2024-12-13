@@ -7,7 +7,9 @@ import (
 	"syscall"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/install"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/run"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/start"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/stop"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/update"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -57,7 +59,9 @@ Authored by the ethPandaOps team
 
 	// Register commands
 	install.RegisterCommands(app, "install", []string{"i"})
-	run.RegisterCommands(app, "run", []string{"r"})
+	start.RegisterCommands(app, "start", []string{""})
+	stop.RegisterCommands(app, "stop", []string{""})
+	update.RegisterCommands(app, "update", []string{""})
 
 	// Handle normal exit
 	app.After = func(c *cli.Context) error {

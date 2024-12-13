@@ -1,4 +1,4 @@
-package run
+package stop
 
 import (
 	"fmt"
@@ -27,15 +27,15 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:      name,
 		Aliases:   aliases,
-		Usage:     "Run Contributoor",
-		UsageText: "contributoor run [options]",
+		Usage:     "Stop Contributoor",
+		UsageText: "contributoor stop [options]",
 		Action: func(c *cli.Context) error {
-			return runContributoor(c)
+			return stopContributoor(c)
 		},
 	})
 }
 
-func runContributoor(c *cli.Context) error {
+func stopContributoor(c *cli.Context) error {
 	configPath := c.GlobalString("config-path")
 	path, err := homedir.Expand(configPath)
 	if err != nil {
@@ -66,15 +66,32 @@ func runContributoor(c *cli.Context) error {
 
 	switch cfg.RunMethod {
 	case internal.RunMethodDocker:
-		dockerService := service.NewDockerService(logger, cfg)
-		if err := dockerService.Start(); err != nil {
-			logger.Errorf("could not start service: %v", err)
+		logger.WithField("version", cfg.Version).Info("Stopping Contributoor")
+
+		dockerService, err := service.NewDockerService(logger, cfg)
+		if err != nil {
+			logger.Errorf("could not create docker service: %v", err)
+			return err
+		}
+
+		// Check if running before attempting to stop
+		running, err := dockerService.IsRunning()
+		if err != nil {
+			logger.Errorf("could not check service status: %v", err)
+			return err
+		}
+		if !running {
+			return fmt.Errorf("%sContributoor is not running. Use 'contributoor start' to start it%s", colorRed, colorReset)
+		}
+
+		if err := dockerService.Stop(); err != nil {
+			logger.Errorf("could not stop service: %v", err)
 			return err
 		}
 	case internal.RunMethodBinary:
 		binaryService := service.NewBinaryService(logger, cfg)
-		if err := binaryService.Start(); err != nil {
-			logger.Errorf("could not start service: %v", err)
+		if err := binaryService.Stop(); err != nil {
+			logger.Errorf("could not stop service: %v", err)
 			return err
 		}
 	}

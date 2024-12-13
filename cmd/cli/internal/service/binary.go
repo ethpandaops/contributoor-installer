@@ -42,3 +42,11 @@ func (s *BinaryService) Start() error {
 
 	return nil
 }
+
+func (s *BinaryService) Stop() error {
+	return nil
+}
+
+func (s *BinaryService) Update() error {
+	return nil
+}

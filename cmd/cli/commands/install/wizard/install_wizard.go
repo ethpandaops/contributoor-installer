@@ -64,7 +64,12 @@ func (w *InstallWizard) OnComplete() error {
 
 	switch w.Config.RunMethod {
 	case config.RunMethodDocker:
-		dockerService := service.NewDockerService(w.Logger, w.Config)
+		dockerService, err := service.NewDockerService(w.Logger, w.Config)
+		if err != nil {
+			w.Logger.Errorf("could not create docker service: %v", err)
+			return err
+		}
+
 		if err := dockerService.Start(); err != nil {
 			w.Logger.Errorf("could not start service: %v", err)
 			return err

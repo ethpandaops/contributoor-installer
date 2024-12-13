@@ -13,285 +13,146 @@ import (
 )
 
 type DockerService struct {
-	logger *logrus.Logger
-	config *internal.ContributoorConfig
+	logger      *logrus.Logger
+	config      *internal.ContributoorConfig
+	composePath string
+	configPath  string
 }
 
-type DockerImageInfo struct {
-	ID      string
-	RepoTag string
-}
+func NewDockerService(logger *logrus.Logger, config *internal.ContributoorConfig) (*DockerService, error) {
+	composePath, err := findComposeFile()
+	if err != nil {
+		return nil, fmt.Errorf("failed to find docker-compose.yml: %w", err)
+	}
 
-func NewDockerService(logger *logrus.Logger, config *internal.ContributoorConfig) *DockerService {
+	configPath, err := expandConfigPath(config.ContributoorDirectory)
+	if err != nil {
+		return nil, fmt.Errorf("failed to expand config path: %w", err)
+	}
+
 	return &DockerService{
-		logger: logger,
-		config: config,
-	}
+		logger:      logger,
+		config:      config,
+		composePath: composePath,
+		configPath:  configPath,
+	}, nil
 }
 
-func (s *DockerService) Stop() error {
-	expandedPath, err := s.getConfigPath()
-	if err != nil {
-		return err
-	}
-
-	dockerComposeFile, err := s.getComposeFilePath()
-	if err != nil {
-		return err
-	}
-
-	logCtx := s.logger.WithFields(logrus.Fields{
-		"config_path":  expandedPath,
-		"compose_file": dockerComposeFile,
-	})
-	logCtx.Info("Stopping docker service")
-
-	// Stop existing containers
-	if err := s.stopContainers(dockerComposeFile, expandedPath); err != nil {
-		return err
-	}
-
-	logCtx.Info("Service stopped successfully")
-	return nil
-}
-
+// Start starts the docker container using docker-compose
 func (s *DockerService) Start() error {
-	// Check if image exists
-	imageInfo, err := s.getImageInfo(fmt.Sprintf("ethpandaops/contributoor-test:%s", s.config.Version))
-	if err != nil || imageInfo.ID == "" {
-		s.logger.Warnf("Image not found locally, attempting to pull...")
-		cmd := exec.Command("docker", "pull", fmt.Sprintf("ethpandaops/contributoor-test:%s", s.config.Version))
-		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("failed to pull image: %w\nOutput: %s", err, string(output))
-		}
-	}
+	cmd := exec.Command("docker", "compose", "-f", s.composePath, "up", "-d", "--pull", "always")
+	cmd.Env = s.getComposeEnv()
 
-	if err := s.checkForUpdates(); err != nil {
-		s.logger.Warnf("Failed to check for updates: %v", err)
-	}
-
-	expandedPath, err := s.getConfigPath()
-	if err != nil {
-		return err
-	}
-
-	dockerComposeFile, err := s.getComposeFilePath()
-	if err != nil {
-		return err
-	}
-
-	logCtx := s.logger.WithFields(logrus.Fields{
-		"config_path":  expandedPath,
-		"compose_file": dockerComposeFile,
-	})
-	logCtx.Info("Starting docker service")
-
-	// Start containers
-	if err := s.startContainers(dockerComposeFile, expandedPath); err != nil {
-		return err
-	}
-
-	logCtx.Info("Service started successfully")
-	return nil
-}
-
-func (s *DockerService) Restart() error {
-	if err := s.checkForUpdates(); err != nil {
-		s.logger.Warnf("Failed to check for updates: %v", err)
-	}
-
-	expandedPath, err := s.getConfigPath()
-	if err != nil {
-		return err
-	}
-
-	dockerComposeFile, err := s.getComposeFilePath()
-	if err != nil {
-		return err
-	}
-
-	logCtx := s.logger.WithFields(logrus.Fields{
-		"config_path":  expandedPath,
-		"compose_file": dockerComposeFile,
-	})
-
-	hasContainer, err := s.hasExistingContainer()
-	if err != nil {
-		s.logger.Warnf("Failed to check container status: %v", err)
-	}
-
-	if hasContainer {
-		logCtx.Info("Found existing container, stopping first")
-		if err := s.stopContainers(dockerComposeFile, expandedPath); err != nil {
-			return err
-		}
-	} else {
-		logCtx.Info("No existing container found, starting fresh")
-	}
-
-	// Start containers
-	if err := s.startContainers(dockerComposeFile, expandedPath); err != nil {
-		return err
-	}
-
-	logCtx.Info("Service restarted successfully")
-	return nil
-}
-
-func (s *DockerService) stopContainers(dockerComposeFile string, cfgPath string) error {
-	cmd := exec.Command("docker", "compose", "-f", dockerComposeFile, "down", "-v", "--remove-orphans")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", cfgPath))
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("docker compose down failed: %w, output: %s", err, string(output))
+		return fmt.Errorf("failed to start containers: %w\nOutput: %s", err, string(output))
 	}
+
+	s.logger.Info("Service started successfully")
 	return nil
 }
 
-func (s *DockerService) startContainers(dockerComposeFile string, cfgPath string) error {
-	cmd := exec.Command("docker", "compose", "-f", dockerComposeFile, "up", "-d", "--pull", "always")
-	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", cfgPath),
+// Stop stops and removes the docker container using docker-compose
+func (s *DockerService) Stop() error {
+	// Stop and remove containers, volumes, and networks
+	cmd := exec.Command("docker", "compose", "-f", s.composePath, "down",
+		"--remove-orphans", // Remove containers not defined in compose
+		"-v",               // Remove volumes
+		"--rmi", "local",   // Remove local images
+		"--timeout", "30") // Wait up to 30 seconds before force killing
+	cmd.Env = s.getComposeEnv()
+
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to stop containers: %w\nOutput: %s", err, string(output))
+	}
+
+	s.logger.Info("Service stopped and cleaned up successfully")
+	return nil
+}
+
+// IsRunning checks if the docker container is running
+func (s *DockerService) IsRunning() (bool, error) {
+	cmd := exec.Command("docker", "compose", "-f", s.composePath, "ps", "--format", "{{.State}}")
+	cmd.Env = s.getComposeEnv()
+
+	output, err := cmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("failed to check container status: %w", err)
+	}
+
+	states := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, state := range states {
+		if strings.Contains(strings.ToLower(state), "running") {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// Update pulls the latest image and restarts the container
+func (s *DockerService) Update() error {
+	// Pull image
+	cmd := exec.Command("docker", "pull", fmt.Sprintf("ethpandaops/contributoor-test:%s", s.config.Version))
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to pull image: %w\nOutput: %s", err, string(output))
+	}
+
+	s.logger.WithField("version", s.config.Version).Info("Image updated successfully")
+	return nil
+}
+
+func (s *DockerService) getComposeEnv() []string {
+	return append(os.Environ(),
+		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", s.configPath),
 		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", s.config.Version),
 	)
-
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("docker compose up failed: %w\nOutput: %s", err, string(output))
-	}
-	return nil
 }
 
-func (s *DockerService) getComposeFilePath() (string, error) {
-	// Get the directory where the binary is located
+func findComposeFile() (string, error) {
+	// Get binary directory
 	ex, err := os.Executable()
 	if err != nil {
 		return "", fmt.Errorf("could not get executable path: %w", err)
 	}
 	binDir := filepath.Dir(ex)
 
-	// First check if docker-compose.yml exists next to binary (release mode)
+	// Check release mode (next to binary)
 	composePath := filepath.Join(binDir, "docker-compose.yml")
 	if _, err := os.Stat(composePath); err == nil {
 		return composePath, nil
 	}
 
-	// If not found, try dev mode paths
+	// Check dev mode paths
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("could not get working directory: %w", err)
 	}
 
-	// Check current directory
-	composePath = filepath.Join(cwd, "docker-compose.yml")
-	if _, err := os.Stat(composePath); err == nil {
-		return composePath, nil
+	// Try current directory
+	if _, err := os.Stat(filepath.Join(cwd, "docker-compose.yml")); err == nil {
+		return filepath.Join(cwd, "docker-compose.yml"), nil
 	}
 
-	// Check one level up (in case we're in cmd/cli)
-	composePath = filepath.Join(cwd, "..", "..", "docker-compose.yml")
-	if _, err := os.Stat(composePath); err == nil {
-		return composePath, nil
+	// Try repo root
+	if _, err := os.Stat(filepath.Join(cwd, "..", "..", "docker-compose.yml")); err == nil {
+		return filepath.Join(cwd, "..", "..", "docker-compose.yml"), nil
 	}
 
-	return "", fmt.Errorf("docker-compose.yml not found in binary dir or repo root")
+	return "", fmt.Errorf("docker-compose.yml not found")
 }
 
-func (s *DockerService) getConfigPath() (string, error) {
-	// Ensure absolute path
-	absPath, err := filepath.Abs(s.config.ContributoorDirectory)
+func expandConfigPath(path string) (string, error) {
+	// Get absolute path
+	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return "", fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
-	// Expand home directory if needed
+	// Expand home directory
 	expandedPath, err := homedir.Expand(absPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to expand home directory: %w", err)
 	}
 
 	return expandedPath, nil
-}
-
-func (s *DockerService) checkForUpdates() error {
-	var hasUpdate bool
-
-	// Get current image info before pull
-	imageTag := strings.TrimPrefix(s.config.Version, "v")
-	if imageTag == "latest" {
-		imageTag = "latest"
-	}
-	before, err := s.getImageInfo(fmt.Sprintf("ethpandaops/contributoor-test:%s", imageTag))
-	if err != nil {
-		return err
-	}
-
-	// Pull latest image
-	cmd := exec.Command("docker", "pull", "ethpandaops/contributoor-test:latest")
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to pull latest image: %w", err)
-	}
-
-	// Get image info after pull
-	after, err := s.getImageInfo("ethpandaops/contributoor-test:latest")
-	if err != nil {
-		return err
-	}
-
-	s.logger.WithFields(logrus.Fields{
-		"before": before.ID,
-		"after":  after.ID,
-	}).Info("Checking for docker image updates")
-
-	// Compare IDs to detect changes
-	hasUpdate = before.ID != after.ID
-
-	if hasUpdate {
-		s.logger.Info("New Docker image version available")
-	} else {
-		s.logger.Info("Docker image is up to date")
-	}
-
-	return nil
-}
-
-func (s *DockerService) getImageInfo(image string) (*DockerImageInfo, error) {
-	cmd := exec.Command("docker", "image", "inspect", "--format", "{{.ID}}", image)
-	output, err := cmd.Output()
-	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
-			// Image doesn't exist
-			return &DockerImageInfo{}, nil
-		}
-		return nil, fmt.Errorf("failed to inspect image: %w", err)
-	}
-
-	return &DockerImageInfo{
-		ID: strings.TrimSpace(string(output)),
-	}, nil
-}
-
-func (s *DockerService) hasExistingContainer() (bool, error) {
-	dockerComposeFile, err := s.getComposeFilePath()
-	if err != nil {
-		return false, fmt.Errorf("failed to get compose file path: %w", err)
-	}
-
-	expandedPath, err := s.getConfigPath()
-	if err != nil {
-		return false, fmt.Errorf("failed to get config path: %w", err)
-	}
-
-	cmd := exec.Command("docker", "compose", "-f", dockerComposeFile, "ps", "-a", "--format", "{{.Name}}")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", expandedPath))
-
-	output, err := cmd.Output()
-	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
-			// No containers found
-			return false, nil
-		}
-		return false, fmt.Errorf("failed to check container status: %w", err)
-	}
-
-	// Check if any container exists
-	return len(strings.TrimSpace(string(output))) > 0, nil
 }
