@@ -1,3 +1,6 @@
+// Package display provides the display components for the CLI.
+//
+// Adapted from https://github.com/rocket-pool/smartnode.
 package display
 
 import (
@@ -72,12 +75,4 @@ func (s *ChoiceStep) Next() (WizardStep, error) {
 
 func (s *ChoiceStep) Previous() (WizardStep, error) {
 	return nil, nil //nolint:nilnil // No previous step.
-}
-
-func (s *ChoiceStep) GetTitle() string {
-	return s.Modal.GetTitle()
-}
-
-func (s *ChoiceStep) GetProgress() (int, int) {
-	return s.Step, s.Total
 }

@@ -1,3 +1,6 @@
+// Package display provides the display components for the CLI.
+//
+// Adapted from https://github.com/rocket-pool/smartnode.
 package display
 
 import (
@@ -77,14 +80,6 @@ func (s *TextBoxStep) Next() (WizardStep, error) {
 
 func (s *TextBoxStep) Previous() (WizardStep, error) {
 	return s.Wizard.GetCurrentStep(), nil
-}
-
-func (s *TextBoxStep) GetTitle() string {
-	return s.Modal.Title
-}
-
-func (s *TextBoxStep) GetProgress() (int, int) {
-	return s.Step, s.Total
 }
 
 func newPage(parent *page, id string, title string, description string, content tview.Primitive) *page {

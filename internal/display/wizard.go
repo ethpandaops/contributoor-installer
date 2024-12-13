@@ -1,3 +1,6 @@
+// Package display provides the display components for the CLI.
+//
+// Adapted from https://github.com/rocket-pool/smartnode.
 package display
 
 import (
@@ -13,8 +16,6 @@ type WizardStep interface {
 	Show() error
 	Next() (WizardStep, error)
 	Previous() (WizardStep, error)
-	GetTitle() string
-	GetProgress() (current, total int)
 }
 
 // Wizard defines the interface for command wizards.

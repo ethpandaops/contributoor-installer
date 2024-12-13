@@ -1,3 +1,6 @@
+// Package display provides the display components for the CLI.
+//
+// Adapted from https://github.com/rocket-pool/smartnode.
 package display
 
 import (
@@ -180,8 +183,4 @@ func (m *TextBoxModalLayout) handleBack() {
 func (m *TextBoxModalLayout) Focus() {
 	m.App.SetFocus(m.FirstBox)
 	m.Form.SetFocus(0)
-}
-
-func (m *TextBoxModalLayout) GetTitle() string {
-	return m.Title
 }

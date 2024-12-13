@@ -1,3 +1,6 @@
+// Package display provides the display components for the CLI.
+//
+// Adapted from https://github.com/rocket-pool/smartnode.
 package display
 
 import (

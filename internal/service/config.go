@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -44,22 +45,43 @@ type ConfigService struct {
 	config     *ContributoorConfig
 }
 
+type ConfigNotFoundError struct {
+	Path string
+}
+
+func (e *ConfigNotFoundError) Error() string {
+	return fmt.Sprintf("Config file not found at [%s]. Please run 'contributoor install' first", e.Path)
+}
+
 func NewConfigService(logger *logrus.Logger, configPath string) (*ConfigService, error) {
-	// If configPath is a directory, append config.yaml
-	fileInfo, err := os.Stat(configPath)
+	// Expand home directory
+	path, err := homedir.Expand(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to stat config path: %w", err)
+		return nil, fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
 	}
 
-	fullConfigPath := configPath
-	if fileInfo.IsDir() {
-		fullConfigPath = filepath.Join(configPath, "config.yaml")
+	// Check directory exists
+	dirInfo, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return nil, fmt.Errorf("directory [%s] does not exist", path)
+	}
+
+	if !dirInfo.IsDir() {
+		return nil, fmt.Errorf("[%s] is not a directory", path)
+	}
+
+	// Determine full config path
+	fullConfigPath := filepath.Join(path, "config.yaml")
+
+	// Check if config exists
+	if _, err := os.Stat(fullConfigPath); os.IsNotExist(err) {
+		return nil, &ConfigNotFoundError{Path: fullConfigPath}
 	}
 
 	// Load existing config
 	data, err := os.ReadFile(fullConfigPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
 
 	oldConfig := &ContributoorConfig{}
@@ -127,12 +149,12 @@ func (s *ConfigService) Update(updates func(*ContributoorConfig)) error {
 	return nil
 }
 
-func (s *ConfigService) GetConfigDir() string {
-	return s.configDir
-}
-
 func (s *ConfigService) Get() *ContributoorConfig {
 	return s.config
+}
+
+func (s *ConfigService) GetConfigDir() string {
+	return s.configDir
 }
 
 func WriteConfig(path string, cfg *ContributoorConfig) error {
@@ -212,4 +234,8 @@ func migrateConfig(target, source *ContributoorConfig) error {
 		}
 	*/
 	return nil
+}
+
+func (s *ConfigService) Save() error {
+	return WriteConfig(s.configPath, s.config)
 }
