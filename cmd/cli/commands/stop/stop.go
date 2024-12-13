@@ -6,26 +6,26 @@ import (
 	"path/filepath"
 
 	"github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/utils"
 )
 
-func RegisterCommands(app *cli.App, name string, aliases []string) {
+func RegisterCommands(app *cli.App, opts *utils.CommandOpts) {
 	app.Commands = append(app.Commands, cli.Command{
-		Name:      name,
-		Aliases:   aliases,
+		Name:      opts.Name(),
+		Aliases:   opts.Aliases(),
 		Usage:     "Stop Contributoor",
 		UsageText: "contributoor stop [options]",
 		Action: func(c *cli.Context) error {
-			return stopContributoor(c)
+			return stopContributoor(c, opts)
 		},
 	})
 }
 
-func stopContributoor(c *cli.Context) error {
+func stopContributoor(c *cli.Context, opts *utils.CommandOpts) error {
+	log := opts.Logger()
 	configPath := c.GlobalString("config-path")
 	path, err := homedir.Expand(configPath)
 	if err != nil {
@@ -47,27 +47,25 @@ func stopContributoor(c *cli.Context) error {
 		return fmt.Errorf("%sConfig file not found at [%s]. Please run 'contributoor install' first%s", utils.ColorRed, configFile, utils.ColorReset)
 	}
 
-	logger := c.App.Metadata["logger"].(*logrus.Logger)
-
-	configService, err := service.NewConfigService(logger, configFile)
+	configService, err := service.NewConfigService(log, configFile)
 	if err != nil {
 		return err
 	}
 
 	switch configService.Get().RunMethod {
 	case service.RunMethodDocker:
-		logger.WithField("version", configService.Get().Version).Info("Stopping Contributoor")
+		log.WithField("version", configService.Get().Version).Info("Stopping Contributoor")
 
-		dockerService, err := service.NewDockerService(logger, configService)
+		dockerService, err := service.NewDockerService(log, configService)
 		if err != nil {
-			logger.Errorf("could not create docker service: %v", err)
+			log.Errorf("could not create docker service: %v", err)
 			return err
 		}
 
 		// Check if running before attempting to stop
 		running, err := dockerService.IsRunning()
 		if err != nil {
-			logger.Errorf("could not check service status: %v", err)
+			log.Errorf("could not check service status: %v", err)
 			return err
 		}
 		if !running {
@@ -75,13 +73,13 @@ func stopContributoor(c *cli.Context) error {
 		}
 
 		if err := dockerService.Stop(); err != nil {
-			logger.Errorf("could not stop service: %v", err)
+			log.Errorf("could not stop service: %v", err)
 			return err
 		}
 	case service.RunMethodBinary:
-		binaryService := service.NewBinaryService(logger, configService)
+		binaryService := service.NewBinaryService(log, configService)
 		if err := binaryService.Stop(); err != nil {
-			logger.Errorf("could not stop service: %v", err)
+			log.Errorf("could not stop service: %v", err)
 			return err
 		}
 	}

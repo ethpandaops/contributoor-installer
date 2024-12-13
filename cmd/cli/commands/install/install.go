@@ -14,13 +14,15 @@ import (
 	"github.com/urfave/cli"
 )
 
-func RegisterCommands(app *cli.App, name string, aliases []string) {
+func RegisterCommands(app *cli.App, opts *utils.CommandOpts) {
 	app.Commands = append(app.Commands, cli.Command{
-		Name:      name,
-		Aliases:   aliases,
+		Name:      opts.Name(),
+		Aliases:   opts.Aliases(),
 		Usage:     "Install Contributoor",
 		UsageText: "contributoor install [options]",
-		Action:    installContributoor,
+		Action: func(c *cli.Context) error {
+			return installContributoor(c, opts)
+		},
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "version, v",
@@ -36,12 +38,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	})
 }
 
-func installContributoor(c *cli.Context) error {
+func installContributoor(c *cli.Context, opts *utils.CommandOpts) error {
 	var (
 		configDir = c.GlobalString("config-path")
+		log       = opts.Logger()
 	)
-
-	log := c.App.Metadata["logger"].(*logrus.Logger)
 
 	// Expand the home directory if necessary
 	expandedDir, err := homedir.Expand(configDir)

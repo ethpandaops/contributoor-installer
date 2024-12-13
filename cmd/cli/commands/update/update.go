@@ -6,17 +6,16 @@ import (
 	"path/filepath"
 
 	"github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/utils"
 )
 
-func RegisterCommands(app *cli.App, name string, aliases []string) {
+func RegisterCommands(app *cli.App, opts *utils.CommandOpts) {
 	app.Commands = append(app.Commands, cli.Command{
-		Name:      name,
-		Aliases:   aliases,
+		Name:      opts.Name(),
+		Aliases:   opts.Aliases(),
 		Usage:     "Update Contributoor to the latest version",
 		UsageText: "contributoor update [options]",
 		Flags: []cli.Flag{
@@ -27,12 +26,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			return updateContributoor(c)
+			return updateContributoor(c, opts)
 		},
 	})
 }
 
-func updateContributoor(c *cli.Context) error {
+func updateContributoor(c *cli.Context, opts *utils.CommandOpts) error {
+	log := opts.Logger()
+
 	configPath := c.GlobalString("config-path")
 	path, err := homedir.Expand(configPath)
 	if err != nil {
@@ -54,24 +55,22 @@ func updateContributoor(c *cli.Context) error {
 		return fmt.Errorf("%sConfig file not found at [%s]. Please run 'contributoor install' first%s", utils.ColorRed, configFile, utils.ColorReset)
 	}
 
-	logger := c.App.Metadata["logger"].(*logrus.Logger)
-
-	configService, err := service.NewConfigService(logger, configPath)
+	configService, err := service.NewConfigService(log, configPath)
 	if err != nil {
 		return err
 	}
 
-	logger.WithField("version", configService.Get().Version).Info("Current version")
+	log.WithField("version", configService.Get().Version).Info("Current version")
 
 	github := service.NewGitHubService("ethpandaops", "contributoor-test")
 
 	// Update version in config if specified
 	if c.IsSet("version") {
 		tag := c.String("version")
-		logger.WithField("version", tag).Info("Update version provided")
+		log.WithField("version", tag).Info("Update version provided")
 
 		if tag == configService.Get().Version {
-			logger.Infof(
+			log.Infof(
 				"%sContributoor is already running version %s%s",
 				utils.ColorGreen,
 				tag,
@@ -103,10 +102,10 @@ func updateContributoor(c *cli.Context) error {
 			return fmt.Errorf("failed to get latest version: %w", err)
 		}
 
-		logger.WithField("version", tag).Info("Latest version detected")
+		log.WithField("version", tag).Info("Latest version detected")
 
 		if tag == configService.Get().Version {
-			logger.Infof(
+			log.Infof(
 				"%sContributoor is up to date%s",
 				utils.ColorGreen,
 				utils.ColorReset,
@@ -123,29 +122,29 @@ func updateContributoor(c *cli.Context) error {
 
 	// Save the updated config
 	if err := service.WriteConfig(configFile, configService.Get()); err != nil {
-		logger.Errorf("could not save updated config: %v", err)
+		log.Errorf("could not save updated config: %v", err)
 		return err
 	}
 
 	switch configService.Get().RunMethod {
 	case service.RunMethodDocker:
-		dockerService, err := service.NewDockerService(logger, configService)
+		dockerService, err := service.NewDockerService(log, configService)
 		if err != nil {
-			logger.Errorf("could not create docker service: %v", err)
+			log.Errorf("could not create docker service: %v", err)
 			return err
 		}
 
-		logger.WithField("version", configService.Get().Version).Info("Updating Contributoor")
+		log.WithField("version", configService.Get().Version).Info("Updating Contributoor")
 
 		if err := dockerService.Update(); err != nil {
-			logger.Errorf("could not update service: %v", err)
+			log.Errorf("could not update service: %v", err)
 			return err
 		}
 
 		// Check if service is running
 		running, err := dockerService.IsRunning()
 		if err != nil {
-			logger.Errorf("could not check service status: %v", err)
+			log.Errorf("could not check service status: %v", err)
 			return err
 		}
 
@@ -158,7 +157,7 @@ func updateContributoor(c *cli.Context) error {
 					return fmt.Errorf("failed to start service: %w", err)
 				}
 			} else {
-				logger.Info("Service will continue running with the previous version until next restart")
+				log.Info("Service will continue running with the previous version until next restart")
 			}
 		} else {
 			if utils.Confirm("Service is not running. Would you like to start it?") {
@@ -168,17 +167,17 @@ func updateContributoor(c *cli.Context) error {
 			}
 		}
 
-		logger.Infof("%sContributoor updated successfully to version %s%s", utils.ColorGreen, configService.Get().Version, utils.ColorReset)
+		log.Infof("%sContributoor updated successfully to version %s%s", utils.ColorGreen, configService.Get().Version, utils.ColorReset)
 	case service.RunMethodBinary:
-		binaryService := service.NewBinaryService(logger, configService)
+		binaryService := service.NewBinaryService(log, configService)
 		if err := binaryService.Update(); err != nil {
-			logger.Errorf("could not update service: %v", err)
+			log.Errorf("could not update service: %v", err)
 			return err
 		}
 
 		// Save the updated config back to file
 		if err := service.WriteConfig(configFile, configService.Get()); err != nil {
-			logger.Errorf("could not save updated config: %v", err)
+			log.Errorf("could not save updated config: %v", err)
 			return err
 		}
 	}

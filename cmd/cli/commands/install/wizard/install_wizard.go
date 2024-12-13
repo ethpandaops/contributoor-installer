@@ -3,6 +3,7 @@ package wizard
 import (
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/service"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/utils"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 )
@@ -59,25 +60,7 @@ func (w *InstallWizard) OnComplete() error {
 
 	w.GetApp().Stop()
 
-	switch w.configService.Get().RunMethod {
-	case service.RunMethodDocker:
-		dockerService, err := service.NewDockerService(w.Logger, w.configService)
-		if err != nil {
-			w.Logger.Errorf("could not create docker service: %v", err)
-			return err
-		}
-
-		if err := dockerService.Start(); err != nil {
-			w.Logger.Errorf("could not start service: %v", err)
-			return err
-		}
-	case service.RunMethodBinary:
-		binaryService := service.NewBinaryService(w.Logger, w.configService)
-		if err := binaryService.Start(); err != nil {
-			w.Logger.Errorf("could not start service: %v", err)
-			return err
-		}
-	}
+	w.Logger.Infof("%sInstallation complete. You can now run 'contributoor start'.%s", utils.ColorGreen, utils.ColorReset)
 
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/stop"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/update"
 	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/internal/display"
+	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -58,10 +59,26 @@ Authored by the ethPandaOps team
 	}
 
 	// Register commands
-	install.RegisterCommands(app, "install", []string{"i"})
-	start.RegisterCommands(app, "start", []string{""})
-	stop.RegisterCommands(app, "stop", []string{""})
-	update.RegisterCommands(app, "update", []string{""})
+	install.RegisterCommands(app, utils.NewCommandOpts(
+		utils.WithName("install"),
+		utils.WithLogger(logger),
+		utils.WithAliases([]string{"i"}),
+	))
+
+	start.RegisterCommands(app, utils.NewCommandOpts(
+		utils.WithName("start"),
+		utils.WithLogger(logger),
+	))
+
+	stop.RegisterCommands(app, utils.NewCommandOpts(
+		utils.WithName("stop"),
+		utils.WithLogger(logger),
+	))
+
+	update.RegisterCommands(app, utils.NewCommandOpts(
+		utils.WithName("update"),
+		utils.WithLogger(logger),
+	))
 
 	// Handle normal exit
 	app.After = func(c *cli.Context) error {

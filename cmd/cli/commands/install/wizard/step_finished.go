@@ -20,20 +20,8 @@ func NewFinishStep(w *InstallWizard) *FinishStep {
 		total:  3,
 	}
 
-	cfg := w.GetConfig()
 	helperText := fmt.Sprintf(`Nice work!
-
-Your configuration:
-Network: %s
-Beacon Node: %s
-Run Method: %s
-Version: %s
-
-You're all done and ready to run contributoor.`,
-		cfg.Network.Name,
-		cfg.Network.BeaconNodeAddress,
-		cfg.RunMethod,
-		cfg.Version)
+You're all done and ready to run contributoor.`)
 
 	step.modal = tview.NewModal().
 		SetText(helperText).
