@@ -3,8 +3,8 @@ package stop
 import (
 	"fmt"
 
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/terminal"
-	"github.com/ethpandaops/contributoor-installer-test/internal/service"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/urfave/cli"
 )
 

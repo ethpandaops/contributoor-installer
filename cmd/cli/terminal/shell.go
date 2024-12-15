@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ethpandaops/contributoor-installer-test/internal/display"
+	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/urfave/cli"
 )
 

@@ -5,8 +5,8 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/terminal"
-	"github.com/ethpandaops/contributoor-installer-test/internal/service"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer/internal/service"
 )
 
 func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {

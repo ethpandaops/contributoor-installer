@@ -1,7 +1,7 @@
 package wizard
 
 import (
-	"github.com/ethpandaops/contributoor-installer-test/internal/display"
+	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/rivo/tview"
 )
 
