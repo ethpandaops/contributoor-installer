@@ -94,7 +94,7 @@ func (s *DockerService) IsRunning() (bool, error) {
 // Update pulls the latest image and restarts the container.
 func (s *DockerService) Update() error {
 	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
-	cmd := exec.Command("docker", "pull", fmt.Sprintf("ethpandaops/contributoor-test:%s", s.config.Version))
+	cmd := exec.Command("docker", "pull", fmt.Sprintf("ethpandaops/contributoor:%s", s.config.Version))
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to pull image: %w\nOutput: %s", err, string(output))
 	}

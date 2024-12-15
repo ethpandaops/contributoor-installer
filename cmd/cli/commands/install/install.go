@@ -3,9 +3,9 @@ package install
 import (
 	"fmt"
 
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/install/wizard"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/terminal"
-	"github.com/ethpandaops/contributoor-installer-test/internal/service"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/install/wizard"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"

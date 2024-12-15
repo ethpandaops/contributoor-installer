@@ -3,8 +3,8 @@ package wizard
 import (
 	"fmt"
 
-	"github.com/ethpandaops/contributoor-installer-test/internal/display"
-	"github.com/ethpandaops/contributoor-installer-test/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/display"
+	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/rivo/tview"
 )
 

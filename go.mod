@@ -1,4 +1,4 @@
-module github.com/ethpandaops/contributoor-installer-test
+module github.com/ethpandaops/contributoor-installer
 
 go 1.23.4
 

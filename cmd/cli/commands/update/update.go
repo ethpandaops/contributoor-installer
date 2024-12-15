@@ -5,8 +5,8 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/terminal"
-	"github.com/ethpandaops/contributoor-installer-test/internal/service"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer/internal/service"
 )
 
 // RegisterCommands registers the update command.
@@ -44,7 +44,7 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 
 	log.WithField("version", configService.Get().Version).Info("Current version")
 
-	github := service.NewGitHubService("ethpandaops", "contributoor-test")
+	github := service.NewGitHubService("ethpandaops", "contributoor")
 
 	// Determine target version
 	var targetVersion string

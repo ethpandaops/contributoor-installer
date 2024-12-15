@@ -6,11 +6,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/install"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/start"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/stop"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/commands/update"
-	"github.com/ethpandaops/contributoor-installer-test/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/install"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/start"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/stop"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/update"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
