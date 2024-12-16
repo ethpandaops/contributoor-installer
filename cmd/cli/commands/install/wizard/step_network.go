@@ -33,66 +33,29 @@ var availableNetworks = []networkOption{
 }
 
 type NetworkStep struct {
-	Wizard          *InstallWizard
-	Modal           *tview.Frame
-	Step, Total     int
-	selectedNetwork string
+	Wizard      *InstallWizard
+	Modal       *tview.Frame
+	Step, Total int
 }
 
 func NewNetworkStep(w *InstallWizard) *NetworkStep {
 	step := &NetworkStep{
-		Wizard:          w,
-		Step:            2,
-		Total:           3,
-		selectedNetwork: availableNetworks[0].Value,
+		Wizard: w,
+		Step:   2,
+		Total:  5,
 	}
 
-	// Extract labels and descriptions for the modal
-	labels := make([]string, len(availableNetworks))
-	descriptions := make([]string, len(availableNetworks))
-	for i, network := range availableNetworks {
-		labels[i] = network.Label
-		descriptions[i] = network.Description
-	}
-
-	// Create modal layout
-	modal := display.NewChoiceModal(w.GetApp(), display.ChoiceModalOptions{
-		Title:        fmt.Sprintf("[%d/%d] Network", step.Step, step.Total),
-		Width:        70,
-		Text:         "Let's start by choosing which network you'd like to use.",
-		Labels:       labels,
-		Descriptions: descriptions,
-		OnSelect: func(index int) {
-			step.selectedNetwork = availableNetworks[index].Value
-			// Update config with selected network value
-			w.UpdateConfig(func(cfg *service.ContributoorConfig) {
-				cfg.NetworkName = step.selectedNetwork
-			})
-			// Move to next step
-			next, _ := step.Next()
-			next.Show()
-		},
-		OnBack: func() {
-			prev, _ := step.Previous()
-			prev.Show()
-		},
-	})
-
-	step.Modal = display.CreateWizardFrame(display.WizardFrameOptions{
-		Content: modal.BorderGrid,
-		Step:    step.Step,
-		Total:   step.Total,
-		Title:   "Network",
-		OnEsc: func() {
-			prev, _ := step.Previous()
-			prev.Show()
-		},
-	})
+	// Farm this out into a separate function which we can call here in
+	// the constructor and in the Show() method. This is important because
+	// steps before this one might have modified the config, which this
+	// step conditionally uses.
+	step.setupModal()
 
 	return step
 }
 
 func (s *NetworkStep) Show() error {
+	s.setupModal()
 	s.Wizard.GetApp().SetRoot(s.Modal, true)
 	return nil
 }
@@ -105,6 +68,45 @@ func (s *NetworkStep) Previous() (display.WizardStep, error) {
 	return s.Wizard.GetSteps()[0], nil
 }
 
-func (s *NetworkStep) GetSelectedNetwork() string {
-	return s.selectedNetwork
+func (s *NetworkStep) setupModal() {
+	// Extract labels and descriptions for the modal
+	labels := make([]string, len(availableNetworks))
+	descriptions := make([]string, len(availableNetworks))
+	for i, network := range availableNetworks {
+		labels[i] = network.Label
+		descriptions[i] = network.Description
+	}
+
+	// Create modal layout
+	modal := display.NewChoiceModal(s.Wizard.GetApp(), display.ChoiceModalOptions{
+		Title:        fmt.Sprintf("[%d/%d] Network", s.Step, s.Total),
+		Width:        70,
+		Text:         "Let's start by selecting which network you're using.",
+		Labels:       labels,
+		Descriptions: descriptions,
+		OnSelect: func(index int) {
+			// Update config with selected network value
+			s.Wizard.UpdateConfig(func(cfg *service.ContributoorConfig) {
+				cfg.NetworkName = availableNetworks[index].Value
+			})
+			// Move to next step
+			next, _ := s.Next()
+			next.Show()
+		},
+		OnBack: func() {
+			prev, _ := s.Previous()
+			prev.Show()
+		},
+	})
+
+	s.Modal = display.CreateWizardFrame(display.WizardFrameOptions{
+		Content: modal.BorderGrid,
+		Step:    s.Step,
+		Total:   s.Total,
+		Title:   "Network",
+		OnEsc: func() {
+			prev, _ := s.Previous()
+			prev.Show()
+		},
+	})
 }

@@ -27,12 +27,18 @@ const (
 )
 
 type ContributoorConfig struct {
-	Version               string `yaml:"version"`
-	ContributoorDirectory string `yaml:"contributoorDirectory"`
-	RunMethod             string `yaml:"runMethod"`
-	NetworkName           string `yaml:"network_name"`
-	BeaconNodeAddress     string `yaml:"beacon_node_address"`
-	MetricsAddress        string `yaml:"metricsAddress"`
+	Version               string              `yaml:"version"`
+	ContributoorDirectory string              `yaml:"contributoorDirectory"`
+	RunMethod             string              `yaml:"runMethod"`
+	NetworkName           string              `yaml:"networkName"`
+	BeaconNodeAddress     string              `yaml:"beaconNodeAddress"`
+	MetricsAddress        string              `yaml:"metricsAddress"`
+	OutputServer          *OutputServerConfig `yaml:"outputServer"`
+}
+
+type OutputServerConfig struct {
+	Address     string `yaml:"address"`
+	Credentials string `yaml:"credentials,omitempty"`
 }
 
 type ConfigService struct {

@@ -110,9 +110,8 @@ func NewChoiceModal(app *tview.Application, opts ChoiceModalOptions) *ChoiceModa
 		modal.Forms = append(modal.Forms, form)
 		formsFlex.AddItem(form, 1, 1, true)
 
-		// Add spacing between buttons
 		spacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
-		formsFlex.AddItem(spacer, 1, 1, false)
+		formsFlex.AddItem(spacer, 0, 1, false)
 	}
 
 	// Create description box if needed
@@ -133,7 +132,7 @@ func NewChoiceModal(app *tview.Application, opts ChoiceModalOptions) *ChoiceModa
 	rightSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 
 	if modal.DescBox != nil {
-		buttonGrid.SetColumns(1, -2, 1, -5, 1)
+		buttonGrid.SetColumns(1, -3, 1, -4, 1)
 		buttonGrid.AddItem(leftSpacer, 0, 0, 1, 1, 0, 0, false)
 		buttonGrid.AddItem(formsFlex, 0, 1, 1, 1, 0, 0, true)
 		buttonGrid.AddItem(midSpacer, 0, 2, 1, 1, 0, 0, false)

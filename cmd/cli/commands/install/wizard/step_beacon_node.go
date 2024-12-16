@@ -21,12 +21,36 @@ func NewBeaconNodeStep(w *InstallWizard) *BeaconNodeStep {
 	step := &BeaconNodeStep{
 		Wizard: w,
 		Step:   3,
-		Total:  3,
+		Total:  5,
 	}
 
+	// Farm this out into a separate function which we can call here in
+	// the constructor and in the Show() method. This is important because
+	// steps before this one might have modified the config, which this
+	// step conditionally uses.
+	step.setupModal()
+
+	return step
+}
+
+func (s *BeaconNodeStep) Show() error {
+	s.setupModal()
+	s.Wizard.GetApp().SetRoot(s.Modal, true)
+	return nil
+}
+
+func (s *BeaconNodeStep) Next() (display.WizardStep, error) {
+	return s.Wizard.GetSteps()[3], nil
+}
+
+func (s *BeaconNodeStep) Previous() (display.WizardStep, error) {
+	return s.Wizard.GetSteps()[1], nil
+}
+
+func (s *BeaconNodeStep) setupModal() {
 	// Create modal layout
-	modal := display.NewTextBoxModal(w.GetApp(), display.TextBoxModalOptions{
-		Title: fmt.Sprintf("[%d/%d] Beacon Node", step.Step, step.Total),
+	modal := display.NewTextBoxModal(s.Wizard.GetApp(), display.TextBoxModalOptions{
+		Title: fmt.Sprintf("[%d/%d] Beacon Node", s.Step, s.Total),
 		Width: 70,
 		Text:  "Please enter the address of your Beacon Node.\nFor example: http://localhost:5052",
 		Labels: []string{
@@ -48,36 +72,34 @@ func NewBeaconNodeStep(w *InstallWizard) *BeaconNodeStep {
 			}
 
 			// Update config with beacon node address
-			w.UpdateConfig(func(cfg *service.ContributoorConfig) {
+			s.Wizard.UpdateConfig(func(cfg *service.ContributoorConfig) {
 				cfg.BeaconNodeAddress = address
 			})
 
-			// Complete the wizard
-			w.SetCompleted()
-			w.GetApp().Stop()
+			// Move to next step
+			next, _ := s.Next()
+			next.Show()
 		},
 		OnBack: func() {
-			prev, _ := step.Previous()
+			prev, _ := s.Previous()
 			prev.Show()
 		},
 		OnEsc: func() {
-			prev, _ := step.Previous()
+			prev, _ := s.Previous()
 			prev.Show()
 		},
 	})
 
-	step.Modal = display.CreateWizardFrame(display.WizardFrameOptions{
+	s.Modal = display.CreateWizardFrame(display.WizardFrameOptions{
 		Content: modal.BorderGrid,
-		Step:    step.Step,
-		Total:   step.Total,
+		Step:    s.Step,
+		Total:   s.Total,
 		Title:   "Beacon Node",
 		OnEsc: func() {
-			prev, _ := step.Previous()
+			prev, _ := s.Previous()
 			prev.Show()
 		},
 	})
-
-	return step
 }
 
 func validateBeaconNode(address string) error {
@@ -101,17 +123,4 @@ func validateBeaconNode(address string) error {
 	}
 
 	return nil
-}
-
-func (s *BeaconNodeStep) Show() error {
-	s.Wizard.GetApp().SetRoot(s.Modal, true)
-	return nil
-}
-
-func (s *BeaconNodeStep) Next() (display.WizardStep, error) {
-	return nil, nil // This is the last step
-}
-
-func (s *BeaconNodeStep) Previous() (display.WizardStep, error) {
-	return s.Wizard.GetSteps()[1], nil
 }

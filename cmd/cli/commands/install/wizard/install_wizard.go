@@ -27,6 +27,8 @@ func NewInstallWizard(log *logrus.Logger, app *tview.Application, configService 
 		NewWelcomeStep(w),
 		NewNetworkStep(w),
 		NewBeaconNodeStep(w),
+		NewOutputServerStep(w),
+		NewOutputCredentialsStep(w),
 		NewFinishStep(w),
 	}
 

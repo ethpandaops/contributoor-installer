@@ -31,6 +31,7 @@ type TextBoxModalOptions struct {
 	Labels     []string
 	MaxLengths []int
 	Regexes    []string
+	IsPassword []bool
 	OnDone     func(values map[string]string, setError func(string))
 	OnBack     func()
 	OnEsc      func()
@@ -47,7 +48,7 @@ func NewTextBoxModal(app *tview.Application, opts TextBoxModalOptions) *TextBoxM
 	}
 
 	// Create the button grid
-	height := modal.setupForm(opts.Labels, opts.MaxLengths, opts.Regexes)
+	height := modal.setupForm(opts.Labels, opts.MaxLengths, opts.Regexes, opts.IsPassword)
 
 	// Create the main text view
 	textView := tview.NewTextView().
@@ -103,7 +104,7 @@ func NewTextBoxModal(app *tview.Application, opts TextBoxModalOptions) *TextBoxM
 	return modal
 }
 
-func (m *TextBoxModalLayout) setupForm(labels []string, maxLengths []int, regexes []string) int {
+func (m *TextBoxModalLayout) setupForm(labels []string, maxLengths []int, regexes []string, isPassword []bool) int {
 	m.ControlGrid = tview.NewGrid().
 		SetRows(0).
 		SetColumns(-1, -5, -1)
@@ -125,7 +126,14 @@ func (m *TextBoxModalLayout) setupForm(labels []string, maxLengths []int, regexe
 	m.Form = form
 
 	for i, label := range labels {
-		textbox := tview.NewInputField().SetLabel(label)
+		var textbox *tview.InputField
+		if i < len(isPassword) && isPassword[i] {
+			textbox = tview.NewInputField().
+				SetLabel(label).
+				SetMaskCharacter('*')
+		} else {
+			textbox = tview.NewInputField().SetLabel(label)
+		}
 		maxLength := maxLengths[i]
 
 		textbox.SetAcceptanceFunc(func(textToCheck string, lastChar rune) bool {
