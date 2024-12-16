@@ -49,14 +49,18 @@ func (s *OutputCredentialsStep) Previous() (display.WizardStep, error) {
 
 func (s *OutputCredentialsStep) setupModal() {
 	var (
-		cfg               = s.Wizard.GetConfig()
-		pandaOutputServer = strings.Contains(cfg.OutputServer.Address, "platform.ethpandaops.io")
-		helpText          = "Please enter your custom output server address below, with credentials if they are required."
-		labels            = []string{"Server Address", "Username", "Password"}
-		maxLengths        = []int{256, 256, 256}
-		isPassword        = []bool{false, false, true}
+		cfg        = s.Wizard.GetConfig()
+		helpText   = "Please enter your custom output server address below, with credentials if they are required."
+		labels     = []string{"Server Address", "Username", "Password"}
+		maxLengths = []int{256, 256, 256}
+		isPassword = []bool{false, false, true}
 	)
 
+	if cfg.OutputServer == nil {
+		cfg.OutputServer = &service.OutputServerConfig{}
+	}
+
+	pandaOutputServer := strings.Contains(cfg.OutputServer.Address, "platform.ethpandaops.io")
 	if pandaOutputServer {
 		helpText = "The ethPandaOps team will have provided you with a username and password. Please enter them below."
 		labels = []string{"Username", "Password"}
