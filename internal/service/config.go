@@ -27,16 +27,12 @@ const (
 )
 
 type ContributoorConfig struct {
-	Version               string         `yaml:"version"`
-	ContributoorDirectory string         `yaml:"contributoorDirectory"`
-	RunMethod             string         `yaml:"runMethod"`
-	Network               *NetworkConfig `yaml:"network"`
-}
-
-type NetworkConfig struct {
-	Name              string `yaml:"name"`
-	CustomNetworkName string `yaml:"customNetworkName"`
-	BeaconNodeAddress string `yaml:"beaconNodeAddress"`
+	Version               string `yaml:"version"`
+	ContributoorDirectory string `yaml:"contributoorDirectory"`
+	RunMethod             string `yaml:"runMethod"`
+	NetworkName           string `yaml:"network_name"`
+	BeaconNodeAddress     string `yaml:"beacon_node_address"`
+	MetricsAddress        string `yaml:"metricsAddress"`
 }
 
 type ConfigService struct {
@@ -177,12 +173,11 @@ func WriteConfig(path string, cfg *ContributoorConfig) error {
 
 func newDefaultConfig() *ContributoorConfig {
 	return &ContributoorConfig{
-		Version:   "latest",
-		RunMethod: RunMethodDocker,
-		Network: &NetworkConfig{
-			Name:              "mainnet",
-			BeaconNodeAddress: "http://localhost:5052",
-		},
+		Version:           "latest",
+		RunMethod:         RunMethodDocker,
+		NetworkName:       "mainnet",
+		BeaconNodeAddress: "http://localhost:5052",
+		MetricsAddress:    ":9090",
 	}
 }
 
@@ -197,6 +192,14 @@ func (s *ConfigService) validate(cfg *ContributoorConfig) error {
 
 	if cfg.RunMethod != RunMethodDocker && cfg.RunMethod != RunMethodBinary {
 		return fmt.Errorf("invalid runMethod: %s", cfg.RunMethod)
+	}
+
+	if cfg.NetworkName == "" {
+		return fmt.Errorf("networkName is required")
+	}
+
+	if cfg.BeaconNodeAddress == "" {
+		return fmt.Errorf("beaconNodeAddress is required")
 	}
 
 	return nil

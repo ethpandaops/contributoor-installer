@@ -17,7 +17,7 @@ type TextBoxModalLayout struct {
 	BorderGrid  *tview.Grid
 	ContentGrid *tview.Grid
 	ControlGrid *tview.Grid
-	Done        func(text map[string]string)
+	Done        func(values map[string]string, setError func(string))
 	Back        func()
 	Form        *Form
 	FirstBox    *tview.InputField
@@ -31,7 +31,7 @@ type TextBoxModalOptions struct {
 	Labels     []string
 	MaxLengths []int
 	Regexes    []string
-	OnDone     func(text map[string]string)
+	OnDone     func(values map[string]string, setError func(string))
 	OnBack     func()
 	OnEsc      func()
 }
@@ -172,7 +172,7 @@ func (m *TextBoxModalLayout) handleNext() {
 		text[label] = strings.TrimSpace(textbox.GetText())
 	}
 
-	m.Done(text)
+	m.Done(text, m.ShowError)
 }
 
 func (m *TextBoxModalLayout) handleBack() {
@@ -184,4 +184,34 @@ func (m *TextBoxModalLayout) handleBack() {
 func (m *TextBoxModalLayout) Focus() {
 	m.App.SetFocus(m.FirstBox)
 	m.Form.SetFocus(0)
+}
+
+func (m *TextBoxModalLayout) ShowError(msg string) {
+	// Create error modal with emoji
+	errorModal := tview.NewModal().
+		SetText("⛔ " + msg).
+		AddButtons([]string{"Try Again"}).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			// Clear error state and restore focus
+			for _, box := range m.TextBoxes {
+				box.SetBorderColor(tcell.ColorWhite)
+			}
+			m.App.SetRoot(m.BorderGrid, true)
+			m.Focus()
+		}).
+		SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
+		SetButtonBackgroundColor(tview.Styles.PrimitiveBackgroundColor).
+		SetButtonTextColor(tcell.ColorLightGray).
+		SetTextColor(tview.Styles.PrimaryTextColor)
+
+	// Style the button
+	errorModal.SetButtonStyle(tcell.StyleDefault.
+		Background(tcell.ColorDefault).
+		Foreground(tcell.ColorLightGray)).
+		SetButtonActivatedStyle(tcell.StyleDefault.
+			Background(tcell.Color46).
+			Foreground(tcell.ColorBlack))
+
+	// Show the error modal
+	m.App.SetRoot(errorModal, true)
 }
