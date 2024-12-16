@@ -35,6 +35,7 @@ type ContributoorConfig struct {
 
 type NetworkConfig struct {
 	Name              string `yaml:"name"`
+	CustomNetworkName string `yaml:"customNetworkName"`
 	BeaconNodeAddress string `yaml:"beaconNodeAddress"`
 }
 
