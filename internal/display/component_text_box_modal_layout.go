@@ -22,7 +22,6 @@ type TextBoxModalLayout struct {
 	Form        *Form
 	FirstBox    *tview.InputField
 	TextBoxes   map[string]*tview.InputField
-	Page        *page
 }
 
 type TextBoxModalOptions struct {
@@ -34,6 +33,7 @@ type TextBoxModalOptions struct {
 	Regexes    []string
 	OnDone     func(text map[string]string)
 	OnBack     func()
+	OnEsc      func()
 }
 
 func NewTextBoxModal(app *tview.Application, opts TextBoxModalOptions) *TextBoxModalLayout {
@@ -91,6 +91,15 @@ func NewTextBoxModal(app *tview.Application, opts TextBoxModalOptions) *TextBoxM
 	// Navigation footer
 	// modal.setupNavigation()
 
+	// Add key handler for ESC
+	modal.Form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEsc && opts.OnEsc != nil {
+			opts.OnEsc()
+			return nil
+		}
+		return event
+	})
+
 	return modal
 }
 
@@ -130,14 +139,6 @@ func (m *TextBoxModalLayout) setupForm(labels []string, maxLengths []int, regexe
 			m.FirstBox = textbox
 		}
 	}
-
-	m.Form.AddButton("Back", m.handleBack).
-		SetButtonStyle(tcell.StyleDefault.
-			Background(tcell.ColorDefault).
-			Foreground(tcell.ColorLightGray)).
-		SetButtonActivatedStyle(tcell.StyleDefault.
-			Background(tcell.Color46).
-			Foreground(tcell.ColorBlack))
 
 	m.Form.AddButton("Next", m.handleNext).
 		SetButtonStyle(tcell.StyleDefault.
