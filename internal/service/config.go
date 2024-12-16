@@ -32,7 +32,6 @@ type ContributoorConfig struct {
 	RunMethod             string              `yaml:"runMethod"`
 	NetworkName           string              `yaml:"networkName"`
 	BeaconNodeAddress     string              `yaml:"beaconNodeAddress"`
-	MetricsAddress        string              `yaml:"metricsAddress"`
 	OutputServer          *OutputServerConfig `yaml:"outputServer"`
 }
 
