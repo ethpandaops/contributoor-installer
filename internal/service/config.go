@@ -182,7 +182,6 @@ func newDefaultConfig() *ContributoorConfig {
 		RunMethod:         RunMethodDocker,
 		NetworkName:       "mainnet",
 		BeaconNodeAddress: "http://localhost:5052",
-		MetricsAddress:    ":9090",
 	}
 }
 
