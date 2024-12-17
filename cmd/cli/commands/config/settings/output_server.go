@@ -35,40 +35,40 @@ var availableOutputServers = []outputServerOption{
 	},
 }
 
-type OutputServerPage struct {
-	display     *SettingsDisplay
+type OutputServerConfigPage struct {
+	display     *ConfigDisplay
 	page        *page
 	content     tview.Primitive
 	form        *tview.Form
 	description *tview.TextView
 }
 
-func NewOutputServerPage(display *SettingsDisplay) *OutputServerPage {
-	outputServerPage := &OutputServerPage{
+func NewOutputServerConfigPage(display *ConfigDisplay) *OutputServerConfigPage {
+	OutputServerConfigPage := &OutputServerConfigPage{
 		display: display,
 	}
 
-	outputServerPage.createContent()
-	outputServerPage.page = newPage(
+	OutputServerConfigPage.createContent()
+	OutputServerConfigPage.page = newPage(
 		display.homePage,
-		"settings-output-server",
+		"config-output-server",
 		"Output Server Settings",
 		"Configure the output server settings including server selection and credentials",
-		outputServerPage.content,
+		OutputServerConfigPage.content,
 	)
 
-	return outputServerPage
+	return OutputServerConfigPage
 }
 
-func (p *OutputServerPage) getPage() *page {
+func (p *OutputServerConfigPage) getPage() *page {
 	return p.page
 }
 
-func (p *OutputServerPage) handleLayoutChanged() {
+func (p *OutputServerConfigPage) handleLayoutChanged() {
 	// Implement if needed
 }
 
-func (p *OutputServerPage) createContent() {
+func (p *OutputServerConfigPage) createContent() {
 	// Create form
 	form := tview.NewForm()
 	p.form = form
@@ -241,11 +241,11 @@ func (p *OutputServerPage) createContent() {
 }
 
 // Helper function to update description text
-func (p *OutputServerPage) updateDescription(text string) {
+func (p *OutputServerConfigPage) updateDescription(text string) {
 	p.description.SetText(text)
 }
 
-func validateAndUpdateOutputServer(p *OutputServerPage) {
+func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 	dropdown := p.form.GetFormItem(0).(*tview.DropDown)
 	_, serverLabel := dropdown.GetCurrentOption()
 

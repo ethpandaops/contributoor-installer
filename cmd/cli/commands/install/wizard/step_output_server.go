@@ -8,30 +8,6 @@ import (
 	"github.com/rivo/tview"
 )
 
-type outputServerOption struct {
-	Label       string
-	Value       string
-	Description string
-}
-
-var availableOutputServers = []outputServerOption{
-	{
-		Label:       "ethPandaOps Production",
-		Value:       "https://xatu.primary.production.platform.ethpandaops.io",
-		Description: "The production server provided by ethPandaOps.",
-	},
-	{
-		Label:       "ethPandaOps Staging",
-		Value:       "https://xatu.primary.staging.platform.ethpandaops.io",
-		Description: "The staging server provided by ethPandaOps.",
-	},
-	{
-		Label:       "Custom",
-		Value:       "custom",
-		Description: "Use your own custom output server.",
-	},
-}
-
 type OutputServerStep struct {
 	Wizard      *InstallWizard
 	Modal       *tview.Frame
@@ -70,9 +46,9 @@ func (s *OutputServerStep) Previous() (display.WizardStep, error) {
 }
 
 func (s *OutputServerStep) setupModal() {
-	labels := make([]string, len(availableOutputServers))
-	descriptions := make([]string, len(availableOutputServers))
-	for i, server := range availableOutputServers {
+	labels := make([]string, len(display.AvailableOutputServers))
+	descriptions := make([]string, len(display.AvailableOutputServers))
+	for i, server := range display.AvailableOutputServers {
 		labels[i] = server.Label
 		descriptions[i] = server.Description
 	}
@@ -86,7 +62,7 @@ func (s *OutputServerStep) setupModal() {
 		OnSelect: func(index int) {
 			s.Wizard.UpdateConfig(func(cfg *service.ContributoorConfig) {
 				cfg.OutputServer = &service.OutputServerConfig{
-					Address:     availableOutputServers[index].Value,
+					Address:     display.AvailableOutputServers[index].Value,
 					Credentials: "",
 				}
 			})

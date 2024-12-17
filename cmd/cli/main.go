@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/config"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/install"
-	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/settings"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/start"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/stop"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/update"
@@ -78,8 +78,8 @@ func main() {
 		terminal.WithLogger(log),
 	))
 
-	settings.RegisterCommands(app, terminal.NewCommandOpts(
-		terminal.WithName("settings"),
+	config.RegisterCommands(app, terminal.NewCommandOpts(
+		terminal.WithName("config"),
 		terminal.WithLogger(log),
 	))
 

@@ -1,4 +1,4 @@
-package settings
+package config
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:      opts.Name(),
 		Usage:     "Configure Contributoor settings",
-		UsageText: "contributoor settings",
+		UsageText: "contributoor config",
 		Action: func(c *cli.Context) error {
 			return showSettings(c, opts)
 		},
@@ -30,7 +30,7 @@ func showSettings(c *cli.Context, opts *terminal.CommandOpts) error {
 
 	app := tview.NewApplication()
 
-	if err := NewSettingsDisplay(log, app, configService).Run(); err != nil {
+	if err := NewConfigDisplay(log, app, configService).Run(); err != nil {
 		return fmt.Errorf("%sDisplay error: %w%s", terminal.ColorRed, err, terminal.ColorReset)
 	}
 

@@ -1,4 +1,4 @@
-package settings
+package config
 
 import (
 	"github.com/ethpandaops/contributoor-installer/internal/display"
@@ -8,39 +8,39 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type SettingsDisplay struct {
-	app              *tview.Application
-	pages            *tview.Pages
-	frame            *tview.Frame
-	log              *logrus.Logger
-	configService    *service.ConfigService
-	homePage         *page
-	categoryList     *tview.List
-	content          tview.Primitive
-	settingsPages    []settingsPage
-	networkPage      *NetworkSettingsPage
-	outputServerPage *OutputServerPage
-	descriptionBox   *tview.TextView
-	closeButton      *tview.Button
+type ConfigDisplay struct {
+	app                    *tview.Application
+	pages                  *tview.Pages
+	frame                  *tview.Frame
+	log                    *logrus.Logger
+	configService          *service.ConfigService
+	homePage               *page
+	categoryList           *tview.List
+	content                tview.Primitive
+	settingsPages          []settingsPage
+	networkPage            *NetworkConfigPage
+	OutputServerConfigPage *OutputServerConfigPage
+	descriptionBox         *tview.TextView
+	closeButton            *tview.Button
 }
 
-func NewSettingsDisplay(log *logrus.Logger, app *tview.Application, configService *service.ConfigService) *SettingsDisplay {
-	display := &SettingsDisplay{
+func NewConfigDisplay(log *logrus.Logger, app *tview.Application, configService *service.ConfigService) *ConfigDisplay {
+	display := &ConfigDisplay{
 		app:           app,
 		pages:         tview.NewPages(),
 		log:           log,
 		configService: configService,
 	}
 
-	display.homePage = newPage(nil, "settings-home", "Categories", "", nil)
+	display.homePage = newPage(nil, "config-home", "Categories", "", nil)
 
 	// Create settings subpages
-	display.networkPage = NewNetworkSettingsPage(display)
-	display.outputServerPage = NewOutputServerPage(display)
+	display.networkPage = NewNetworkConfigPage(display)
+	display.OutputServerConfigPage = NewOutputServerConfigPage(display)
 
 	display.settingsPages = []settingsPage{
 		display.networkPage,
-		display.outputServerPage,
+		display.OutputServerConfigPage,
 	}
 
 	// Add subpages to display
@@ -60,7 +60,7 @@ func NewSettingsDisplay(log *logrus.Logger, app *tview.Application, configServic
 	return display
 }
 
-func (d *SettingsDisplay) setupGrid() {
+func (d *ConfigDisplay) setupGrid() {
 	// Create the main content area
 	content := tview.NewFlex().SetDirection(tview.FlexRow)
 
@@ -73,7 +73,7 @@ func (d *SettingsDisplay) setupGrid() {
 		HelpType: display.HelpSettings,
 		OnEsc: func() {
 			// If we're not on the home page, go back to it.
-			if d.pages.HasPage("settings-home") {
+			if d.pages.HasPage("config-home") {
 				d.setPage(d.homePage)
 			}
 		},
@@ -83,7 +83,7 @@ func (d *SettingsDisplay) setupGrid() {
 	d.app.SetRoot(frame, true)
 }
 
-func (d *SettingsDisplay) setPage(page *page) {
+func (d *ConfigDisplay) setPage(page *page) {
 	// Update the frame title to show current location
 	d.frame.Clear()
 	frame := display.CreateWizardFrame(display.WizardFrameOptions{
@@ -91,7 +91,7 @@ func (d *SettingsDisplay) setPage(page *page) {
 		Title:    page.title,
 		HelpType: display.HelpSettings,
 		OnEsc: func() {
-			if d.pages.HasPage("settings-home") {
+			if d.pages.HasPage("config-home") {
 				d.setPage(d.homePage)
 			}
 		},
@@ -102,11 +102,11 @@ func (d *SettingsDisplay) setPage(page *page) {
 	d.pages.SwitchToPage(page.id)
 }
 
-func (d *SettingsDisplay) Run() error {
+func (d *ConfigDisplay) Run() error {
 	return d.app.Run()
 }
 
-func (d *SettingsDisplay) createContent() {
+func (d *ConfigDisplay) createContent() {
 	// Create category list
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
@@ -215,6 +215,6 @@ func (d *SettingsDisplay) createContent() {
 }
 
 // Helper function to update description text
-func (d *SettingsDisplay) updateDescription(text string) {
+func (d *ConfigDisplay) updateDescription(text string) {
 	d.descriptionBox.SetText(text)
 }

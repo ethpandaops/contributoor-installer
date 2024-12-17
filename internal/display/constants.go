@@ -34,6 +34,30 @@ var AvailableNetworks = []NetworkOption{
 	},
 }
 
+type OutputServerOption struct {
+	Label       string
+	Value       string
+	Description string
+}
+
+var AvailableOutputServers = []OutputServerOption{
+	{
+		Label:       "ethPandaOps Production",
+		Value:       "https://xatu.primary.production.platform.ethpandaops.io",
+		Description: "The production server provided by ethPandaOps.",
+	},
+	{
+		Label:       "ethPandaOps Staging",
+		Value:       "https://xatu.primary.staging.platform.ethpandaops.io",
+		Description: "The staging server provided by ethPandaOps.",
+	},
+	{
+		Label:       "Custom",
+		Value:       "custom",
+		Description: "Use your own custom output server.",
+	},
+}
+
 // Colors used throughout the UI
 var (
 	ColorBackground      = tcell.ColorDarkSlateGray

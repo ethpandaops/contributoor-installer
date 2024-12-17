@@ -1,4 +1,4 @@
-package settings
+package config
 
 import (
 	"fmt"
@@ -12,23 +12,23 @@ import (
 	"github.com/rivo/tview"
 )
 
-type NetworkSettingsPage struct {
-	display     *SettingsDisplay
+type NetworkConfigPage struct {
+	display     *ConfigDisplay
 	page        *page
 	content     tview.Primitive
 	form        *tview.Form
 	description *tview.TextView
 }
 
-func NewNetworkSettingsPage(display *SettingsDisplay) *NetworkSettingsPage {
-	networkPage := &NetworkSettingsPage{
+func NewNetworkConfigPage(display *ConfigDisplay) *NetworkConfigPage {
+	networkPage := &NetworkConfigPage{
 		display: display,
 	}
 
 	networkPage.createContent()
 	networkPage.page = newPage(
 		display.homePage,
-		"settings-network",
+		"config-network",
 		"Network Settings",
 		"Configure network settings including client endpoints and network selection",
 		networkPage.content,
@@ -37,15 +37,15 @@ func NewNetworkSettingsPage(display *SettingsDisplay) *NetworkSettingsPage {
 	return networkPage
 }
 
-func (p *NetworkSettingsPage) getPage() *page {
+func (p *NetworkConfigPage) getPage() *page {
 	return p.page
 }
 
-func (p *NetworkSettingsPage) handleLayoutChanged() {
+func (p *NetworkConfigPage) handleLayoutChanged() {
 	// Implement if needed
 }
 
-func (p *NetworkSettingsPage) createContent() {
+func (p *NetworkConfigPage) createContent() {
 	// Create form
 	form := tview.NewForm()
 	p.form = form
@@ -180,7 +180,7 @@ func (p *NetworkSettingsPage) createContent() {
 }
 
 // Helper function to update description text
-func (p *NetworkSettingsPage) updateDescription(text string) {
+func (p *NetworkConfigPage) updateDescription(text string) {
 	p.description.SetText(text)
 }
 
@@ -207,7 +207,7 @@ func validateBeaconNode(address string) error {
 	return nil
 }
 
-func validateAndUpdate(p *NetworkSettingsPage, input *tview.InputField) {
+func validateAndUpdate(p *NetworkConfigPage, input *tview.InputField) {
 	text := input.GetText()
 
 	// Get current network selection before validation
