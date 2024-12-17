@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/install"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/settings"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/start"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/stop"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/update"
@@ -74,6 +75,11 @@ func main() {
 
 	update.RegisterCommands(app, terminal.NewCommandOpts(
 		terminal.WithName("update"),
+		terminal.WithLogger(log),
+	))
+
+	settings.RegisterCommands(app, terminal.NewCommandOpts(
+		terminal.WithName("settings"),
 		terminal.WithLogger(log),
 	))
 

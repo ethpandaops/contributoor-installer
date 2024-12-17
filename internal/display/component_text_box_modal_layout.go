@@ -195,30 +195,14 @@ func (m *TextBoxModalLayout) Focus() {
 }
 
 func (m *TextBoxModalLayout) ShowError(msg string) {
-	// Create error modal with emoji
-	errorModal := tview.NewModal().
-		SetText("⛔ " + msg).
-		AddButtons([]string{"Try Again"}).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			// Clear error state and restore focus
-			for _, box := range m.TextBoxes {
-				box.SetBorderColor(tcell.ColorWhite)
-			}
-			m.App.SetRoot(m.BorderGrid, true)
-			m.Focus()
-		}).
-		SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
-		SetButtonBackgroundColor(tview.Styles.PrimitiveBackgroundColor).
-		SetButtonTextColor(tcell.ColorLightGray).
-		SetTextColor(tview.Styles.PrimaryTextColor)
-
-	// Style the button
-	errorModal.SetButtonStyle(tcell.StyleDefault.
-		Background(tcell.ColorDefault).
-		Foreground(tcell.ColorLightGray)).
-		SetButtonActivatedStyle(tcell.StyleDefault.
-			Background(tcell.Color46).
-			Foreground(tcell.ColorBlack))
+	errorModal := CreateErrorModal(m.App, msg, func() {
+		// Clear error state and restore focus
+		for _, box := range m.TextBoxes {
+			box.SetBorderColor(tcell.ColorWhite)
+		}
+		m.App.SetRoot(m.BorderGrid, true)
+		m.Focus()
+	})
 
 	// Show the error modal
 	m.App.SetRoot(errorModal, true)
