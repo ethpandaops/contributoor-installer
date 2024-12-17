@@ -57,13 +57,13 @@ func NewTextBoxModal(app *tview.Application, opts TextBoxModalOptions) *TextBoxM
 		SetWordWrap(true).
 		SetTextColor(tview.Styles.PrimaryTextColor).
 		SetDynamicColors(true)
-	textView.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	textView.SetBackgroundColor(ColorFormBackground)
 	textView.SetBorderPadding(0, 0, 1, 1)
 
 	// Row spacers
-	spacer1 := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
-	spacer2 := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
-	spacer3 := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	spacer1 := tview.NewBox().SetBackgroundColor(ColorFormBackground)
+	spacer2 := tview.NewBox().SetBackgroundColor(ColorFormBackground)
+	spacer3 := tview.NewBox().SetBackgroundColor(ColorFormBackground)
 
 	// Content grid
 	modal.ContentGrid = tview.NewGrid().
@@ -75,7 +75,7 @@ func NewTextBoxModal(app *tview.Application, opts TextBoxModalOptions) *TextBoxM
 		AddItem(spacer3, 4, 0, 1, 1, 0, 0, false)
 
 	modal.ContentGrid.
-		SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
+		SetBackgroundColor(ColorFormBackground).
 		SetBorder(true).
 		SetTitle(" " + opts.Title + " ")
 
@@ -108,19 +108,19 @@ func (m *TextBoxModalLayout) setupForm(labels []string, maxLengths []int, regexe
 	m.ControlGrid = tview.NewGrid().
 		SetRows(0).
 		SetColumns(-1, -5, -1)
-	m.ControlGrid.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	m.ControlGrid.SetBackgroundColor(ColorFormBackground)
 
 	form := NewForm()
 	form.SetButtonsAlign(tview.AlignCenter)
 	form.SetFieldBackgroundColor(tcell.ColorBlack)
-	form.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	form.SetBackgroundColor(ColorFormBackground)
 	form.SetBorderPadding(0, 0, 0, 0)
 	form.SetLabelColor(tcell.ColorLightGray)
 	form.SetButtonStyle(tcell.StyleDefault.
 		Background(tcell.ColorDefault).
 		Foreground(tcell.ColorLightGray)).
 		SetButtonActivatedStyle(tcell.StyleDefault.
-			Background(tcell.Color46).
+			Background(ColorButtonActivated).
 			Foreground(tcell.ColorBlack))
 
 	m.Form = form
@@ -148,19 +148,19 @@ func (m *TextBoxModalLayout) setupForm(labels []string, maxLengths []int, regexe
 		}
 	}
 
-	m.Form.AddButton("Next", m.handleNext).
+	m.Form.AddButton(ButtonNext, m.handleNext).
 		SetButtonStyle(tcell.StyleDefault.
 			Background(tcell.ColorDefault).
 			Foreground(tcell.ColorLightGray)).
 		SetButtonActivatedStyle(tcell.StyleDefault.
-			Background(tcell.Color46).
+			Background(ColorButtonActivated).
 			Foreground(tcell.ColorBlack)).
-		SetButtonBackgroundActivatedColor(tcell.Color46).
+		SetButtonBackgroundActivatedColor(ColorButtonActivated).
 		SetButtonTextColor(tcell.ColorLightGray).
 		SetButtonTextActivatedColor(tcell.ColorBlack)
 
-	leftSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
-	rightSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	leftSpacer := tview.NewBox().SetBackgroundColor(ColorFormBackground)
+	rightSpacer := tview.NewBox().SetBackgroundColor(ColorFormBackground)
 
 	m.ControlGrid.
 		AddItem(leftSpacer, 0, 0, 1, 1, 0, 0, false).

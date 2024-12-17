@@ -72,7 +72,7 @@ func (p *OutputServerPage) createContent() {
 	// Create form
 	form := tview.NewForm()
 	p.form = form
-	form.SetBackgroundColor(tcell.ColorLightSlateGray)
+	form.SetBackgroundColor(display.ColorFormBackground)
 
 	// Create description box
 	p.description = tview.NewTextView()
@@ -80,11 +80,11 @@ func (p *OutputServerPage) createContent() {
 		SetDynamicColors(true).
 		SetWordWrap(true).
 		SetTextAlign(tview.AlignLeft).
-		SetBackgroundColor(tcell.ColorLightSlateGray)
+		SetBackgroundColor(display.ColorFormBackground)
 	p.description.SetBorder(true)
-	p.description.SetTitle("Description")
+	p.description.SetTitle(display.TitleDescription)
 	p.description.SetBorderPadding(0, 0, 1, 1)
-	p.description.SetBorderColor(tcell.ColorWhite)
+	p.description.SetBorderColor(display.ColorBorder)
 
 	// Field descriptions
 	descriptions := map[string]string{
@@ -156,12 +156,12 @@ func (p *OutputServerPage) createContent() {
 	dropdown.SetCurrentOption(defaultIndex)
 
 	// Create save button with validation
-	saveButton := tview.NewButton("Save Settings")
+	saveButton := tview.NewButton(display.ButtonSaveSettings)
 	saveButton.SetSelectedFunc(func() {
 		validateAndUpdateOutputServer(p)
 	})
-	saveButton.SetBackgroundColorActivated(tcell.ColorGreen)
-	saveButton.SetLabelColorActivated(tcell.ColorBlack)
+	saveButton.SetBackgroundColorActivated(display.ColorButtonActivated)
+	saveButton.SetLabelColorActivated(display.ColorButtonText)
 
 	// Handle save button input
 	saveButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -212,14 +212,14 @@ func (p *OutputServerPage) createContent() {
 	formFrame.SetBorder(true)
 	formFrame.SetTitle("Output Server Settings")
 	formFrame.SetBorderPadding(0, 0, 1, 1)
-	formFrame.SetBorderColor(tcell.ColorWhite)
-	formFrame.SetBackgroundColor(tcell.ColorLightSlateGray)
+	formFrame.SetBorderColor(display.ColorBorder)
+	formFrame.SetBackgroundColor(display.ColorFormBackground)
 
 	// Create button container
 	buttonFlex := tview.NewFlex().
 		SetDirection(tview.FlexColumn).
 		AddItem(nil, 0, 1, false).
-		AddItem(saveButton, len("Save Settings")+4, 0, true).
+		AddItem(saveButton, len(display.ButtonSaveSettings)+4, 0, true).
 		AddItem(nil, 0, 1, false)
 
 	// Create horizontal flex for form and description
@@ -235,7 +235,7 @@ func (p *OutputServerPage) createContent() {
 		AddItem(nil, 1, 0, false).
 		AddItem(buttonFlex, 1, 0, false).
 		AddItem(nil, 1, 0, false)
-	mainFlex.SetBackgroundColor(tcell.ColorDarkSlateGray)
+	mainFlex.SetBackgroundColor(display.ColorBackground)
 
 	p.content = mainFlex
 }

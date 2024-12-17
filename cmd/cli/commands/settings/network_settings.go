@@ -49,7 +49,7 @@ func (p *NetworkSettingsPage) createContent() {
 	// Create form
 	form := tview.NewForm()
 	p.form = form
-	form.SetBackgroundColor(tcell.ColorLightSlateGray)
+	form.SetBackgroundColor(display.ColorFormBackground)
 
 	// Create description box
 	p.description = tview.NewTextView()
@@ -57,11 +57,11 @@ func (p *NetworkSettingsPage) createContent() {
 		SetDynamicColors(true).
 		SetWordWrap(true).
 		SetTextAlign(tview.AlignLeft).
-		SetBackgroundColor(tcell.ColorLightSlateGray)
+		SetBackgroundColor(display.ColorFormBackground)
 	p.description.SetBorder(true)
-	p.description.SetTitle("Description")
+	p.description.SetTitle(display.TitleDescription)
 	p.description.SetBorderPadding(0, 0, 1, 1)
-	p.description.SetBorderColor(tcell.ColorWhite)
+	p.description.SetBorderColor(display.ColorBorder)
 
 	// Field descriptions
 	descriptions := map[string]string{
@@ -69,30 +69,38 @@ func (p *NetworkSettingsPage) createContent() {
 		"Beacon Node Address": "The URL of your beacon node's HTTP endpoint.",
 	}
 
-	// Network options
-	networks := []string{"mainnet", "goerli", "sepolia"}
+	// Network options from display constants
+	networks := make([]string, len(display.AvailableNetworks))
+	networkDescriptions := make(map[string]string)
+	for i, network := range display.AvailableNetworks {
+		networks[i] = network.Value
+		networkDescriptions[network.Value] = network.Description
+		descriptions["Network"] = network.Description // Update description when network is selected
+	}
 
-	// Find current network index.
+	// Find current network index
 	defaultIndex := 0
 	for i, network := range networks {
 		if network == p.display.configService.Get().NetworkName {
 			defaultIndex = i
-
 			break
 		}
 	}
 
-	// Add form field without immediate config updates
-	form.AddDropDown("Network", networks, defaultIndex, nil)
+	// Add form fields without immediate config updates
+	form.AddDropDown("Network", networks, defaultIndex, func(option string, index int) {
+		// Update description when network changes
+		p.updateDescription(networkDescriptions[option])
+	})
 	form.AddInputField("Beacon Node Address", p.display.configService.Get().BeaconNodeAddress, 0, nil, nil)
 
 	// Create save button with validation
-	saveButton := tview.NewButton("Save Settings")
+	saveButton := tview.NewButton(display.ButtonSaveSettings)
 	saveButton.SetSelectedFunc(func() {
 		validateAndUpdate(p, form.GetFormItem(1).(*tview.InputField))
 	})
-	saveButton.SetBackgroundColorActivated(tcell.ColorGreen)
-	saveButton.SetLabelColorActivated(tcell.ColorBlack)
+	saveButton.SetBackgroundColorActivated(display.ColorButtonActivated)
+	saveButton.SetLabelColorActivated(display.ColorButtonText)
 
 	// Handle save button input
 	saveButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -143,14 +151,14 @@ func (p *NetworkSettingsPage) createContent() {
 	formFrame.SetBorder(true)
 	formFrame.SetTitle("Network Settings")
 	formFrame.SetBorderPadding(0, 0, 1, 1)
-	formFrame.SetBorderColor(tcell.ColorWhite)
-	formFrame.SetBackgroundColor(tcell.ColorLightSlateGray)
+	formFrame.SetBorderColor(display.ColorBorder)
+	formFrame.SetBackgroundColor(display.ColorFormBackground)
 
 	// Create button container
 	buttonFlex := tview.NewFlex().
 		SetDirection(tview.FlexColumn).
 		AddItem(nil, 0, 1, false).
-		AddItem(saveButton, len("Save Settings")+4, 0, true).
+		AddItem(saveButton, len(display.ButtonSaveSettings)+4, 0, true).
 		AddItem(nil, 0, 1, false)
 
 	// Create horizontal flex for form and description
@@ -166,7 +174,7 @@ func (p *NetworkSettingsPage) createContent() {
 		AddItem(nil, 1, 0, false).
 		AddItem(buttonFlex, 1, 0, false).
 		AddItem(nil, 1, 0, false)
-	mainFlex.SetBackgroundColor(tcell.ColorDarkSlateGray)
+	mainFlex.SetBackgroundColor(display.ColorBackground)
 
 	p.content = mainFlex
 }

@@ -69,7 +69,7 @@ func (d *SettingsDisplay) setupGrid() {
 	// Create the frame around the content
 	frame := display.CreateWizardFrame(display.WizardFrameOptions{
 		Content:  content,
-		Title:    "Settings",
+		Title:    display.TitleSettings,
 		HelpType: display.HelpSettings,
 		OnEsc: func() {
 			// If we're not on the home page, go back to it.
@@ -115,7 +115,7 @@ func (d *SettingsDisplay) createContent() {
 				d.updateDescription(d.settingsPages[index].getPage().description)
 			}
 		})
-	categoryList.SetBackgroundColor(tcell.ColorLightSlateGray)
+	categoryList.SetBackgroundColor(display.ColorFormBackground)
 	categoryList.SetBorderPadding(0, 0, 1, 1)
 	d.categoryList = categoryList
 
@@ -125,11 +125,11 @@ func (d *SettingsDisplay) createContent() {
 		SetDynamicColors(true).
 		SetWordWrap(true).
 		SetTextAlign(tview.AlignLeft).
-		SetBackgroundColor(tcell.ColorLightSlateGray)
+		SetBackgroundColor(display.ColorFormBackground)
 	d.descriptionBox.SetBorder(true)
-	d.descriptionBox.SetTitle("Description")
+	d.descriptionBox.SetTitle(display.TitleDescription)
 	d.descriptionBox.SetBorderPadding(0, 0, 1, 1)
-	d.descriptionBox.SetBorderColor(tcell.ColorWhite)
+	d.descriptionBox.SetBorderColor(display.ColorBorder)
 
 	// Set initial description
 	if len(d.settingsPages) > 0 {
@@ -162,13 +162,13 @@ func (d *SettingsDisplay) createContent() {
 	categoryFrame.SetBorder(true)
 	categoryFrame.SetTitle("Select a Category")
 	categoryFrame.SetBorderPadding(0, 0, 1, 1)
-	categoryFrame.SetBorderColor(tcell.ColorWhite)
-	categoryFrame.SetBackgroundColor(tcell.ColorLightSlateGray)
+	categoryFrame.SetBorderColor(display.ColorBorder)
+	categoryFrame.SetBackgroundColor(display.ColorFormBackground)
 
 	// Create close button
-	closeButton := tview.NewButton("Close Config")
-	closeButton.SetBackgroundColorActivated(tcell.ColorGreen)
-	closeButton.SetLabelColorActivated(tcell.ColorBlack)
+	closeButton := tview.NewButton(display.ButtonClose)
+	closeButton.SetBackgroundColorActivated(display.ColorButtonActivated)
+	closeButton.SetLabelColorActivated(display.ColorButtonText)
 	d.closeButton = closeButton
 
 	// Set tab handling for the close button
@@ -194,14 +194,14 @@ func (d *SettingsDisplay) createContent() {
 	// Layout everything in a flex container
 	buttonBar := tview.NewFlex().
 		AddItem(nil, 0, 1, false).
-		AddItem(closeButton, len("Close Config")+4, 0, false).
+		AddItem(closeButton, len(display.ButtonClose)+4, 0, false).
 		AddItem(nil, 0, 1, false)
 
 	// Create horizontal flex for category and description
 	contentFlex := tview.NewFlex().
 		AddItem(categoryFrame, 0, 2, true).
 		AddItem(d.descriptionBox, 0, 1, false)
-	contentFlex.SetBackgroundColor(tcell.ColorDarkSlateGray)
+	contentFlex.SetBackgroundColor(display.ColorBackground)
 
 	// Main flex container
 	flex := tview.NewFlex().
@@ -209,7 +209,7 @@ func (d *SettingsDisplay) createContent() {
 		AddItem(contentFlex, 0, 1, true).
 		AddItem(nil, 1, 0, false).
 		AddItem(buttonBar, 1, 0, false)
-	flex.SetBackgroundColor(tcell.ColorDarkSlateGray)
+	flex.SetBackgroundColor(display.ColorBackground)
 
 	d.content = flex
 }

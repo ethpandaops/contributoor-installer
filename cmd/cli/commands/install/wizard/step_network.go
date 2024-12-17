@@ -8,30 +8,6 @@ import (
 	"github.com/rivo/tview"
 )
 
-type networkOption struct {
-	Label       string
-	Value       string
-	Description string
-}
-
-var availableNetworks = []networkOption{
-	{
-		Label:       "Ethereum Mainnet",
-		Value:       "mainnet",
-		Description: "This is the real Ethereum main network.",
-	},
-	{
-		Label:       "Holesky Testnet",
-		Value:       "holesky",
-		Description: "The Holesky test network.",
-	},
-	{
-		Label:       "Sepolia Testnet",
-		Value:       "sepolia",
-		Description: "The Sepolia test network.",
-	},
-}
-
 type NetworkStep struct {
 	Wizard      *InstallWizard
 	Modal       *tview.Frame
@@ -70,9 +46,9 @@ func (s *NetworkStep) Previous() (display.WizardStep, error) {
 
 func (s *NetworkStep) setupModal() {
 	// Extract labels and descriptions for the modal
-	labels := make([]string, len(availableNetworks))
-	descriptions := make([]string, len(availableNetworks))
-	for i, network := range availableNetworks {
+	labels := make([]string, len(display.AvailableNetworks))
+	descriptions := make([]string, len(display.AvailableNetworks))
+	for i, network := range display.AvailableNetworks {
 		labels[i] = network.Label
 		descriptions[i] = network.Description
 	}
@@ -87,7 +63,7 @@ func (s *NetworkStep) setupModal() {
 		OnSelect: func(index int) {
 			// Update config with selected network value
 			s.Wizard.UpdateConfig(func(cfg *service.ContributoorConfig) {
-				cfg.NetworkName = availableNetworks[index].Value
+				cfg.NetworkName = display.AvailableNetworks[index].Value
 			})
 			// Move to next step
 			next, _ := s.Next()

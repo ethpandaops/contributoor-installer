@@ -38,12 +38,12 @@ func NewChoiceModal(app *tview.Application, opts ChoiceModalOptions) *ChoiceModa
 
 	// Create the button grid
 	buttonGrid := tview.NewGrid().SetRows(0)
-	buttonGrid.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	buttonGrid.SetBackgroundColor(ColorFormBackground)
 
 	formsFlex := tview.NewFlex().SetDirection(tview.FlexRow)
 	if len(opts.Descriptions) > 0 {
 		// Add spacing row to align with description box
-		spacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+		spacer := tview.NewBox().SetBackgroundColor(ColorFormBackground)
 		formsFlex.AddItem(spacer, 1, 1, false)
 	}
 
@@ -51,7 +51,7 @@ func NewChoiceModal(app *tview.Application, opts ChoiceModalOptions) *ChoiceModa
 	for i, label := range opts.Labels {
 		form := tview.NewForm()
 		form.SetButtonsAlign(tview.AlignCenter)
-		form.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+		form.SetBackgroundColor(ColorFormBackground)
 		form.SetBorderPadding(0, 0, 0, 0)
 
 		// Add button to form
@@ -73,7 +73,7 @@ func NewChoiceModal(app *tview.Application, opts ChoiceModalOptions) *ChoiceModa
 				Background(tview.Styles.PrimitiveBackgroundColor).
 				Foreground(tcell.ColorLightGray)).
 			SetButtonActivatedStyle(tcell.StyleDefault.
-				Background(tcell.Color46). // Bright green
+				Background(ColorButtonActivated).
 				Foreground(tcell.ColorBlack))
 
 		// Set up navigation
@@ -110,7 +110,7 @@ func NewChoiceModal(app *tview.Application, opts ChoiceModalOptions) *ChoiceModa
 		modal.Forms = append(modal.Forms, form)
 		formsFlex.AddItem(form, 1, 1, true)
 
-		spacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+		spacer := tview.NewBox().SetBackgroundColor(ColorFormBackground)
 		formsFlex.AddItem(spacer, 0, 1, false)
 	}
 
@@ -120,16 +120,16 @@ func NewChoiceModal(app *tview.Application, opts ChoiceModalOptions) *ChoiceModa
 		modal.DescBox.
 			SetDynamicColors(true).
 			SetText(opts.Descriptions[0]).
-			SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
+			SetBackgroundColor(ColorFormBackground).
 			SetBorder(true).
-			SetTitle("Description").
+			SetTitle(TitleDescription).
 			SetBorderPadding(0, 0, 1, 1)
 	}
 
 	// Set up the grids
-	leftSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
-	midSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
-	rightSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	leftSpacer := tview.NewBox().SetBackgroundColor(ColorFormBackground)
+	midSpacer := tview.NewBox().SetBackgroundColor(ColorFormBackground)
+	rightSpacer := tview.NewBox().SetBackgroundColor(ColorFormBackground)
 
 	if modal.DescBox != nil {
 		buttonGrid.SetColumns(1, -3, 1, -4, 1)
@@ -151,13 +151,13 @@ func NewChoiceModal(app *tview.Application, opts ChoiceModalOptions) *ChoiceModa
 		SetTextAlign(tview.AlignCenter).
 		SetWordWrap(true).
 		SetTextColor(tview.Styles.PrimaryTextColor)
-	textView.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	textView.SetBackgroundColor(ColorFormBackground)
 	textView.SetBorderPadding(0, 0, 0, 0)
 
 	// Row spacers
-	spacer1 := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
-	spacer2 := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
-	spacer3 := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	spacer1 := tview.NewBox().SetBackgroundColor(ColorFormBackground)
+	spacer2 := tview.NewBox().SetBackgroundColor(ColorFormBackground)
+	spacer3 := tview.NewBox().SetBackgroundColor(ColorFormBackground)
 
 	// Content grid
 	modal.ContentGrid = tview.NewGrid().
@@ -169,7 +169,7 @@ func NewChoiceModal(app *tview.Application, opts ChoiceModalOptions) *ChoiceModa
 		AddItem(spacer3, 4, 0, 1, 1, 0, 0, false)
 
 	modal.ContentGrid.
-		SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
+		SetBackgroundColor(ColorFormBackground).
 		SetBorder(true).
 		SetTitle(" " + opts.Title + " ")
 

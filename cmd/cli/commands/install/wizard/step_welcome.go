@@ -51,15 +51,16 @@ func (s *WelcomeStep) setupModal() {
 
 	modal := tview.NewModal().
 		SetText(helperText).
-		AddButtons([]string{"Quit", "Next"}).
+		AddButtons([]string{display.ButtonNext, display.ButtonClose}).
+		SetBackgroundColor(display.ColorFormBackground).
 		SetButtonStyle(tcell.StyleDefault.
 			Background(tcell.ColorDefault).
 			Foreground(tcell.ColorLightGray)).
 		SetButtonActivatedStyle(tcell.StyleDefault.
-			Background(tcell.Color46).
+			Background(display.ColorButtonActivated).
 			Foreground(tcell.ColorBlack)).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonIndex == 1 {
+			if buttonIndex == 0 {
 				if next, err := s.Next(); err == nil {
 					s.Wizard.CurrentStep = next
 					if err := next.Show(); err != nil {
@@ -70,6 +71,9 @@ func (s *WelcomeStep) setupModal() {
 				s.Wizard.GetApp().Stop()
 			}
 		})
+
+	modal.Box.SetBackgroundColor(display.ColorFormBackground)
+	modal.Box.SetBorderColor(display.ColorBorder)
 
 	s.Modal = display.CreateWizardFrame(display.WizardFrameOptions{
 		Content: modal,

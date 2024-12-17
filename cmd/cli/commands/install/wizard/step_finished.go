@@ -59,7 +59,7 @@ You're all done and ready to run contributoor.`
 			Background(tcell.ColorDefault).
 			Foreground(tcell.ColorLightGray)).
 		SetButtonActivatedStyle(tcell.StyleDefault.
-			Background(tcell.Color46).
+			Background(display.ColorButtonActivated).
 			Foreground(tcell.ColorBlack)).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			s.Wizard.SetCompleted()

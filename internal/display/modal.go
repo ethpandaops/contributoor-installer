@@ -9,7 +9,7 @@ import (
 func CreateErrorModal(app *tview.Application, msg string, onDone func()) *tview.Modal {
 	errorModal := tview.NewModal().
 		SetText("⛔ " + msg).
-		AddButtons([]string{"Try Again"}).
+		AddButtons([]string{ButtonTryAgain}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if onDone != nil {
 				onDone()
@@ -29,7 +29,7 @@ func CreateErrorModal(app *tview.Application, msg string, onDone func()) *tview.
 		Background(tcell.ColorDefault).
 		Foreground(tcell.ColorLightGray)).
 		SetButtonActivatedStyle(tcell.StyleDefault.
-			Background(tcell.Color46).
+			Background(ColorButtonActivated).
 			Foreground(tcell.ColorBlack))
 
 	return errorModal
