@@ -62,9 +62,17 @@ func stopContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		}
 	case service.RunMethodBinary:
 		binaryService := service.NewBinaryService(log, configService)
-		if err := binaryService.Stop(); err != nil {
-			log.Errorf("could not stop service: %v", err)
 
+		running, err := binaryService.IsRunning()
+		if err != nil {
+			return fmt.Errorf("failed to check service status: %v", err)
+		}
+
+		if !running {
+			return fmt.Errorf("%sContributoor is not running%s", terminal.ColorRed, terminal.ColorReset)
+		}
+
+		if err := binaryService.Stop(); err != nil {
 			return err
 		}
 	}

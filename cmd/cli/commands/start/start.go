@@ -64,9 +64,17 @@ func startContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 
 	case service.RunMethodBinary:
 		binaryService := service.NewBinaryService(log, configService)
-		if err := binaryService.Start(); err != nil {
-			log.Errorf("could not start service: %v", err)
 
+		running, err := binaryService.IsRunning()
+		if err != nil {
+			return fmt.Errorf("failed to check service status: %v", err)
+		}
+
+		if running {
+			return fmt.Errorf("%sContributoor is already running%s", terminal.ColorRed, terminal.ColorReset)
+		}
+
+		if err := binaryService.Start(); err != nil {
 			return err
 		}
 	}

@@ -257,6 +257,14 @@ setup_binary_contributoor() {
     chmod +x "$CONTRIBUTOOR_BIN/sentry"
     success "Set contributoor permissions: $CONTRIBUTOOR_BIN/sentry"
     rm -f "$temp_archive"
+
+    # After setting permissions, create service files based on platform
+    if [ "$INSTALL_MODE" = "binary" ]; then
+        # Create logs directory for binary output
+        mkdir -p "$CONTRIBUTOOR_PATH/logs" || fail "Could not create the contributoor logs directory"
+        chmod -R 755 "$CONTRIBUTOOR_PATH/logs"
+        success "Created logs directory: $CONTRIBUTOOR_PATH/logs"
+    fi
 }
 
 ###############################################################################
@@ -426,6 +434,11 @@ main() {
     mkdir -p "$CONTRIBUTOOR_BIN" || fail "Could not create the contributoor bin directory"
     chmod -R 755 "$CONTRIBUTOOR_BIN"
     success "bin directory: $CONTRIBUTOOR_BIN" 
+
+    # Create logs directory if needed
+    mkdir -p "$CONTRIBUTOOR_PATH/logs" || fail "Could not create the contributoor logs directory"
+    chmod -R 755 "$CONTRIBUTOOR_PATH/logs"
+    success "logs directory: $CONTRIBUTOOR_PATH/logs"
 
     # Prepare installation for the mode selected.
     # If binary, download the contributoor binary.

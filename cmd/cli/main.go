@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
+
+	"io"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/install"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/start"
@@ -13,11 +16,36 @@ import (
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func main() {
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
+
+	// Enable color output
+	log.SetFormatter(&logrus.TextFormatter{
+		ForceColors:   true,
+		DisableColors: false,
+	})
+
+	// Set up log rotation for CLI logs
+	logDir := filepath.Join(os.Getenv("HOME"), ".contributoor", "logs")
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		fmt.Printf("Failed to create log directory: %v\n", err)
+		os.Exit(1)
+	}
+
+	cliLogger := &lumberjack.Logger{
+		Filename:   filepath.Join(logDir, "debug.log"),
+		MaxSize:    10,
+		MaxBackups: 5,
+		MaxAge:     28,
+		Compress:   true,
+	}
+
+	// Write logs to both stdout and file
+	log.SetOutput(io.MultiWriter(os.Stdout, cliLogger))
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
