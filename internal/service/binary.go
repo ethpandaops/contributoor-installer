@@ -2,10 +2,14 @@ package service
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 )
@@ -157,5 +161,92 @@ func (s *BinaryService) IsRunning() (bool, error) {
 }
 
 func (s *BinaryService) Update() error {
+	expandedDir, err := homedir.Expand(s.config.ContributoorDirectory)
+	if err != nil {
+		return fmt.Errorf("failed to expand config path: %w", err)
+	}
+
+	binaryPath := filepath.Join(expandedDir, "bin", "sentry")
+	binaryDir := filepath.Dir(binaryPath)
+
+	// Download and verify checksums
+	checksumURL := fmt.Sprintf("https://github.com/ethpandaops/contributoor/releases/download/v%s/contributoor_%s_checksums.txt",
+		s.config.Version, s.config.Version)
+
+	resp, err := http.Get(checksumURL)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download checksums: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Determine platform and arch
+	platform := runtime.GOOS
+	arch := runtime.GOARCH
+	if arch == "amd64" {
+		arch = "x86_64"
+	}
+
+	// Download binary
+	binaryURL := fmt.Sprintf("https://github.com/ethpandaops/contributoor/releases/download/v%s/contributoor_%s_%s_%s.tar.gz",
+		s.config.Version, s.config.Version, platform, arch)
+
+	resp, err = http.Get(binaryURL)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download binary: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Create temp file for download
+	tmpFile, err := os.CreateTemp("", "contributoor-*.tar.gz")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// Copy download to temp file
+	if _, err := io.Copy(tmpFile, resp.Body); err != nil {
+		return fmt.Errorf("failed to write binary to temp file: %w", err)
+	}
+
+	// Stop service if running
+	running, err := s.IsRunning()
+	if err != nil {
+		return fmt.Errorf("failed to check if service is running: %w", err)
+	}
+
+	if running {
+		if err := s.Stop(); err != nil {
+			return fmt.Errorf("failed to stop service: %w", err)
+		}
+	}
+
+	// Extract binary
+	if err := os.MkdirAll(binaryDir, 0755); err != nil {
+		return fmt.Errorf("failed to create binary directory: %w", err)
+	}
+
+	cmd := exec.Command("tar", "--no-same-owner", "-xzf", tmpFile.Name(), "-C", binaryDir)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to extract binary: %w", err)
+	}
+
+	// Set permissions
+	if err := os.Chmod(binaryPath, 0755); err != nil {
+		return fmt.Errorf("failed to set binary permissions: %w", err)
+	}
+
+	s.logger.WithField("version", s.config.Version).Infof(
+		"%sBinary updated successfully%s",
+		terminal.ColorGreen,
+		terminal.ColorReset,
+	)
+
+	// Restart if it was running
+	if running {
+		if err := s.Start(); err != nil {
+			return fmt.Errorf("failed to restart service: %w", err)
+		}
+	}
+
 	return nil
 }

@@ -42,12 +42,31 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		return fmt.Errorf("%sError loading config: %v%s", terminal.ColorRed, err, terminal.ColorReset)
 	}
 
-	log.WithField("version", configService.Get().Version).Info("Current version")
+	var (
+		updateSuccessful bool
+		targetVersion    string
+		currentVersion   = configService.Get().Version
+		github           = service.NewGitHubService("ethpandaops", "contributoor")
+	)
 
-	github := service.NewGitHubService("ethpandaops", "contributoor")
+	log.WithField("version", currentVersion).Info("Current version")
+
+	defer func() {
+		if !updateSuccessful {
+			if err := configService.Update(func(cfg *service.ContributoorConfig) {
+				cfg.Version = currentVersion
+			}); err != nil {
+				log.Errorf("Failed to roll back version in config: %v", err)
+				return
+			}
+
+			if err := configService.Save(); err != nil {
+				log.Errorf("Failed to save config after version rollback: %v", err)
+			}
+		}
+	}()
 
 	// Determine target version
-	var targetVersion string
 	if c.IsSet("version") {
 		targetVersion = c.String("version")
 
@@ -68,6 +87,7 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		}
 	} else {
 		var err error
+
 		targetVersion, err = github.GetLatestVersion()
 		if err != nil {
 			return fmt.Errorf("failed to get latest version: %w", err)
@@ -107,7 +127,6 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 	// Save the updated config.
 	if err := configService.Save(); err != nil {
 		log.Errorf("could not save updated config: %v", err)
-
 		return err
 	}
 
@@ -116,7 +135,6 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		dockerService, err := service.NewDockerService(log, configService)
 		if err != nil {
 			log.Errorf("could not create docker service: %v", err)
-
 			return err
 		}
 
@@ -124,7 +142,6 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 
 		if e := dockerService.Update(); e != nil {
 			log.Errorf("could not update service: %v", e)
-
 			return e
 		}
 
@@ -132,7 +149,6 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		running, err := dockerService.IsRunning()
 		if err != nil {
 			log.Errorf("could not check service status: %v", err)
-
 			return err
 		}
 
@@ -159,6 +175,28 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		log.Infof("%sContributoor updated successfully to version %s%s", terminal.ColorGreen, configService.Get().Version, terminal.ColorReset)
 	case service.RunMethodBinary:
 		binaryService := service.NewBinaryService(log, configService)
+
+		log.WithField("version", configService.Get().Version).Info("Updating Contributoor")
+
+		// Check if service is running
+		running, err := binaryService.IsRunning()
+		if err != nil {
+			log.Errorf("could not check service status: %v", err)
+			return err
+		}
+
+		if running {
+			if terminal.Confirm("Service is running. In order to update, it must be stopped. Would you like to stop it?") {
+				if err := binaryService.Stop(); err != nil {
+					return fmt.Errorf("failed to stop service: %w", err)
+				}
+			} else {
+				log.Error("Update process was cancelled")
+
+				return nil
+			}
+		}
+
 		if err := binaryService.Update(); err != nil {
 			log.Errorf("could not update service: %v", err)
 
@@ -170,7 +208,16 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 
 			return err
 		}
+
+		// If it was running, start it again.
+		if running {
+			if err := binaryService.Start(); err != nil {
+				return fmt.Errorf("failed to start service: %w", err)
+			}
+		}
 	}
+
+	updateSuccessful = true
 
 	return nil
 }

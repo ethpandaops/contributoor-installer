@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
 	"github.com/sirupsen/logrus"
 )
 
@@ -99,7 +100,11 @@ func (s *DockerService) Update() error {
 		return fmt.Errorf("failed to pull image: %w\nOutput: %s", err, string(output))
 	}
 
-	s.logger.WithField("version", s.config.Version).Info("Image updated successfully")
+	s.logger.WithField("version", s.config.Version).Infof(
+		"%sImage updated successfully%s",
+		terminal.ColorGreen,
+		terminal.ColorReset,
+	)
 
 	return nil
 }
