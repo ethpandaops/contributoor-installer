@@ -10,9 +10,30 @@ import (
 	"time"
 )
 
-const (
-	githubAPITimeout = 10 * time.Second
-	githubAPIHost    = "api.github.com"
+var (
+	githubAPIHost     = "api.github.com"
+	validateGitHubURL = func(owner, repo string) (*url.URL, error) {
+		if owner == "" || repo == "" {
+			return nil, fmt.Errorf("owner and repo cannot be empty")
+		}
+
+		if strings.ContainsAny(owner+repo, "/?#[]@!$&'()*+,;=") {
+			return nil, fmt.Errorf("invalid owner or repo name")
+		}
+
+		urlStr := fmt.Sprintf("https://%s/repos/%s/%s/releases", githubAPIHost, owner, repo)
+
+		u, err := url.Parse(urlStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse URL: %w", err)
+		}
+
+		if u.Host != githubAPIHost {
+			return nil, fmt.Errorf("invalid GitHub API host")
+		}
+
+		return u, nil
+	}
 )
 
 // GitHubService is a basic service for interacting with the GitHub API.
@@ -33,7 +54,7 @@ func NewGitHubService(owner, repo string) *GitHubService {
 		owner: owner,
 		repo:  repo,
 		client: &http.Client{
-			Timeout: githubAPITimeout,
+			Timeout: 10 * time.Second,
 		},
 	}
 }
@@ -158,27 +179,4 @@ func (s *GitHubService) VersionExists(version string) (bool, error) {
 	}
 
 	return false, nil
-}
-
-func validateGitHubURL(owner, repo string) (*url.URL, error) {
-	if owner == "" || repo == "" {
-		return nil, fmt.Errorf("owner and repo cannot be empty")
-	}
-
-	if strings.ContainsAny(owner+repo, "/?#[]@!$&'()*+,;=") {
-		return nil, fmt.Errorf("invalid owner or repo name")
-	}
-
-	urlStr := fmt.Sprintf("https://%s/repos/%s/%s/releases", githubAPIHost, owner, repo)
-
-	u, err := url.Parse(urlStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse URL: %w", err)
-	}
-
-	if u.Host != githubAPIHost {
-		return nil, fmt.Errorf("invalid GitHub API host")
-	}
-
-	return u, nil
 }

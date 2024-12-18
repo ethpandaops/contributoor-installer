@@ -27,6 +27,7 @@ func NewBinaryService(logger *logrus.Logger, configService *ConfigService) *Bina
 	expandedDir, err := homedir.Expand(configService.Get().ContributoorDirectory)
 	if err != nil {
 		logger.Errorf("Failed to expand config path: %v", err)
+
 		return &BinaryService{
 			logger: logger,
 			config: configService.Get(),
@@ -39,6 +40,7 @@ func NewBinaryService(logger *logrus.Logger, configService *ConfigService) *Bina
 	stdout, err := os.OpenFile(filepath.Join(logsDir, "debug.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		logger.Errorf("Failed to open stdout log file: %v", err)
+
 		return &BinaryService{
 			logger: logger,
 			config: configService.Get(),
@@ -48,7 +50,9 @@ func NewBinaryService(logger *logrus.Logger, configService *ConfigService) *Bina
 	stderr, err := os.OpenFile(filepath.Join(logsDir, "service.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		stdout.Close()
+
 		logger.Errorf("Failed to open stderr log file: %v", err)
+
 		return &BinaryService{
 			logger: logger,
 			config: configService.Get(),
@@ -112,13 +116,13 @@ func (s *BinaryService) Start() error {
 // Stop stops the binary service.
 func (s *BinaryService) Stop() error {
 	pidFile := filepath.Join(s.config.ContributoorDirectory, "contributoor.pid")
+
 	pidBytes, err := os.ReadFile(pidFile)
 	if err != nil {
 		return fmt.Errorf("failed to read pid file: %w", err)
 	}
 
-	pid := string(pidBytes)
-	cmd := exec.Command("kill", pid)
+	cmd := exec.Command("kill", string(pidBytes))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to stop process: %w", err)
 	}
@@ -159,6 +163,7 @@ func (s *BinaryService) IsRunning() (bool, error) {
 	if err := cmd.Run(); err != nil {
 		os.Remove(pidFile)
 
+		//nolint:nilerr // We don't care about the error here.
 		return false, nil
 	}
 
@@ -176,8 +181,11 @@ func (s *BinaryService) Update() error {
 	binaryDir := filepath.Dir(binaryPath)
 
 	// Download and verify checksums
-	checksumURL := fmt.Sprintf("https://github.com/ethpandaops/contributoor/releases/download/v%s/contributoor_%s_checksums.txt",
-		s.config.Version, s.config.Version)
+	checksumURL := fmt.Sprintf(
+		"https://github.com/ethpandaops/contributoor/releases/download/v%s/contributoor_%s_checksums.txt",
+		s.config.Version,
+		s.config.Version,
+	)
 
 	resp, err := http.Get(checksumURL)
 	if err != nil || resp.StatusCode != http.StatusOK {
@@ -186,8 +194,11 @@ func (s *BinaryService) Update() error {
 	defer resp.Body.Close()
 
 	// Determine platform and arch
-	platform := runtime.GOOS
-	arch := runtime.GOARCH
+	var (
+		platform = runtime.GOOS
+		arch     = runtime.GOARCH
+	)
+
 	if arch == "amd64" {
 		arch = "x86_64"
 	}
@@ -210,7 +221,7 @@ func (s *BinaryService) Update() error {
 	defer os.Remove(tmpFile.Name())
 
 	// Copy download to temp file
-	if _, err := io.Copy(tmpFile, resp.Body); err != nil {
+	if _, ioerr := io.Copy(tmpFile, resp.Body); ioerr != nil {
 		return fmt.Errorf("failed to write binary to temp file: %w", err)
 	}
 

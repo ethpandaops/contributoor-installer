@@ -83,7 +83,7 @@ func NewConfigService(logger *logrus.Logger, configPath string) (*ConfigService,
 	fullConfigPath := filepath.Join(path, "config.yaml")
 
 	// Check if config exists
-	if _, err := os.Stat(fullConfigPath); os.IsNotExist(err) {
+	if _, serr := os.Stat(fullConfigPath); os.IsNotExist(serr) {
 		return nil, &ConfigNotFoundError{Path: fullConfigPath}
 	}
 
