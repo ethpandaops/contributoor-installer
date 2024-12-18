@@ -24,8 +24,6 @@ jobs:
 
       - name: Set up Go
         uses: ./.github/workflows/go-setup
-        with:
-          go-version: ${{ vars.GO_VERSION }}
 
       - name: Run Tests
         run: |
@@ -35,17 +33,18 @@ jobs:
           # Get total package count and calculate split
           COUNT=$(echo "$PKGS" | wc -l)
           SPLIT=$((COUNT / 4))
-          START=$(((matrix.test-group - 1) * SPLIT))
+          GROUP=${{ matrix.test-group }}
+          START=$(((GROUP - 1) * SPLIT))
           
           # Select packages for this group
-          if [ "${{ matrix.test-group }}" == "4" ]; then
+          if [ "$GROUP" == "4" ]; then
             TEST_PKGS=$(echo "$PKGS" | tail -n +$START)
           else
             TEST_PKGS=$(echo "$PKGS" | tail -n +$START | head -n $SPLIT)
           fi
           
           # Run tests for this group with JSON output
-          go test -v -race -json $TEST_PKGS > test.${{ matrix.test-group }}.json
+          go test -v -race -json $TEST_PKGS > test.$GROUP.json
 
       - name: Upload test results
         if: always()
