@@ -66,25 +66,20 @@ jobs:
 
       - name: Merge test results
         run: |
-          # Start with an empty array
-          echo "[" > test.json
+          # Start with an empty file
+          > test.json
           
-          # Merge all test result files, adding commas between them
-          first=true
+          # Merge all test files, each line is already a complete JSON object
           for f in test.*.json; do
             if [ -f "$f" ]; then
-              if [ "$first" = true ]; then
-                first=false
-              else
-                echo "," >> test.json
-              fi
-              # Remove the last newline if it exists and append to test.json
-              sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/,/g' "$f" >> test.json
+              cat "$f" >> test.json
             fi
           done
           
-          # Close the array
-          echo "]" >> test.json
+          # Verify we have content
+          if [ ! -s test.json ]; then
+            echo '{"Action":"skip","Package":"none","Test":"none"}' > test.json
+          fi
 
       - name: Annotate tests
         uses: guyarb/golang-test-annotations@v0.6.0
