@@ -14,20 +14,20 @@ import (
 
 type BeaconNodePage struct {
 	display     *InstallDisplay
-	page        *page
+	page        *display.Page
 	content     tview.Primitive
 	form        *tview.Form
 	description *tview.TextView
 }
 
-func NewBeaconNodePage(display *InstallDisplay) *BeaconNodePage {
+func NewBeaconNodePage(id *InstallDisplay) *BeaconNodePage {
 	beaconPage := &BeaconNodePage{
-		display: display,
+		display: id,
 	}
 
 	beaconPage.initPage()
-	beaconPage.page = newPage(
-		display.networkPage.GetPage(), // Set parent to network page
+	beaconPage.page = display.NewPage(
+		id.networkPage.GetPage(), // Set parent to network page
 		"install-beacon",
 		"Beacon Node",
 		"Configure your beacon node connection",

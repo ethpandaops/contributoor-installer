@@ -7,19 +7,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type installPage interface {
-	GetPage() *display.Page
-}
-
 type InstallDisplay struct {
 	app                         *tview.Application
 	pages                       *tview.Pages
 	frame                       *tview.Frame
 	log                         *logrus.Logger
 	configService               *service.ConfigService
-	homePage                    *page
+	homePage                    *display.Page
 	content                     tview.Primitive
-	installPages                []installPage
+	installPages                []display.PageInterface
 	networkPage                 *NetworkPage
 	beaconPage                  *BeaconNodePage
 	outputPage                  *OutputServerPage
@@ -30,7 +26,7 @@ type InstallDisplay struct {
 }
 
 func NewInstallDisplay(log *logrus.Logger, app *tview.Application, configService *service.ConfigService) *InstallDisplay {
-	installDisplay := &InstallDisplay{
+	id := &InstallDisplay{
 		app:           app,
 		pages:         tview.NewPages(),
 		log:           log,
@@ -38,38 +34,38 @@ func NewInstallDisplay(log *logrus.Logger, app *tview.Application, configService
 	}
 
 	// Create pages
-	installDisplay.welcomePage = NewWelcomePage(installDisplay)
-	installDisplay.networkPage = NewNetworkPage(installDisplay)
-	installDisplay.beaconPage = NewBeaconNodePage(installDisplay)
-	installDisplay.outputPage = NewOutputServerPage(installDisplay)
-	installDisplay.outputServerCredentialsPage = NewOutputServerCredentialsPage(installDisplay)
-	installDisplay.finishedPage = NewFinishedPage(installDisplay)
-	installDisplay.installPages = []installPage{
-		installDisplay.welcomePage,
-		installDisplay.networkPage,
-		installDisplay.beaconPage,
-		installDisplay.outputPage,
-		installDisplay.outputServerCredentialsPage,
-		installDisplay.finishedPage,
+	id.welcomePage = NewWelcomePage(id)
+	id.networkPage = NewNetworkPage(id)
+	id.beaconPage = NewBeaconNodePage(id)
+	id.outputPage = NewOutputServerPage(id)
+	id.outputServerCredentialsPage = NewOutputServerCredentialsPage(id)
+	id.finishedPage = NewFinishedPage(id)
+	id.installPages = []display.PageInterface{
+		id.welcomePage,
+		id.networkPage,
+		id.beaconPage,
+		id.outputPage,
+		id.outputServerCredentialsPage,
+		id.finishedPage,
 	}
 
 	// Setup pages
-	for _, page := range installDisplay.installPages {
-		installDisplay.pages.AddPage(page.GetPage().ID, page.GetPage().Content, true, false)
+	for _, page := range id.installPages {
+		id.pages.AddPage(page.GetPage().ID, page.GetPage().Content, true, false)
 	}
 
 	// Create initial frame
 	frame := display.CreatePageFrame(display.PageFrameOptions{
-		Content:  installDisplay.pages,
-		Title:    installDisplay.welcomePage.GetPage().Title,
+		Content:  id.pages,
+		Title:    id.welcomePage.GetPage().Title,
 		HelpType: display.HelpWizard,
 		Step:     1,
-		Total:    len(installDisplay.installPages),
+		Total:    len(id.installPages),
 	})
-	installDisplay.frame = frame
-	installDisplay.app.SetRoot(frame, true)
+	id.frame = frame
+	id.app.SetRoot(frame, true)
 
-	return installDisplay
+	return id
 }
 
 func (d *InstallDisplay) Run() error {
@@ -101,7 +97,7 @@ func (d *InstallDisplay) getCurrentStep() int {
 	return 1
 }
 
-func (d *InstallDisplay) setPage(page *page) {
+func (d *InstallDisplay) setPage(page *display.Page) {
 	// Switch to the new page first
 	d.pages.SwitchToPage(page.ID)
 

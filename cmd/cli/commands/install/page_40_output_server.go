@@ -11,20 +11,20 @@ import (
 
 type OutputServerPage struct {
 	display *InstallDisplay
-	page    *page
+	page    *display.Page
 	content tview.Primitive
 	form    *tview.Form
 }
 
-func NewOutputServerPage(display *InstallDisplay) *OutputServerPage {
+func NewOutputServerPage(id *InstallDisplay) *OutputServerPage {
 	outputPage := &OutputServerPage{
-		display: display,
+		display: id,
 	}
 
 	outputPage.initPage()
 
-	outputPage.page = newPage(
-		display.beaconPage.GetPage(), // Set parent to beacon page
+	outputPage.page = display.NewPage(
+		id.beaconPage.GetPage(), // Set parent to beacon page
 		"install-output",
 		"Output Server",
 		"Select the output server you'd like to use",

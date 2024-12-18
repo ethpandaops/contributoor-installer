@@ -9,17 +9,17 @@ import (
 
 type NetworkPage struct {
 	display *InstallDisplay
-	page    *page
+	page    *display.Page
 	content tview.Primitive
 }
 
-func NewNetworkPage(display *InstallDisplay) *NetworkPage {
+func NewNetworkPage(id *InstallDisplay) *NetworkPage {
 	networkPage := &NetworkPage{
-		display: display,
+		display: id,
 	}
 
 	networkPage.initPage()
-	networkPage.page = newPage(
+	networkPage.page = display.NewPage(
 		nil,
 		"install-network",
 		"Network Selection",

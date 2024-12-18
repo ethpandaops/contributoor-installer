@@ -13,7 +13,7 @@ import (
 
 type OutputServerCredentialsPage struct {
 	display     *InstallDisplay
-	page        *page
+	page        *display.Page
 	content     tview.Primitive
 	form        *tview.Form
 	description *tview.TextView
@@ -21,14 +21,14 @@ type OutputServerCredentialsPage struct {
 	username    string
 }
 
-func NewOutputServerCredentialsPage(display *InstallDisplay) *OutputServerCredentialsPage {
+func NewOutputServerCredentialsPage(id *InstallDisplay) *OutputServerCredentialsPage {
 	credentialsPage := &OutputServerCredentialsPage{
-		display: display,
+		display: id,
 	}
 
 	credentialsPage.initPage()
-	credentialsPage.page = newPage(
-		display.outputPage.GetPage(), // Set parent to output server page
+	credentialsPage.page = display.NewPage(
+		id.outputPage.GetPage(), // Set parent to output server page
 		"install-credentials",
 		"Output Server Credentials",
 		"Configure your output server authentication",

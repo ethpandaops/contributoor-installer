@@ -15,21 +15,21 @@ import (
 // NetworkConfigPage is a page that allows the user to configure the network settings.
 type NetworkConfigPage struct {
 	display     *ConfigDisplay
-	page        *page
+	page        *display.Page
 	content     tview.Primitive
 	form        *tview.Form
 	description *tview.TextView
 }
 
 // NewNetworkConfigPage creates a new NetworkConfigPage.
-func NewNetworkConfigPage(display *ConfigDisplay) *NetworkConfigPage {
+func NewNetworkConfigPage(cd *ConfigDisplay) *NetworkConfigPage {
 	networkPage := &NetworkConfigPage{
-		display: display,
+		display: cd,
 	}
 
 	networkPage.initPage()
-	networkPage.page = newPage(
-		display.homePage,
+	networkPage.page = display.NewPage(
+		cd.homePage,
 		"config-network",
 		"Network Settings",
 		"Configure network settings including client endpoints and network selection",

@@ -10,18 +10,18 @@ import (
 
 type WelcomePage struct {
 	display     *InstallDisplay
-	page        *page
+	page        *display.Page
 	content     tview.Primitive
 	description *tview.TextView
 }
 
-func NewWelcomePage(display *InstallDisplay) *WelcomePage {
+func NewWelcomePage(id *InstallDisplay) *WelcomePage {
 	welcomePage := &WelcomePage{
-		display: display,
+		display: id,
 	}
 
 	welcomePage.initPage()
-	welcomePage.page = newPage(
+	welcomePage.page = display.NewPage(
 		nil,
 		"install-welcome",
 		"Welcome",

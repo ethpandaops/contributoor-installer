@@ -14,21 +14,21 @@ import (
 // OutputServerConfigPage is the page for configuring the output server.
 type OutputServerConfigPage struct {
 	display     *ConfigDisplay
-	page        *page
+	page        *display.Page
 	content     tview.Primitive
 	form        *tview.Form
 	description *tview.TextView
 }
 
 // NewOutputServerConfigPage creates a new OutputServerConfigPage.
-func NewOutputServerConfigPage(display *ConfigDisplay) *OutputServerConfigPage {
+func NewOutputServerConfigPage(cd *ConfigDisplay) *OutputServerConfigPage {
 	OutputServerConfigPage := &OutputServerConfigPage{
-		display: display,
+		display: cd,
 	}
 
 	OutputServerConfigPage.initPage()
-	OutputServerConfigPage.page = newPage(
-		display.homePage,
+	OutputServerConfigPage.page = display.NewPage(
+		cd.homePage,
 		"config-output-server",
 		"Output Server Settings",
 		"Configure the output server settings including server selection and credentials",

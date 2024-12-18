@@ -15,10 +15,10 @@ type ConfigDisplay struct {
 	frame                  *tview.Frame
 	log                    *logrus.Logger
 	configService          *service.ConfigService
-	homePage               *page
+	homePage               *display.Page
 	categoryList           *tview.List
 	content                tview.Primitive
-	settingsPages          []settingsPage
+	settingsPages          []display.PageInterface
 	networkPage            *NetworkConfigPage
 	OutputServerConfigPage *OutputServerConfigPage
 	descriptionBox         *tview.TextView
@@ -27,38 +27,38 @@ type ConfigDisplay struct {
 
 // NewConfigDisplay creates a new ConfigDisplay.
 func NewConfigDisplay(log *logrus.Logger, app *tview.Application, configService *service.ConfigService) *ConfigDisplay {
-	display := &ConfigDisplay{
+	cd := &ConfigDisplay{
 		app:           app,
 		pages:         tview.NewPages(),
 		log:           log,
 		configService: configService,
 	}
 
-	display.homePage = newPage(nil, "config-home", "Categories", "", nil)
+	cd.homePage = display.NewPage(nil, "config-home", "Categories", "", nil)
 
 	// Create all the config sub-pages.
-	display.networkPage = NewNetworkConfigPage(display)
-	display.OutputServerConfigPage = NewOutputServerConfigPage(display)
-	display.settingsPages = []settingsPage{
-		display.networkPage,
-		display.OutputServerConfigPage,
+	cd.networkPage = NewNetworkConfigPage(cd)
+	cd.OutputServerConfigPage = NewOutputServerConfigPage(cd)
+	cd.settingsPages = []display.PageInterface{
+		cd.networkPage,
+		cd.OutputServerConfigPage,
 	}
 
 	// Add all the sub-pages to the display.
-	for _, subpage := range display.settingsPages {
-		display.pages.AddPage(subpage.GetPage().ID, subpage.GetPage().Content, true, false)
+	for _, subpage := range cd.settingsPages {
+		cd.pages.AddPage(subpage.GetPage().ID, subpage.GetPage().Content, true, false)
 	}
 
 	// Initialize the page layout.
-	display.initPage()
-	display.homePage.Content = display.content
-	display.pages.AddPage(display.homePage.ID, display.content, true, false)
-	display.setupGrid()
+	cd.initPage()
+	cd.homePage.Content = cd.content
+	cd.pages.AddPage(cd.homePage.ID, cd.content, true, false)
+	cd.setupGrid()
 
 	// ... and finally, set the home page as the current page.
-	display.setPage(display.homePage)
+	cd.setPage(cd.homePage)
 
-	return display
+	return cd
 }
 
 // Run starts the application.
@@ -92,7 +92,7 @@ func (d *ConfigDisplay) setupGrid() {
 }
 
 // setPage sets the current page and updates the frame.
-func (d *ConfigDisplay) setPage(page *page) {
+func (d *ConfigDisplay) setPage(page *display.Page) {
 	d.frame.Clear()
 
 	frame := display.CreatePageFrame(display.PageFrameOptions{
@@ -214,8 +214,4 @@ func (d *ConfigDisplay) initPage() {
 	flex.SetBackgroundColor(display.ColorBackground)
 
 	d.content = flex
-}
-
-type settingsPage interface {
-	GetPage() *display.Page
 }

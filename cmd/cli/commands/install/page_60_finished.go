@@ -8,19 +8,19 @@ import (
 
 type FinishedPage struct {
 	display *InstallDisplay
-	page    *page
+	page    *display.Page
 	content tview.Primitive
 	form    *tview.Form
 }
 
-func NewFinishedPage(display *InstallDisplay) *FinishedPage {
+func NewFinishedPage(id *InstallDisplay) *FinishedPage {
 	finishedPage := &FinishedPage{
-		display: display,
+		display: id,
 	}
 
 	finishedPage.initPage()
-	finishedPage.page = newPage(
-		display.outputServerCredentialsPage.GetPage(),
+	finishedPage.page = display.NewPage(
+		id.outputServerCredentialsPage.GetPage(),
 		"install-finished",
 		"Installation Complete",
 		"Contributoor has been configured successfully",
