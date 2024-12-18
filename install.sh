@@ -374,8 +374,10 @@ main() {
 
     # Installation path
     progress 3 "Installation path"
-    printf "\nWhere would you like to install contributoor? [${COLOR_CYAN}~/.contributoor${COLOR_RESET}]: "
-    read -r CUSTOM_PATH
+    if [ "${TEST_MODE:-}" != "true" ]; then
+        printf "\nWhere would you like to install contributoor? [${COLOR_CYAN}~/.contributoor${COLOR_RESET}]: "
+        read -r CUSTOM_PATH
+    fi
     if [ -n "$CUSTOM_PATH" ]; then
         CONTRIBUTOOR_PATH="$CUSTOM_PATH"
         CONTRIBUTOOR_BIN="$CONTRIBUTOOR_PATH/bin"
@@ -389,41 +391,43 @@ main() {
     CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${VERSION}/contributoor_${VERSION}_${PLATFORM}_${ARCH}.tar.gz"
 
     # Installation mode selection
-    selected=1
-    trap 'tput cnorm' EXIT
-    tput civis
-    while true; do
-        clear
-        print_logo
-        progress 1 "Detecting platform..."
-        success "$PLATFORM ($ARCH)"
-        progress 2 "Determining latest version"
-        success "Using version: $VERSION"
-        progress 3 "Installation path"
-        success "Using path: $CONTRIBUTOOR_PATH"
-        progress 4 "Select installation mode"
-        printf "\n  %s Docker (${COLOR_CYAN}recommended${COLOR_RESET})\n" "$([ "$selected" = 1 ] && echo ">" || echo " ")"
-        printf "  %s Binary\n" "$([ "$selected" = 2 ] && echo ">" || echo " ")"
-        printf "\nUse arrow keys (↑/↓) or j/k to select, Enter to confirm\n"
-        
-        read -r -n1 key
-        case "$key" in
-            A|k) [ "$selected" -gt 1 ] && selected=$((selected - 1)) ;;
-            B|j) [ "$selected" -lt 2 ] && selected=$((selected + 1)) ;;
-            "")
-                tput cnorm
-                printf "Selected: "
-                if [ "$selected" = 1 ]; then
-                    INSTALL_MODE="docker"
-                    printf "${COLOR_GREEN}Docker${COLOR_RESET}"
-                else
-                    INSTALL_MODE="binary"
-                    printf "${COLOR_GREEN}Binary${COLOR_RESET}"
-                fi
-                break
-                ;;
-        esac
-    done
+    if [ "${TEST_MODE:-}" != "true" ]; then
+        selected=1
+        trap 'tput cnorm' EXIT
+        tput civis
+        while true; do
+            clear
+            print_logo
+            progress 1 "Detecting platform..."
+            success "$PLATFORM ($ARCH)"
+            progress 2 "Determining latest version"
+            success "Using version: $VERSION"
+            progress 3 "Installation path"
+            success "Using path: $CONTRIBUTOOR_PATH"
+            progress 4 "Select installation mode"
+            printf "\n  %s Docker (${COLOR_CYAN}recommended${COLOR_RESET})\n" "$([ "$selected" = 1 ] && echo ">" || echo " ")"
+            printf "  %s Binary\n" "$([ "$selected" = 2 ] && echo ">" || echo " ")"
+            printf "\nUse arrow keys (↑/↓) or j/k to select, Enter to confirm\n"
+            
+            read -r -n1 key
+            case "$key" in
+                A|k) [ "$selected" -gt 1 ] && selected=$((selected - 1)) ;;
+                B|j) [ "$selected" -lt 2 ] && selected=$((selected + 1)) ;;
+                "")
+                    tput cnorm
+                    printf "Selected: "
+                    if [ "$selected" = 1 ]; then
+                        INSTALL_MODE="docker"
+                        printf "${COLOR_GREEN}Docker${COLOR_RESET}"
+                    else
+                        INSTALL_MODE="binary"
+                        printf "${COLOR_GREEN}Binary${COLOR_RESET}"
+                    fi
+                    break
+                    ;;
+            esac
+        done
+    fi
 
     # Directory setup
     progress 5 "Setting up directories"
@@ -465,5 +469,7 @@ main() {
 }
 
 # Execute main installation
-main "$@"
+if [ "${TEST_MODE:-}" != "true" ]; then
+    main "$@"
+fi
 
