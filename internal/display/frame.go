@@ -27,7 +27,7 @@ type PageFrameOptions struct {
 func CreatePageFrame(opts PageFrameOptions) *tview.Frame {
 	frame := tview.NewFrame(opts.Content)
 	frame.SetBorders(2, 2, 2, 2, 4, 4)
-	frame.AddText("Contributoor Configuration", true, tview.AlignCenter, tcell.ColorYellow)
+	frame.AddText("Contributoor Configuration", true, tview.AlignCenter, ColorHeading)
 
 	// Set navigation text based on context
 	switch opts.HelpType {
@@ -41,7 +41,7 @@ func CreatePageFrame(opts PageFrameOptions) *tview.Frame {
 		frame.AddText("Arrow keys: Navigate    Space/Enter: Select", false, tview.AlignCenter, tcell.ColorWhite)
 	}
 
-	frame.SetBorderColor(tcell.ColorYellow)
+	frame.SetBorderColor(ColorHeading)
 	frame.SetBorder(true)
 
 	if opts.OnEsc != nil {

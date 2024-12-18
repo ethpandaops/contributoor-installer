@@ -1,4 +1,4 @@
-package terminal
+package display
 
 import (
 	"bufio"
@@ -7,25 +7,24 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/urfave/cli"
 )
 
 const (
-	ColorReset     = "\033[0m"
-	ColorBold      = "\033[1m"
-	ColorRed       = "\033[31m"
-	ColorYellow    = "\033[33m"
-	ColorGreen     = "\033[32m"
-	ColorLightBlue = "\033[36m"
-	ClearLine      = "\033[2K"
+	TerminalColorReset     = "\033[0m"
+	TerminalColorBold      = "\033[1m"
+	TerminalColorRed       = "\033[31m"
+	TerminalColorYellow    = "\033[33m"
+	TerminalColorGreen     = "\033[32m"
+	TerminalColorLightBlue = "\033[36m"
+	TerminalClearLine      = "\033[2K"
 )
 
 // AppHelpTemplate is the help template for the CLI.
 var AppHelpTemplate = fmt.Sprintf(`%s
 Authored by the ethPandaOps team
 
-%s`, display.Logo, cli.AppHelpTemplate)
+%s`, Logo, cli.AppHelpTemplate)
 
 // Prompt will prompt the user for input and validate the input against the expected format.
 func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt string) string {

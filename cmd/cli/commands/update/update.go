@@ -5,12 +5,13 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
+	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 )
 
 // RegisterCommands registers the update command.
-func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
+func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:      opts.Name(),
 		Aliases:   opts.Aliases(),
@@ -30,16 +31,16 @@ func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
 }
 
 // updateContributoor updates contributoor to the latest version (based on run method configured in config.yaml).
-func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
+func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	log := opts.Logger()
 
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
 		if _, ok := err.(*service.ConfigNotFoundError); ok {
-			return fmt.Errorf("%s%v%s", terminal.ColorRed, err, terminal.ColorReset)
+			return fmt.Errorf("%s%v%s", display.TerminalColorRed, err, display.TerminalColorReset)
 		}
 
-		return fmt.Errorf("%sError loading config: %v%s", terminal.ColorRed, err, terminal.ColorReset)
+		return fmt.Errorf("%sError loading config: %v%s", display.TerminalColorRed, err, display.TerminalColorReset)
 	}
 
 	var (
@@ -80,9 +81,9 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		if !exists {
 			return fmt.Errorf(
 				"%sVersion %s not found. Use 'contributoor update' without --version to get the latest version%s",
-				terminal.ColorRed,
+				display.TerminalColorRed,
 				targetVersion,
-				terminal.ColorReset,
+				display.TerminalColorReset,
 			)
 		}
 	} else {
@@ -101,16 +102,16 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		if c.IsSet("version") {
 			log.Infof(
 				"%sContributoor is already running version %s%s",
-				terminal.ColorGreen,
+				display.TerminalColorGreen,
 				targetVersion,
-				terminal.ColorReset,
+				display.TerminalColorReset,
 			)
 		} else {
 			log.Infof(
 				"%sContributoor is up to date at version %s%s",
-				terminal.ColorGreen,
+				display.TerminalColorGreen,
 				targetVersion,
-				terminal.ColorReset,
+				display.TerminalColorReset,
 			)
 		}
 
@@ -153,7 +154,7 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		}
 
 		if running {
-			if terminal.Confirm("Service is running. Would you like to restart it with the new version?") {
+			if display.Confirm("Service is running. Would you like to restart it with the new version?") {
 				if err := dockerService.Stop(); err != nil {
 					return fmt.Errorf("failed to stop service: %w", err)
 				}
@@ -165,14 +166,14 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 				log.Info("Service will continue running with the previous version until next restart")
 			}
 		} else {
-			if terminal.Confirm("Service is not running. Would you like to start it?") {
+			if display.Confirm("Service is not running. Would you like to start it?") {
 				if err := dockerService.Start(); err != nil {
 					return fmt.Errorf("failed to start service: %w", err)
 				}
 			}
 		}
 
-		log.Infof("%sContributoor updated successfully to version %s%s", terminal.ColorGreen, configService.Get().Version, terminal.ColorReset)
+		log.Infof("%sContributoor updated successfully to version %s%s", display.TerminalColorGreen, configService.Get().Version, display.TerminalColorReset)
 	case service.RunMethodBinary:
 		binaryService := service.NewBinaryService(log, configService)
 
@@ -186,7 +187,7 @@ func updateContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		}
 
 		if running {
-			if terminal.Confirm("Service is running. In order to update, it must be stopped. Would you like to stop it?") {
+			if display.Confirm("Service is running. In order to update, it must be stopped. Would you like to stop it?") {
 				if err := binaryService.Stop(); err != nil {
 					return fmt.Errorf("failed to stop service: %w", err)
 				}

@@ -1,7 +1,6 @@
 package install
 
 import (
-	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
 	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/rivo/tview"
@@ -126,7 +125,7 @@ func (d *InstallDisplay) setPage(page *page) {
 }
 
 func (d *InstallDisplay) OnComplete() error {
-	d.log.Infof("%sInstallation complete%s", terminal.ColorGreen, terminal.ColorReset)
+	d.log.Infof("%sInstallation complete%s", display.TerminalColorGreen, display.TerminalColorReset)
 	d.log.Info("You can now manage contributoor using the following commands:")
 	d.log.Info("    contributoor start")
 	d.log.Info("    contributoor stop")

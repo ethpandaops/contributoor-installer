@@ -2,6 +2,7 @@ package display
 
 import "github.com/gdamore/tcell/v2"
 
+// Logo is used as a bit of branding in the installer UI.
 const Logo string = `
    ______            __       _ __          __                  
   / ____/___  ____  / /______(_) /_  __  __/ /_____  ____  _____
@@ -10,12 +11,14 @@ const Logo string = `
 \____/\____/_/ /_/\__/_/  /_/_.___/\__,_/\__/\____/\____/_/    
 `
 
+// NetworkOption is used to represent a network option, eg: Ethereum Mainnet, Sepolia Testnet, etc.
 type NetworkOption struct {
 	Label       string
 	Value       string
 	Description string
 }
 
+// AvailableNetworks is a list of available networks.
 var AvailableNetworks = []NetworkOption{
 	{
 		Label:       "Ethereum Mainnet",
@@ -34,12 +37,14 @@ var AvailableNetworks = []NetworkOption{
 	},
 }
 
+// OutputServerOption is used to represent an output server option, eg: ethPandaOps Production, ethPandaOps Staging, etc.
 type OutputServerOption struct {
 	Label       string
 	Value       string
 	Description string
 }
 
+// AvailableOutputServers is a list of available output servers.
 var AvailableOutputServers = []OutputServerOption{
 	{
 		Label:       "ethPandaOps Production",
@@ -58,7 +63,7 @@ var AvailableOutputServers = []OutputServerOption{
 	},
 }
 
-// Colors used throughout the UI
+// Colors used throughout the UI.
 var (
 	ColorBackground      = tcell.ColorDarkSlateGray
 	ColorFormBackground  = tcell.ColorLightSlateGray
@@ -70,23 +75,12 @@ var (
 	ColorHeading         = tcell.ColorYellow
 )
 
-// Common strings used in the UI
+// Common strings used in the various UI screens.
 const (
-	// Buttons
 	ButtonSaveSettings = "Save Settings"
 	ButtonClose        = "Close"
 	ButtonNext         = "Next"
-	ButtonBack         = "Back"
 	ButtonTryAgain     = "Try Again"
-	ButtonFinish       = "Finish"
-
-	// Titles
-	TitleDescription = "Description"
-	TitleSettings    = "Settings"
-	TitleInstall     = "Install"
-
-	// Icons
-	IconError   = "⛔"
-	IconSuccess = "✓"
-	IconLoading = "⟳"
+	TitleDescription   = "Description"
+	TitleSettings      = "Settings"
 )

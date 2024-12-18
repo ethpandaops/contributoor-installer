@@ -5,11 +5,12 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
+	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 )
 
-func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
+func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:      opts.Name(),
 		Aliases:   opts.Aliases(),
@@ -21,16 +22,16 @@ func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
 	})
 }
 
-func startContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
+func startContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	log := opts.Logger()
 
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
 		if _, ok := err.(*service.ConfigNotFoundError); ok {
-			return fmt.Errorf("%s%v%s", terminal.ColorRed, err, terminal.ColorReset)
+			return fmt.Errorf("%s%v%s", display.TerminalColorRed, err, display.TerminalColorReset)
 		}
 
-		return fmt.Errorf("%sError loading config: %v%s", terminal.ColorRed, err, terminal.ColorReset)
+		return fmt.Errorf("%sError loading config: %v%s", display.TerminalColorRed, err, display.TerminalColorReset)
 	}
 
 	switch configService.Get().RunMethod {
@@ -53,7 +54,7 @@ func startContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		}
 
 		if running {
-			return fmt.Errorf("%sContributoor is already running. Use 'contributoor stop' first if you want to restart it%s", terminal.ColorRed, terminal.ColorReset)
+			return fmt.Errorf("%sContributoor is already running. Use 'contributoor stop' first if you want to restart it%s", display.TerminalColorRed, display.TerminalColorReset)
 		}
 
 		if err := dockerService.Start(); err != nil {
@@ -71,7 +72,7 @@ func startContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		}
 
 		if running {
-			return fmt.Errorf("%sContributoor is already running%s", terminal.ColorRed, terminal.ColorReset)
+			return fmt.Errorf("%sContributoor is already running%s", display.TerminalColorRed, display.TerminalColorReset)
 		}
 
 		if err := binaryService.Start(); err != nil {

@@ -12,7 +12,8 @@ import (
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/start"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/stop"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/update"
-	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
+	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -44,7 +45,7 @@ func main() {
 		os.Exit(0)
 	}()
 
-	cli.AppHelpTemplate = terminal.AppHelpTemplate
+	cli.AppHelpTemplate = display.AppHelpTemplate
 	app := cli.NewApp()
 	app.Name = "contributoor"
 	app.Usage = "Xatu Contributoor CLI"
@@ -57,30 +58,30 @@ func main() {
 		},
 	}
 
-	install.RegisterCommands(app, terminal.NewCommandOpts(
-		terminal.WithName("install"),
-		terminal.WithLogger(log),
-		terminal.WithAliases([]string{"i"}),
+	install.RegisterCommands(app, options.NewCommandOpts(
+		options.WithName("install"),
+		options.WithLogger(log),
+		options.WithAliases([]string{"i"}),
 	))
 
-	start.RegisterCommands(app, terminal.NewCommandOpts(
-		terminal.WithName("start"),
-		terminal.WithLogger(log),
+	start.RegisterCommands(app, options.NewCommandOpts(
+		options.WithName("start"),
+		options.WithLogger(log),
 	))
 
-	stop.RegisterCommands(app, terminal.NewCommandOpts(
-		terminal.WithName("stop"),
-		terminal.WithLogger(log),
+	stop.RegisterCommands(app, options.NewCommandOpts(
+		options.WithName("stop"),
+		options.WithLogger(log),
 	))
 
-	update.RegisterCommands(app, terminal.NewCommandOpts(
-		terminal.WithName("update"),
-		terminal.WithLogger(log),
+	update.RegisterCommands(app, options.NewCommandOpts(
+		options.WithName("update"),
+		options.WithLogger(log),
 	))
 
-	config.RegisterCommands(app, terminal.NewCommandOpts(
-		terminal.WithName("config"),
-		terminal.WithLogger(log),
+	config.RegisterCommands(app, options.NewCommandOpts(
+		options.WithName("config"),
+		options.WithLogger(log),
 	))
 
 	// Handle normal exit.

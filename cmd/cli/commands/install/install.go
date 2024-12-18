@@ -3,14 +3,15 @@ package install
 import (
 	"fmt"
 
-	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
+	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
-func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
+func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:      opts.Name(),
 		Aliases:   opts.Aliases(),
@@ -34,28 +35,28 @@ func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
 	})
 }
 
-func installContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
+func installContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	log := opts.Logger()
 	log.SetLevel(logrus.DebugLevel)
 
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
-		return fmt.Errorf("%sError loading config: %v%s", terminal.ColorRed, err, terminal.ColorReset)
+		return fmt.Errorf("%sError loading config: %v%s", display.TerminalColorRed, err, display.TerminalColorReset)
 	}
 
 	app := tview.NewApplication()
-	display := NewInstallDisplay(log, app, configService)
+	d := NewInstallDisplay(log, app, configService)
 
 	// Run the display
-	if err := display.Run(); err != nil {
+	if err := d.Run(); err != nil {
 		log.Errorf("Error running display: %v", err)
-		return fmt.Errorf("%sDisplay error: %w%s", terminal.ColorRed, err, terminal.ColorReset)
+		return fmt.Errorf("%sDisplay error: %w%s", display.TerminalColorRed, err, display.TerminalColorReset)
 	}
 
 	// Handle completion
-	if err := display.OnComplete(); err != nil {
+	if err := d.OnComplete(); err != nil {
 		log.Errorf("Error completing installation: %v", err)
-		return fmt.Errorf("%sCompletion error: %w%s", terminal.ColorRed, err, terminal.ColorReset)
+		return fmt.Errorf("%sCompletion error: %w%s", display.TerminalColorRed, err, display.TerminalColorReset)
 	}
 
 	return nil

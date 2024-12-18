@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/sirupsen/logrus"
 )
 
@@ -102,8 +102,8 @@ func (s *DockerService) Update() error {
 
 	s.logger.WithField("version", s.config.Version).Infof(
 		"%sImage updated successfully%s",
-		terminal.ColorGreen,
-		terminal.ColorReset,
+		display.TerminalColorGreen,
+		display.TerminalColorReset,
 	)
 
 	return nil

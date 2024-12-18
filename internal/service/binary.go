@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 )
@@ -237,8 +237,8 @@ func (s *BinaryService) Update() error {
 
 	s.logger.WithField("version", s.config.Version).Infof(
 		"%sBinary updated successfully%s",
-		terminal.ColorGreen,
-		terminal.ColorReset,
+		display.TerminalColorGreen,
+		display.TerminalColorReset,
 	)
 
 	// Restart if it was running

@@ -3,12 +3,13 @@ package stop
 import (
 	"fmt"
 
-	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
+	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/urfave/cli"
 )
 
-func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
+func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:      opts.Name(),
 		Aliases:   opts.Aliases(),
@@ -20,16 +21,16 @@ func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
 	})
 }
 
-func stopContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
+func stopContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	log := opts.Logger()
 
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
 		if _, ok := err.(*service.ConfigNotFoundError); ok {
-			return fmt.Errorf("%s%v%s", terminal.ColorRed, err, terminal.ColorReset)
+			return fmt.Errorf("%s%v%s", display.TerminalColorRed, err, display.TerminalColorReset)
 		}
 
-		return fmt.Errorf("%sError loading config: %v%s", terminal.ColorRed, err, terminal.ColorReset)
+		return fmt.Errorf("%sError loading config: %v%s", display.TerminalColorRed, err, display.TerminalColorReset)
 	}
 
 	switch configService.Get().RunMethod {
@@ -52,7 +53,7 @@ func stopContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		}
 
 		if !running {
-			return fmt.Errorf("%sContributoor is not running. Use 'contributoor start' to start it%s", terminal.ColorRed, terminal.ColorReset)
+			return fmt.Errorf("%sContributoor is not running. Use 'contributoor start' to start it%s", display.TerminalColorRed, display.TerminalColorReset)
 		}
 
 		if err := dockerService.Stop(); err != nil {
@@ -69,7 +70,7 @@ func stopContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 		}
 
 		if !running {
-			return fmt.Errorf("%sContributoor is not running%s", terminal.ColorRed, terminal.ColorReset)
+			return fmt.Errorf("%sContributoor is not running%s", display.TerminalColorRed, display.TerminalColorReset)
 		}
 
 		if err := binaryService.Stop(); err != nil {
