@@ -36,10 +36,6 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
-		if _, ok := err.(*service.ConfigNotFoundError); ok {
-			return fmt.Errorf("%s%v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
-		}
-
 		return fmt.Errorf("%sError loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 

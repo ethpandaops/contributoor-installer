@@ -1,0 +1,20 @@
+name: go-setup
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        description: 'Go version to use'
+        required: false
+        default: '1.23'
+        type: string
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache: true

@@ -51,16 +51,6 @@ type ConfigService struct {
 	config     *ContributoorConfig
 }
 
-// ConfigNotFoundError is an error that occurs when the file config is not found.
-type ConfigNotFoundError struct {
-	Path string
-}
-
-// Error returns the error message.
-func (e *ConfigNotFoundError) Error() string {
-	return fmt.Sprintf("Config file not found at [%s]. Please run 'contributoor install' first", e.Path)
-}
-
 // NewConfigService creates a new ConfigService.
 func NewConfigService(logger *logrus.Logger, configPath string) (*ConfigService, error) {
 	// Expand home directory
@@ -84,7 +74,7 @@ func NewConfigService(logger *logrus.Logger, configPath string) (*ConfigService,
 
 	// Check if config exists
 	if _, serr := os.Stat(fullConfigPath); os.IsNotExist(serr) {
-		return nil, &ConfigNotFoundError{Path: fullConfigPath}
+		return nil, fmt.Errorf("config file not found at [%s]. Please run 'contributoor install' first", fullConfigPath)
 	}
 
 	// Load existing config
@@ -239,7 +229,6 @@ func mergeConfig(target, source *ContributoorConfig) error {
 }
 
 // migrateConfig handles version-specific migrations.
-
 func migrateConfig(target, source *ContributoorConfig) error {
 	/*
 		switch source.Version {
