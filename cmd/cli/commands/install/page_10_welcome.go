@@ -8,6 +8,7 @@ import (
 	"github.com/rivo/tview"
 )
 
+// WelcomePage is the first/introductory page of the install wizard.
 type WelcomePage struct {
 	display     *InstallDisplay
 	page        *tui.Page
@@ -15,6 +16,7 @@ type WelcomePage struct {
 	description *tview.TextView
 }
 
+// NewWelcomePage creates a new WelcomePage.
 func NewWelcomePage(display *InstallDisplay) *WelcomePage {
 	welcomePage := &WelcomePage{
 		display: display,
@@ -32,10 +34,12 @@ func NewWelcomePage(display *InstallDisplay) *WelcomePage {
 	return welcomePage
 }
 
+// GetPage returns the page.
 func (p *WelcomePage) GetPage() *tui.Page {
 	return p.page
 }
 
+// initPage initializes the page.
 func (p *WelcomePage) initPage() {
 	intro := "We'll walk you through the basic setup of contributoor.\n\n"
 	helperText := fmt.Sprintf("%s\n\nWelcome to the contributoor configuration wizard!\n\n%s\n\n", tui.Logo, intro)

@@ -7,14 +7,16 @@ import (
 	"github.com/rivo/tview"
 )
 
-type networkConfigPage struct {
+// NetworkConfigPage is the page for selecting the network.
+type NetworkConfigPage struct {
 	display *InstallDisplay
 	page    *tui.Page
 	content tview.Primitive
 }
 
-func NewnetworkConfigPage(display *InstallDisplay) *networkConfigPage {
-	networkConfigPage := &networkConfigPage{
+// NewNetworkConfigPage creates a new NetworkConfigPage.
+func NewNetworkConfigPage(display *InstallDisplay) *NetworkConfigPage {
+	networkConfigPage := &NetworkConfigPage{
 		display: display,
 	}
 
@@ -30,63 +32,64 @@ func NewnetworkConfigPage(display *InstallDisplay) *networkConfigPage {
 	return networkConfigPage
 }
 
-func (p *networkConfigPage) GetPage() *tui.Page {
+// GetPage returns the page.
+func (p *NetworkConfigPage) GetPage() *tui.Page {
 	return p.page
 }
 
-func (p *networkConfigPage) initPage() {
-	// Layout components
+// initPage initializes the page.
+func (p *NetworkConfigPage) initPage() {
 	var (
-		// Selectable options
+		// Seletable network options.
 		labels       = make([]string, len(tui.AvailableNetworks))
 		descriptions = make([]string, len(tui.AvailableNetworks))
 
-		// Calculate dimensions
+		// Some basic dimensions for the page modal.
 		modalWidth     = 70
 		lines          = tview.WordWrap("Select which network you're using", modalWidth-4)
 		textViewHeight = len(lines) + 4
 		buttonHeight   = len(labels)*2 + 1
 
-		// Main grids
+		// Main grids.
 		buttonGrid  = tview.NewGrid()
 		contentGrid = tview.NewGrid()
 		borderGrid  = tview.NewGrid().SetColumns(0, modalWidth, 0)
 
-		// Flex containers
+		// Flex containers.
 		formsFlex = tview.NewFlex().SetDirection(tview.FlexRow)
 
-		// Form components
+		// Form components.
 		forms   = make([]*tview.Form, 0)
 		descBox *tview.TextView
 
-		// Spacers
+		// Spacers. These have to be individually set because tview doesn't support
+		// setting the background color of a spacer when re-using the same box.
 		leftSpacer  = tview.NewBox().SetBackgroundColor(tui.ColorFormBackground)
 		midSpacer   = tview.NewBox().SetBackgroundColor(tui.ColorFormBackground)
 		rightSpacer = tview.NewBox().SetBackgroundColor(tui.ColorFormBackground)
 	)
 
-	// Populate selectable options
+	// Populate selectable network options.
 	for i, network := range tui.AvailableNetworks {
 		labels[i] = network.Label
 		descriptions[i] = network.Description
 	}
 
-	// Initialize buttonGrid
+	// Add initial spacing for description box and button grid.
 	buttonGrid.SetRows(0)
 	buttonGrid.SetBackgroundColor(tui.ColorFormBackground)
-
-	// Add initial spacing for description box alignment
 	formsFlex.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 1, 1, false)
 
-	// Create forms for each button
+	// Create forms for each button. Each form/button will represent a network option.
 	for i, label := range labels {
 		form := tview.NewForm()
 		form.SetButtonsAlign(tview.AlignCenter)
 		form.SetBackgroundColor(tui.ColorFormBackground)
 		form.SetBorderPadding(0, 0, 0, 0)
 
-		// Add button to form
 		index := i // Capture index for closure
+
+		// Add button to our form.
 		form.AddButton(label, func() {
 			p.display.configService.Update(func(cfg *service.ContributoorConfig) {
 				cfg.NetworkName = tui.AvailableNetworks[index].Value
@@ -94,7 +97,6 @@ func (p *networkConfigPage) initPage() {
 			p.display.setPage(p.display.beaconPage.GetPage())
 		})
 
-		// Style the button
 		button := form.GetButton(0)
 		button.SetBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
 		button.SetLabelColor(tcell.ColorLightGray)
@@ -105,7 +107,8 @@ func (p *networkConfigPage) initPage() {
 				Background(tui.ColorButtonActivated).
 				Foreground(tcell.ColorBlack))
 
-		// Set up navigation
+		// Define key bindings for the button. Allow users to tab or arrow-[up|down] between
+		// buttons.
 		button.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Key() {
 			case tcell.KeyDown, tcell.KeyTab:
@@ -144,7 +147,7 @@ func (p *networkConfigPage) initPage() {
 	descBox.SetTitle(tui.TitleDescription)
 	descBox.SetBorderPadding(0, 0, 1, 1)
 
-	// Set up the grids
+	// Set up the grids.
 	buttonGrid.SetColumns(1, -3, 1, -4, 1)
 	buttonGrid.AddItem(leftSpacer, 0, 0, 1, 1, 0, 0, false)
 	buttonGrid.AddItem(formsFlex, 0, 1, 1, 1, 0, 0, true)
@@ -152,7 +155,7 @@ func (p *networkConfigPage) initPage() {
 	buttonGrid.AddItem(descBox, 0, 3, 1, 1, 0, 0, false)
 	buttonGrid.AddItem(rightSpacer, 0, 4, 1, 1, 0, 0, false)
 
-	// Create the main text view
+	// Create the main text view.
 	textView := tview.NewTextView()
 	textView.SetText("Select which network you're using")
 	textView.SetTextAlign(tview.AlignCenter)
@@ -161,7 +164,7 @@ func (p *networkConfigPage) initPage() {
 	textView.SetBackgroundColor(tui.ColorFormBackground)
 	textView.SetBorderPadding(0, 0, 0, 0)
 
-	// Content grid
+	// We need a content grid to house our text view and button grid.
 	contentGrid.SetRows(2, 2, 1, 0, 1)
 	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 	contentGrid.SetBorder(true)
@@ -174,11 +177,11 @@ func (p *networkConfigPage) initPage() {
 	contentGrid.AddItem(buttonGrid, 3, 0, 1, 1, 0, 0, true)
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 4, 0, 1, 1, 0, 0, false)
 
-	// Border grid
+	// Set up the border grid.
 	borderGrid.SetRows(0, textViewHeight+buttonHeight+3, 0, 2)
 	borderGrid.AddItem(contentGrid, 1, 1, 1, 1, 0, 0, true)
 
-	// Set initial focus
+	// Set initial focus.
 	p.display.app.SetFocus(forms[0])
 	descBox.SetText(descriptions[0])
 	p.content = borderGrid

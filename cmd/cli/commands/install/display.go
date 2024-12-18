@@ -7,67 +7,67 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// InstallDisplay is the display for the install wizard.
 type InstallDisplay struct {
 	app                         *tview.Application
 	pages                       *tview.Pages
 	frame                       *tview.Frame
 	log                         *logrus.Logger
 	configService               *service.ConfigService
-	homePage                    *tui.Page
-	content                     tview.Primitive
 	installPages                []tui.PageInterface
-	networkConfigPage           *networkConfigPage
+	welcomePage                 *WelcomePage
+	networkConfigPage           *NetworkConfigPage
 	beaconPage                  *BeaconNodePage
 	outputPage                  *OutputServerPage
-	description                 *tview.TextView
-	welcomePage                 *WelcomePage
 	outputServerCredentialsPage *OutputServerCredentialsPage
 	finishedPage                *FinishedPage
 }
 
+// NewInstallDisplay creates a new InstallDisplay.
 func NewInstallDisplay(log *logrus.Logger, app *tview.Application, configService *service.ConfigService) *InstallDisplay {
-	id := &InstallDisplay{
+	display := &InstallDisplay{
 		app:           app,
 		pages:         tview.NewPages(),
 		log:           log,
 		configService: configService,
 	}
 
-	// Create pages
-	id.welcomePage = NewWelcomePage(id)
-	id.networkConfigPage = NewnetworkConfigPage(id)
-	id.beaconPage = NewBeaconNodePage(id)
-	id.outputPage = NewOutputServerPage(id)
-	id.outputServerCredentialsPage = NewOutputServerCredentialsPage(id)
-	id.finishedPage = NewFinishedPage(id)
-	id.installPages = []tui.PageInterface{
-		id.welcomePage,
-		id.networkConfigPage,
-		id.beaconPage,
-		id.outputPage,
-		id.outputServerCredentialsPage,
-		id.finishedPage,
+	// Create all of our install wizard pages.
+	display.welcomePage = NewWelcomePage(display)
+	display.networkConfigPage = NewNetworkConfigPage(display)
+	display.beaconPage = NewBeaconNodePage(display)
+	display.outputPage = NewOutputServerPage(display)
+	display.outputServerCredentialsPage = NewOutputServerCredentialsPage(display)
+	display.finishedPage = NewFinishedPage(display)
+	display.installPages = []tui.PageInterface{
+		display.welcomePage,
+		display.networkConfigPage,
+		display.beaconPage,
+		display.outputPage,
+		display.outputServerCredentialsPage,
+		display.finishedPage,
 	}
 
-	// Setup pages
-	for _, page := range id.installPages {
-		id.pages.AddPage(page.GetPage().ID, page.GetPage().Content, true, false)
+	// Add all of our pages to the pages stack.
+	for _, page := range display.installPages {
+		display.pages.AddPage(page.GetPage().ID, page.GetPage().Content, true, false)
 	}
 
-	// Create initial frame
+	// Create the initial page frame, this houses breadcrumbs, page stack, etc.
 	frame := tui.CreatePageFrame(tui.PageFrameOptions{
-		Content:  id.pages,
-		Title:    id.welcomePage.GetPage().Title,
+		Content:  display.pages,
+		Title:    display.welcomePage.GetPage().Title,
 		HelpType: tui.HelpWizard,
 		Step:     1,
-		Total:    len(id.installPages),
+		Total:    len(display.installPages),
 	})
-	id.frame = frame
-	id.app.SetRoot(frame, true)
+	display.frame = frame
+	display.app.SetRoot(frame, true)
 
-	return id
+	return display
 }
 
+// Run starts the install wizard.
 func (d *InstallDisplay) Run() error {
 	d.setPage(d.welcomePage.GetPage())
 
@@ -80,6 +80,7 @@ func (d *InstallDisplay) Run() error {
 	return d.app.Run()
 }
 
+// getCurrentStep returns the current step number based on the current page.
 func (d *InstallDisplay) getCurrentStep() int {
 	// Map pages to step numbers
 	stepMap := map[string]int{
@@ -97,11 +98,12 @@ func (d *InstallDisplay) getCurrentStep() int {
 	return 1
 }
 
+// setPage switches to the new page and updates the frame.
 func (d *InstallDisplay) setPage(page *tui.Page) {
-	// Switch to the new page first
+	// Switch to the new page first.
 	d.pages.SwitchToPage(page.ID)
 
-	// Then create the frame with the updated step number
+	// Then create the frame with the updated step number.
 	d.frame.Clear()
 	frame := tui.CreatePageFrame(tui.PageFrameOptions{
 		Content:  d.pages,
@@ -120,6 +122,7 @@ func (d *InstallDisplay) setPage(page *tui.Page) {
 	d.app.SetRoot(frame, true)
 }
 
+// OnComplete is called when the install wizard is complete.
 func (d *InstallDisplay) OnComplete() error {
 	d.log.Infof("%sInstallation complete%s", tui.TerminalColorGreen, tui.TerminalColorReset)
 	d.log.Info("You can now manage contributoor using the following commands:")

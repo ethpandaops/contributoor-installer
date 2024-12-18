@@ -18,8 +18,8 @@ type ConfigDisplay struct {
 	homePage               *tui.Page
 	categoryList           *tview.List
 	content                tview.Primitive
-	settingsPages          []tui.PageInterface
 	descriptionBox         *tview.TextView
+	settingsPages          []tui.PageInterface
 	closeButton            *tview.Button
 	networkConfigPage      *NetworkConfigPage
 	outputServerConfigPage *OutputServerConfigPage

@@ -11,6 +11,7 @@ import (
 	"github.com/rivo/tview"
 )
 
+// OutputServerCredentialsPage is the page for configuring the users output server credentials.
 type OutputServerCredentialsPage struct {
 	display     *InstallDisplay
 	page        *tui.Page
@@ -21,6 +22,7 @@ type OutputServerCredentialsPage struct {
 	username    string
 }
 
+// NewOutputServerCredentialsPage creates a new OutputServerCredentialsPage.
 func NewOutputServerCredentialsPage(display *InstallDisplay) *OutputServerCredentialsPage {
 	credentialsPage := &OutputServerCredentialsPage{
 		display: display,
@@ -28,7 +30,7 @@ func NewOutputServerCredentialsPage(display *InstallDisplay) *OutputServerCreden
 
 	credentialsPage.initPage()
 	credentialsPage.page = tui.NewPage(
-		display.outputPage.GetPage(), // Set parent to output server page
+		display.outputPage.GetPage(),
 		"install-credentials",
 		"Output Server Credentials",
 		"Configure your output server authentication",
@@ -38,19 +40,20 @@ func NewOutputServerCredentialsPage(display *InstallDisplay) *OutputServerCreden
 	return credentialsPage
 }
 
+// GetPage returns the page.
 func (p *OutputServerCredentialsPage) GetPage() *tui.Page {
 	return p.page
 }
 
+// initPage initializes the page.
 func (p *OutputServerCredentialsPage) initPage() {
-	// Layout components
 	var (
-		modalWidth = 70 // Match other pages' width
+		modalWidth = 70
 		lines      = tview.WordWrap("Please enter your output server credentials", modalWidth-4)
 		height     = len(lines) + 4
 	)
 
-	// Initialize form
+	// We need a form to house our input fields.
 	form := tview.NewForm()
 	form.SetButtonsAlign(tview.AlignCenter)
 	form.SetFieldBackgroundColor(tcell.ColorBlack)
@@ -70,7 +73,7 @@ func (p *OutputServerCredentialsPage) initPage() {
 		}
 	}
 
-	// Add input fields with existing values
+	// Add input fields with existing values.
 	form.AddInputField("Username", p.username, 40, nil, func(username string) {
 		p.username = username
 	})
@@ -79,9 +82,9 @@ func (p *OutputServerCredentialsPage) initPage() {
 		p.password = password
 	})
 
-	// Add Next button
+	// Add a 'Next' button.
 	form.AddButton(tui.ButtonNext, func() {
-		// Only validate credentials for ethpandaops servers
+		// Only validate credentials for ethpandaops servers.
 		currentAddress := p.display.configService.Get().OutputServer.Address
 		if strings.Contains(currentAddress, "platform.ethpandaops.io") {
 			// Validate credentials
@@ -100,7 +103,7 @@ func (p *OutputServerCredentialsPage) initPage() {
 		}
 
 		if p.username != "" && p.password != "" {
-			// Set credentials only when validated
+			// Set credentials only when validated.
 			credentials := fmt.Sprintf("%s:%s", p.username, p.password)
 			p.display.configService.Update(func(cfg *service.ContributoorConfig) {
 				cfg.OutputServer.Credentials = base64.StdEncoding.EncodeToString([]byte(credentials))
@@ -110,7 +113,6 @@ func (p *OutputServerCredentialsPage) initPage() {
 		p.display.setPage(p.display.finishedPage.GetPage())
 	})
 
-	// Style the button
 	if button := form.GetButton(0); button != nil {
 		button.SetBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
 		button.SetLabelColor(tcell.ColorLightGray)
@@ -122,13 +124,13 @@ func (p *OutputServerCredentialsPage) initPage() {
 			Foreground(tcell.ColorBlack))
 	}
 
-	// Create content grid
+	// Create content grid.
 	contentGrid := tview.NewGrid()
 	contentGrid.SetRows(2, 3, 1, 6, 1, 2)
 	contentGrid.SetColumns(1, -4, 1)
 	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 
-	// Create text view
+	// Create text view.
 	textView := tview.NewTextView()
 	textView.SetText("Please enter your output server credentials")
 	textView.SetTextAlign(tview.AlignCenter)
@@ -137,22 +139,21 @@ func (p *OutputServerCredentialsPage) initPage() {
 	textView.SetBackgroundColor(tui.ColorFormBackground)
 	textView.SetBorderPadding(0, 0, 0, 0)
 
-	// Add items to content grid
+	// Add items to content grid.
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 0, 0, 1, 3, 0, 0, false)
 	contentGrid.AddItem(textView, 1, 0, 1, 3, 0, 0, false)
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 2, 0, 1, 3, 0, 0, false)
 	contentGrid.AddItem(form, 3, 0, 1, 3, 0, 0, true)
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 5, 0, 1, 3, 0, 0, false)
+	contentGrid.SetBorder(true)
+	contentGrid.SetTitle(" Output Server Credentials ")
+	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 
-	// Create border grid
+	// Create border grid.
 	borderGrid := tview.NewGrid()
 	borderGrid.SetColumns(0, modalWidth, 0)
 	borderGrid.SetRows(0, height+9, 0, 2)
 	borderGrid.SetBackgroundColor(tui.ColorFormBackground)
-
-	contentGrid.SetBorder(true)
-	contentGrid.SetTitle(" Output Server Credentials ")
-	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 	borderGrid.AddItem(contentGrid, 1, 1, 1, 1, 0, 0, true)
 
 	p.content = borderGrid
@@ -162,7 +163,7 @@ func validateAndSaveCredentials(p *OutputServerCredentialsPage) {
 	username := p.form.GetFormItem(0).(*tview.InputField).GetText()
 	password := p.form.GetFormItem(1).(*tview.InputField).GetText()
 
-	// Only require credentials for non-custom servers
+	// Only require credentials for non-custom servers.
 	if p.display.configService.Get().OutputServer.Address != "custom" {
 		if username == "" || password == "" {
 			errorModal := tui.CreateErrorModal(
@@ -178,7 +179,7 @@ func validateAndSaveCredentials(p *OutputServerCredentialsPage) {
 		}
 	}
 
-	// Update config with credentials
+	// Update config with credentials.
 	p.display.configService.Update(func(cfg *service.ContributoorConfig) {
 		if username != "" && password != "" {
 			credentials := fmt.Sprintf("%s:%s", username, password)
@@ -188,10 +189,6 @@ func validateAndSaveCredentials(p *OutputServerCredentialsPage) {
 		}
 	})
 
-	// Installation complete
+	// Installation complete.
 	p.display.app.Stop()
-}
-
-func (p *OutputServerCredentialsPage) updateDescription(text string) {
-	p.description.SetText(text)
 }

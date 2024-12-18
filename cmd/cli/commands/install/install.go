@@ -11,6 +11,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+// RegisterCommands registers the install command.
 func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:      opts.Name(),
@@ -35,6 +36,7 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 	})
 }
 
+// installContributoor is the action for the install command.
 func installContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	log := opts.Logger()
 	log.SetLevel(logrus.DebugLevel)
@@ -47,13 +49,13 @@ func installContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	app := tview.NewApplication()
 	d := NewInstallDisplay(log, app, configService)
 
-	// Run the display
+	// Run the display.
 	if err := d.Run(); err != nil {
 		log.Errorf("Error running display: %v", err)
 		return fmt.Errorf("%sDisplay error: %w%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
-	// Handle completion
+	// Handle completion.
 	if err := d.OnComplete(); err != nil {
 		log.Errorf("Error completing installation: %v", err)
 		return fmt.Errorf("%sCompletion error: %w%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
