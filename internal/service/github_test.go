@@ -20,11 +20,12 @@ func TestGitHubService_GetLatestVersion(t *testing.T) {
 			name: "valid releases",
 			releases: `[
 				{"tag_name": "v0.0.1"},
+				{"tag_name": "v1.2.3"},
 				{"tag_name": "v0.0.2"},
 				{"tag_name": "v1.0.0"}
 			]`,
 			wantErr:    false,
-			wantResult: "1.0.0",
+			wantResult: "1.2.3",
 		},
 		{
 			name: "invalid version format",
@@ -45,6 +46,8 @@ func TestGitHubService_GetLatestVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Setup a test server to intercept the GitHub API requests. Override the
+			// githubAPIHost and validateGitHubURL function for this test.
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				if _, err := w.Write([]byte(tt.releases)); err != nil {
@@ -53,19 +56,18 @@ func TestGitHubService_GetLatestVersion(t *testing.T) {
 			}))
 			defer server.Close()
 
-			// Store original values.
-			originalHost := githubAPIHost
+			var (
+				host     = githubAPIHost
+				validate = validateGitHubURL
+			)
 
-			// Override with test server URL.
 			githubAPIHost = strings.TrimPrefix(server.URL, "http://")
-			defer func() { githubAPIHost = originalHost }()
+			defer func() { githubAPIHost = host }()
 
-			// Override the validateGitHubURL function temporarily.
-			oldValidate := validateGitHubURL
 			validateGitHubURL = func(owner, repo string) (*url.URL, error) {
 				return url.Parse(fmt.Sprintf("%s/repos/%s/%s/releases", server.URL, owner, repo))
 			}
-			defer func() { validateGitHubURL = oldValidate }()
+			defer func() { validateGitHubURL = validate }()
 
 			svc := NewGitHubService("test", "repo")
 

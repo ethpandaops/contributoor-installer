@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -14,11 +15,11 @@ var (
 	githubAPIHost     = "api.github.com"
 	validateGitHubURL = func(owner, repo string) (*url.URL, error) {
 		if owner == "" || repo == "" {
-			return nil, fmt.Errorf("owner and repo cannot be empty")
+			return nil, errors.New("owner and repo cannot be empty")
 		}
 
 		if strings.ContainsAny(owner+repo, "/?#[]@!$&'()*+,;=") {
-			return nil, fmt.Errorf("invalid owner or repo name")
+			return nil, errors.New("invalid owner or repo name")
 		}
 
 		urlStr := fmt.Sprintf("https://%s/repos/%s/%s/releases", githubAPIHost, owner, repo)
@@ -29,7 +30,7 @@ var (
 		}
 
 		if u.Host != githubAPIHost {
-			return nil, fmt.Errorf("invalid GitHub API host")
+			return nil, fmt.Errorf("invalid GitHub API host: %s", u.Host)
 		}
 
 		return u, nil
@@ -88,19 +89,18 @@ func (s *GitHubService) GetLatestVersion() (string, error) {
 		latestParts   []int
 	)
 
+	// Iterate over releases and find the highest semver version.
 	for _, release := range releases {
-		// Skip empty tags
 		if release.TagName == "" {
 			continue
 		}
 
-		// Parse version parts
 		parts := strings.Split(strings.TrimPrefix(release.TagName, "v"), ".")
 		if len(parts) != 3 {
 			continue
 		}
 
-		// Convert parts to integers
+		// Convert versions from GH to ints for comparison.
 		var versionParts []int
 
 		for _, part := range parts {
@@ -112,8 +112,8 @@ func (s *GitHubService) GetLatestVersion() (string, error) {
 			versionParts = append(versionParts, num)
 		}
 
-		// Compare versions
 		if len(versionParts) == 3 {
+			// If we don't have a latest version, set it.
 			if latestVersion == "" {
 				latestVersion = release.TagName
 				latestParts = versionParts
@@ -121,7 +121,7 @@ func (s *GitHubService) GetLatestVersion() (string, error) {
 				continue
 			}
 
-			// Compare version parts
+			// Now we compare the version parts to find the highest version.
 			for i := 0; i < 3; i++ {
 				if versionParts[i] > latestParts[i] {
 					latestVersion = release.TagName
@@ -135,10 +135,12 @@ func (s *GitHubService) GetLatestVersion() (string, error) {
 		}
 	}
 
+	// Something's cooked if we don't have a latest version.
 	if latestVersion == "" {
 		return "", fmt.Errorf("no valid version tags found")
 	}
 
+	// Return the version without the 'v' prefix.
 	return strings.TrimPrefix(latestVersion, "v"), nil
 }
 
