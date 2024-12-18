@@ -3,7 +3,6 @@ package install
 import (
 	"fmt"
 
-	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/install/wizard"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/terminal"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/rivo/tview"
@@ -37,52 +36,27 @@ func RegisterCommands(app *cli.App, opts *terminal.CommandOpts) {
 
 func installContributoor(c *cli.Context, opts *terminal.CommandOpts) error {
 	log := opts.Logger()
-
-	if !c.GlobalIsSet("config-path") {
-		log.WithField("config_path", c.GlobalString("config-path")).Warnf("No config path provided, using default")
-	}
+	log.SetLevel(logrus.DebugLevel)
 
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
-		if _, ok := err.(*service.ConfigNotFoundError); ok {
-			return fmt.Errorf("%sMissing config file. Please run install.sh first.%s", terminal.ColorRed, terminal.ColorReset)
-		}
-
 		return fmt.Errorf("%sError loading config: %v%s", terminal.ColorRed, err, terminal.ColorReset)
 	}
 
-	// Update config if flags are set
-	if c.IsSet("version") || c.IsSet("run-method") {
-		if err := configService.Update(func(cfg *service.ContributoorConfig) {
-			if c.IsSet("version") {
-				cfg.Version = c.String("version")
-			}
-
-			if c.IsSet("run-method") {
-				cfg.RunMethod = c.String("run-method")
-			}
-		}); err != nil {
-			return fmt.Errorf("%sError updating config: %v%s", terminal.ColorRed, err, terminal.ColorReset)
-		}
-	}
-
-	log.WithFields(logrus.Fields{
-		"config_path": configService.Get().ContributoorDirectory,
-		"version":     configService.Get().Version,
-		"run_method":  configService.Get().RunMethod,
-	}).Info("Running installation wizard")
-
-	// Create and run the install wizard
 	app := tview.NewApplication()
-	wiz := wizard.NewInstallWizard(log, app, configService)
+	display := NewInstallDisplay(log, app, configService)
 
-	if err := wiz.Start(); err != nil {
-		return fmt.Errorf("%sWizard error: %w%s", terminal.ColorRed, err, terminal.ColorReset)
-	}
-
-	if err := app.Run(); err != nil {
+	// Run the display
+	if err := display.Run(); err != nil {
+		log.Errorf("Error running display: %v", err)
 		return fmt.Errorf("%sDisplay error: %w%s", terminal.ColorRed, err, terminal.ColorReset)
 	}
 
-	return wiz.OnComplete()
+	// Handle completion
+	if err := display.OnComplete(); err != nil {
+		log.Errorf("Error completing installation: %v", err)
+		return fmt.Errorf("%sCompletion error: %w%s", terminal.ColorRed, err, terminal.ColorReset)
+	}
+
+	return nil
 }

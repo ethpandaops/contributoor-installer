@@ -45,12 +45,12 @@ func NewConfigDisplay(log *logrus.Logger, app *tview.Application, configService 
 
 	// Add subpages to display
 	for _, subpage := range display.settingsPages {
-		display.pages.AddPage(subpage.getPage().id, subpage.getPage().content, true, false)
+		display.pages.AddPage(subpage.GetPage().ID, subpage.GetPage().Content, true, false)
 	}
 
-	display.createContent()
-	display.homePage.content = display.content
-	display.pages.AddPage(display.homePage.id, display.content, true, false)
+	display.initPage()
+	display.homePage.Content = display.content
+	display.pages.AddPage(display.homePage.ID, display.content, true, false)
 
 	display.setupGrid()
 
@@ -67,7 +67,7 @@ func (d *ConfigDisplay) setupGrid() {
 	content.AddItem(d.pages, 0, 1, true)
 
 	// Create the frame around the content
-	frame := display.CreateWizardFrame(display.WizardFrameOptions{
+	frame := display.CreatePageFrame(display.PageFrameOptions{
 		Content:  content,
 		Title:    display.TitleSettings,
 		HelpType: display.HelpSettings,
@@ -86,9 +86,9 @@ func (d *ConfigDisplay) setupGrid() {
 func (d *ConfigDisplay) setPage(page *page) {
 	// Update the frame title to show current location
 	d.frame.Clear()
-	frame := display.CreateWizardFrame(display.WizardFrameOptions{
+	frame := display.CreatePageFrame(display.PageFrameOptions{
 		Content:  d.pages,
-		Title:    page.title,
+		Title:    page.Title,
 		HelpType: display.HelpSettings,
 		OnEsc: func() {
 			if d.pages.HasPage("config-home") {
@@ -99,20 +99,20 @@ func (d *ConfigDisplay) setPage(page *page) {
 
 	d.frame = frame
 	d.app.SetRoot(frame, true)
-	d.pages.SwitchToPage(page.id)
+	d.pages.SwitchToPage(page.ID)
 }
 
 func (d *ConfigDisplay) Run() error {
 	return d.app.Run()
 }
 
-func (d *ConfigDisplay) createContent() {
+func (d *ConfigDisplay) initPage() {
 	// Create category list
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 			// Update description when selection changes
 			if index >= 0 && index < len(d.settingsPages) {
-				d.updateDescription(d.settingsPages[index].getPage().description)
+				d.updateDescription(d.settingsPages[index].GetPage().Description)
 			}
 		})
 	categoryList.SetBackgroundColor(display.ColorFormBackground)
@@ -133,7 +133,7 @@ func (d *ConfigDisplay) createContent() {
 
 	// Set initial description
 	if len(d.settingsPages) > 0 {
-		d.updateDescription(d.settingsPages[0].getPage().description)
+		d.updateDescription(d.settingsPages[0].GetPage().Description)
 	}
 
 	// Set tab handling for the category list
@@ -151,10 +151,10 @@ func (d *ConfigDisplay) createContent() {
 
 	// Add categories
 	for _, subpage := range d.settingsPages {
-		categoryList.AddItem(subpage.getPage().title, "", 0, nil)
+		categoryList.AddItem(subpage.GetPage().Title, "", 0, nil)
 	}
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
-		d.setPage(d.settingsPages[i].getPage())
+		d.setPage(d.settingsPages[i].GetPage())
 	})
 
 	// Create a frame around the category list
@@ -217,4 +217,8 @@ func (d *ConfigDisplay) createContent() {
 // Helper function to update description text
 func (d *ConfigDisplay) updateDescription(text string) {
 	d.descriptionBox.SetText(text)
+}
+
+type settingsPage interface {
+	GetPage() *display.Page
 }

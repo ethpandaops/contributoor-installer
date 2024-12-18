@@ -1,4 +1,4 @@
-package config
+package install
 
 import (
 	"github.com/ethpandaops/contributoor-installer/internal/display"

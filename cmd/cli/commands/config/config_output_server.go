@@ -24,7 +24,7 @@ func NewOutputServerConfigPage(display *ConfigDisplay) *OutputServerConfigPage {
 		display: display,
 	}
 
-	OutputServerConfigPage.createContent()
+	OutputServerConfigPage.initPage()
 	OutputServerConfigPage.page = newPage(
 		display.homePage,
 		"config-output-server",
@@ -36,15 +36,11 @@ func NewOutputServerConfigPage(display *ConfigDisplay) *OutputServerConfigPage {
 	return OutputServerConfigPage
 }
 
-func (p *OutputServerConfigPage) getPage() *page {
+func (p *OutputServerConfigPage) GetPage() *display.Page {
 	return p.page
 }
 
-func (p *OutputServerConfigPage) handleLayoutChanged() {
-	// Implement if needed
-}
-
-func (p *OutputServerConfigPage) createContent() {
+func (p *OutputServerConfigPage) initPage() {
 	// Create form
 	form := tview.NewForm()
 	p.form = form
@@ -84,7 +80,7 @@ func (p *OutputServerConfigPage) createContent() {
 	currentAddress := p.display.configService.Get().OutputServer.Address
 
 	// Check if it's a custom address
-	if currentAddress != "" && !strings.Contains(currentAddress, "platform.ethpandaops.io") {
+	if !strings.Contains(currentAddress, "platform.ethpandaops.io") {
 		// Set to Custom option
 		for i, server := range display.AvailableOutputServers {
 			if server.Label == "Custom" {

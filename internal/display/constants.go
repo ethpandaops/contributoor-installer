@@ -78,6 +78,7 @@ const (
 	ButtonNext         = "Next"
 	ButtonBack         = "Back"
 	ButtonTryAgain     = "Try Again"
+	ButtonFinish       = "Finish"
 
 	// Titles
 	TitleDescription = "Description"

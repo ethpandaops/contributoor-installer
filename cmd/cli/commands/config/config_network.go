@@ -25,7 +25,7 @@ func NewNetworkConfigPage(display *ConfigDisplay) *NetworkConfigPage {
 		display: display,
 	}
 
-	networkPage.createContent()
+	networkPage.initPage()
 	networkPage.page = newPage(
 		display.homePage,
 		"config-network",
@@ -37,15 +37,11 @@ func NewNetworkConfigPage(display *ConfigDisplay) *NetworkConfigPage {
 	return networkPage
 }
 
-func (p *NetworkConfigPage) getPage() *page {
+func (p *NetworkConfigPage) GetPage() *display.Page {
 	return p.page
 }
 
-func (p *NetworkConfigPage) handleLayoutChanged() {
-	// Implement if needed
-}
-
-func (p *NetworkConfigPage) createContent() {
+func (p *NetworkConfigPage) initPage() {
 	// Create form
 	form := tview.NewForm()
 	p.form = form
