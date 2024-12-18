@@ -113,16 +113,20 @@ func (p *NetworkConfigPage) initPage() {
 			switch event.Key() {
 			case tcell.KeyDown, tcell.KeyTab:
 				nextIndex := (index + 1) % len(labels)
+
 				descBox.SetText(descriptions[nextIndex])
 				p.display.app.SetFocus(forms[nextIndex])
+
 				return nil
 			case tcell.KeyUp:
 				nextIndex := index - 1
 				if nextIndex < 0 {
 					nextIndex = len(labels) - 1
 				}
+
 				descBox.SetText(descriptions[nextIndex])
 				p.display.app.SetFocus(forms[nextIndex])
+
 				return nil
 			case tcell.KeyEsc:
 				if p.page.Parent != nil {
@@ -184,5 +188,6 @@ func (p *NetworkConfigPage) initPage() {
 	// Set initial focus.
 	p.display.app.SetFocus(forms[0])
 	descBox.SetText(descriptions[0])
+
 	p.content = borderGrid
 }

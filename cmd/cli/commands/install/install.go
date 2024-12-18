@@ -43,7 +43,7 @@ func installContributoor(c *cli.Context, opts *options.CommandOpts) error {
 
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
-		return fmt.Errorf("%sError loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
+		return fmt.Errorf("%serror loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
 	app := tview.NewApplication()
@@ -51,14 +51,16 @@ func installContributoor(c *cli.Context, opts *options.CommandOpts) error {
 
 	// Run the display.
 	if err := d.Run(); err != nil {
-		log.Errorf("Error running display: %v", err)
-		return fmt.Errorf("%sDisplay error: %w%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
+		log.Errorf("error running display: %v", err)
+
+		return fmt.Errorf("%sdisplay error: %w%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
 	// Handle completion.
 	if err := d.OnComplete(); err != nil {
-		log.Errorf("Error completing installation: %v", err)
-		return fmt.Errorf("%sCompletion error: %w%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
+		log.Errorf("error completing installation: %v", err)
+
+		return fmt.Errorf("%scompletion error: %w%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
 	return nil

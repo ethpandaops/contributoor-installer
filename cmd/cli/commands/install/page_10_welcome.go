@@ -10,10 +10,9 @@ import (
 
 // WelcomePage is the first/introductory page of the install wizard.
 type WelcomePage struct {
-	display     *InstallDisplay
-	page        *tui.Page
-	content     tview.Primitive
-	description *tview.TextView
+	display *InstallDisplay
+	page    *tui.Page
+	content tview.Primitive
 }
 
 // NewWelcomePage creates a new WelcomePage.

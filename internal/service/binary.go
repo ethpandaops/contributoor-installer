@@ -191,6 +191,7 @@ func (s *BinaryService) Update() error {
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to download checksums: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	// Determine platform and arch
@@ -211,6 +212,7 @@ func (s *BinaryService) Update() error {
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to download binary: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	// Create temp file for download

@@ -76,6 +76,7 @@ func (p *OutputServerPage) initPage() {
 			for i, server := range tui.AvailableOutputServers {
 				if server.Label == "Custom" {
 					defaultIndex = i
+
 					break
 				}
 			}
@@ -84,6 +85,7 @@ func (p *OutputServerPage) initPage() {
 			for i, server := range tui.AvailableOutputServers {
 				if server.Value == currentAddress {
 					defaultIndex = i
+
 					break
 				}
 			}

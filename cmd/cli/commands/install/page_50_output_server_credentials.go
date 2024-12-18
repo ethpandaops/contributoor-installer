@@ -13,13 +13,12 @@ import (
 
 // OutputServerCredentialsPage is the page for configuring the users output server credentials.
 type OutputServerCredentialsPage struct {
-	display     *InstallDisplay
-	page        *tui.Page
-	content     tview.Primitive
-	form        *tview.Form
-	description *tview.TextView
-	password    string
-	username    string
+	display  *InstallDisplay
+	page     *tui.Page
+	content  tview.Primitive
+	form     *tview.Form
+	password string
+	username string
 }
 
 // NewOutputServerCredentialsPage creates a new OutputServerCredentialsPage.

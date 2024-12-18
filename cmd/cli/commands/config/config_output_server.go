@@ -73,6 +73,7 @@ func (p *OutputServerConfigPage) initPage() {
 	// Pull together a list of possible output servers and their descriptions.
 	serverLabels := make([]string, len(tui.AvailableOutputServers))
 	serverDescriptions := make(map[string]string)
+
 	for i, server := range tui.AvailableOutputServers {
 		serverLabels[i] = server.Label
 		serverDescriptions[server.Label] = server.Description
@@ -231,6 +232,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 
 	// Find the corresponding URL
 	var serverAddress string
+
 	for _, server := range tui.AvailableOutputServers {
 		if server.Label == serverLabel {
 			serverAddress = server.Value
@@ -274,8 +276,8 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 
 		// Get credentials, these are optional for custom servers.
 		var (
-			username     = p.form.GetFormItem(2).(*tview.InputField)
-			password     = p.form.GetFormItem(3).(*tview.InputField)
+			username, _  = p.form.GetFormItem(2).(*tview.InputField)
+			password, _  = p.form.GetFormItem(3).(*tview.InputField)
 			usernameText = username.GetText()
 			passwordText = password.GetText()
 		)

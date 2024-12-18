@@ -14,11 +14,10 @@ import (
 
 // BeaconNodePage is the page for configuring the users beacon node.
 type BeaconNodePage struct {
-	display     *InstallDisplay
-	page        *tui.Page
-	content     tview.Primitive
-	form        *tview.Form
-	description *tview.TextView
+	display *InstallDisplay
+	page    *tui.Page
+	content tview.Primitive
+	form    *tview.Form
 }
 
 // NewBeaconNodePage creates a new BeaconNodePage.
@@ -133,7 +132,7 @@ func (p *BeaconNodePage) initPage() {
 
 func validateAndUpdate(p *BeaconNodePage) {
 	// Get text from the input field directly
-	inputField := p.form.GetFormItem(0).(*tview.InputField)
+	inputField, _ := p.form.GetFormItem(0).(*tview.InputField)
 	address := inputField.GetText()
 
 	// Show loading modal while validating
@@ -180,13 +179,13 @@ func validateBeaconNode(address string) error {
 	}
 
 	// Try to connect to the beacon node
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
+	client := &http.Client{Timeout: 5 * time.Second}
+
 	resp, err := client.Get(fmt.Sprintf("%s/eth/v1/node/health", address))
 	if err != nil {
 		return fmt.Errorf("We're unable to connect to your beacon node: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
