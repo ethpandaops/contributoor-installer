@@ -96,7 +96,9 @@ func (p *OutputServerCredentialsPage) initPage() {
 						p.display.app.SetFocus(form)
 					},
 				)
+
 				p.display.app.SetRoot(errorModal, true)
+
 				return
 			}
 		}
@@ -173,7 +175,9 @@ func validateAndSaveCredentials(p *OutputServerCredentialsPage) {
 					p.display.app.SetFocus(p.form)
 				},
 			)
+
 			p.display.app.SetRoot(errorModal, true)
+
 			return
 		}
 	}

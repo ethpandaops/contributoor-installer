@@ -66,6 +66,7 @@ func (p *NetworkConfigPage) initPage() {
 	// Grab the available networks and their descriptions.
 	networks := make([]string, len(tui.AvailableNetworks))
 	networkDescriptions := make(map[string]string)
+
 	for i, network := range tui.AvailableNetworks {
 		networks[i] = network.Value
 		networkDescriptions[network.Value] = network.Description
@@ -90,8 +91,10 @@ func (p *NetworkConfigPage) initPage() {
 		switch event.Key() {
 		case tcell.KeyTab, tcell.KeyBacktab:
 			p.display.app.SetFocus(form)
+
 			return nil
 		}
+
 		return event
 	})
 
@@ -105,6 +108,7 @@ func (p *NetworkConfigPage) initPage() {
 			// If we're on the last form item, move to save button.
 			if formIndex == form.GetFormItemCount()-1 {
 				p.display.app.SetFocus(saveButton)
+
 				return nil
 			}
 
@@ -113,6 +117,7 @@ func (p *NetworkConfigPage) initPage() {
 			// If we're on the first form item, move to save button.
 			if formIndex == 0 {
 				p.display.app.SetFocus(saveButton)
+
 				return nil
 			}
 

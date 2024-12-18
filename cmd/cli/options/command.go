@@ -17,6 +17,7 @@ func NewCommandOpts(opts ...CommandOptFunc) *CommandOpts {
 	for _, opt := range opts {
 		opt(options)
 	}
+
 	return options
 }
 

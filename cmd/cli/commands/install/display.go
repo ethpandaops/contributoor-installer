@@ -95,6 +95,7 @@ func (d *InstallDisplay) getCurrentStep() int {
 	if step, exists := stepMap[currentPage]; exists {
 		return step
 	}
+
 	return 1
 }
 

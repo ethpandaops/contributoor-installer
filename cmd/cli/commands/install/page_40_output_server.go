@@ -149,7 +149,9 @@ func (p *OutputServerPage) initPage() {
 							p.display.app.SetFocus(form)
 						},
 					)
+
 					p.display.app.SetRoot(errorModal, true)
+
 					return
 				}
 
@@ -163,7 +165,9 @@ func (p *OutputServerPage) initPage() {
 							p.display.app.SetFocus(form)
 						},
 					)
+
 					p.display.app.SetRoot(errorModal, true)
+
 					return
 				}
 			}

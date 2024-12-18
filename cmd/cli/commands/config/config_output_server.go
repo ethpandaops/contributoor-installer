@@ -92,6 +92,7 @@ func (p *OutputServerConfigPage) initPage() {
 		for i, server := range tui.AvailableOutputServers {
 			if server.Label == "Custom" {
 				defaultIndex = i
+
 				break
 			}
 		}
@@ -100,6 +101,7 @@ func (p *OutputServerConfigPage) initPage() {
 		for i, server := range tui.AvailableOutputServers {
 			if server.Value == currentAddress {
 				defaultIndex = i
+
 				break
 			}
 		}
@@ -160,8 +162,10 @@ func (p *OutputServerConfigPage) initPage() {
 		switch event.Key() {
 		case tcell.KeyTab, tcell.KeyBacktab:
 			p.display.app.SetFocus(form)
+
 			return nil
 		}
+
 		return event
 	})
 
@@ -175,6 +179,7 @@ func (p *OutputServerConfigPage) initPage() {
 			// If we're on the last form item, move to save button
 			if formIndex == form.GetFormItemCount()-1 {
 				p.display.app.SetFocus(saveButton)
+
 				return nil
 			}
 
@@ -183,6 +188,7 @@ func (p *OutputServerConfigPage) initPage() {
 			// If we're on the first form item, move to save button
 			if formIndex == 0 {
 				p.display.app.SetFocus(saveButton)
+
 				return nil
 			}
 
@@ -227,7 +233,7 @@ func (p *OutputServerConfigPage) initPage() {
 
 func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 	// Get the currently selected server.
-	dropdown := p.form.GetFormItem(0).(*tview.DropDown)
+	dropdown, _ := p.form.GetFormItem(0).(*tview.DropDown)
 	_, serverLabel := dropdown.GetCurrentOption()
 
 	// Find the corresponding URL
@@ -236,6 +242,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 	for _, server := range tui.AvailableOutputServers {
 		if server.Label == serverLabel {
 			serverAddress = server.Value
+
 			break
 		}
 	}
@@ -253,7 +260,9 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 					p.display.app.SetFocus(p.form)
 				},
 			)
+
 			p.display.app.SetRoot(errorModal, true)
+
 			return
 		}
 
@@ -267,7 +276,9 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 					p.display.app.SetFocus(p.form)
 				},
 			)
+
 			p.display.app.SetRoot(errorModal, true)
+
 			return
 		}
 
@@ -313,8 +324,8 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 	} else {
 		// Get and validate credentials, these are required for ethPandaOps servers.
 		var (
-			username     = p.form.GetFormItem(1).(*tview.InputField)
-			password     = p.form.GetFormItem(2).(*tview.InputField)
+			username, _  = p.form.GetFormItem(1).(*tview.InputField)
+			password, _  = p.form.GetFormItem(2).(*tview.InputField)
 			usernameText = username.GetText()
 			passwordText = password.GetText()
 		)
@@ -328,7 +339,9 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 					p.display.app.SetFocus(p.form)
 				},
 			)
+
 			p.display.app.SetRoot(errorModal, true)
+
 			return
 		}
 

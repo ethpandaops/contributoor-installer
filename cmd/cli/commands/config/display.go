@@ -146,8 +146,10 @@ func (d *ConfigDisplay) initPage() {
 		switch event.Key() {
 		case tcell.KeyTab, tcell.KeyBacktab:
 			d.app.SetFocus(d.closeButton)
+
 			return nil
 		}
+
 		return event
 	})
 
@@ -181,11 +183,14 @@ func (d *ConfigDisplay) initPage() {
 		switch event.Key() {
 		case tcell.KeyTab, tcell.KeyBacktab:
 			d.app.SetFocus(d.categoryList)
+
 			return nil
 		case tcell.KeyUp, tcell.KeyDown:
 			d.app.SetFocus(d.categoryList)
+
 			return event
 		}
+
 		return event
 	})
 

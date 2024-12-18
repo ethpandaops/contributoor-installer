@@ -51,8 +51,10 @@ func CreatePageFrame(opts PageFrameOptions) *tview.Frame {
 		frame.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			if event.Key() == tcell.KeyEsc {
 				opts.OnEsc()
+
 				return nil
 			}
+
 			return event
 		})
 	}

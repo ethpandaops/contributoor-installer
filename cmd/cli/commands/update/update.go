@@ -54,6 +54,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 				cfg.Version = currentVersion
 			}); err != nil {
 				log.Errorf("Failed to roll back version in config: %v", err)
+
 				return
 			}
 
@@ -125,6 +126,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	// Save the updated config.
 	if err := configService.Save(); err != nil {
 		log.Errorf("could not save updated config: %v", err)
+
 		return err
 	}
 
@@ -134,6 +136,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 		dockerService, err := service.NewDockerService(log, configService)
 		if err != nil {
 			log.Errorf("could not create docker service: %v", err)
+
 			return err
 		}
 
@@ -141,6 +144,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 
 		if e := dockerService.Update(); e != nil {
 			log.Errorf("could not update service: %v", e)
+
 			return e
 		}
 
@@ -148,6 +152,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 		running, err := dockerService.IsRunning()
 		if err != nil {
 			log.Errorf("could not check service status: %v", err)
+
 			return err
 		}
 
@@ -184,6 +189,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 		running, err := binaryService.IsRunning()
 		if err != nil {
 			log.Errorf("could not check service status: %v", err)
+
 			return err
 		}
 

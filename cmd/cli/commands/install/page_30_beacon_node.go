@@ -157,7 +157,9 @@ func validateAndUpdate(p *BeaconNodePage) {
 						p.display.app.SetFocus(p.form)
 					},
 				)
+
 				p.display.app.SetRoot(errorModal, true)
+
 				return
 			}
 
@@ -175,7 +177,7 @@ func validateAndUpdate(p *BeaconNodePage) {
 func validateBeaconNode(address string) error {
 	// Check if URL is valid
 	if !strings.HasPrefix(address, "http://") && !strings.HasPrefix(address, "https://") {
-		return fmt.Errorf("Beacon node address must start with http:// or https://")
+		return fmt.Errorf("beacon node address must start with http:// or https://")
 	}
 
 	// Try to connect to the beacon node
@@ -183,13 +185,13 @@ func validateBeaconNode(address string) error {
 
 	resp, err := client.Get(fmt.Sprintf("%s/eth/v1/node/health", address))
 	if err != nil {
-		return fmt.Errorf("We're unable to connect to your beacon node: %w", err)
+		return fmt.Errorf("we're unable to connect to your beacon node: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Beacon node returned status %d", resp.StatusCode)
+		return fmt.Errorf("beacon node returned status %d", resp.StatusCode)
 	}
 
 	return nil

@@ -132,8 +132,10 @@ func (p *NetworkConfigPage) initPage() {
 				if p.page.Parent != nil {
 					p.display.setPage(p.page.Parent)
 				}
+
 				return nil
 			}
+
 			return event
 		})
 
