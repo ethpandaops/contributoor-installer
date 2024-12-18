@@ -16,12 +16,12 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 		Usage:     "Configure Contributoor settings",
 		UsageText: "contributoor config",
 		Action: func(c *cli.Context) error {
-			return showSettings(c, opts)
+			return showConfig(c, opts)
 		},
 	})
 }
 
-func showSettings(c *cli.Context, opts *options.CommandOpts) error {
+func showConfig(c *cli.Context, opts *options.CommandOpts) error {
 	log := opts.Logger()
 
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))

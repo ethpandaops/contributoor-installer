@@ -15,16 +15,19 @@ const (
 	githubAPIHost    = "api.github.com"
 )
 
+// GitHubService is a basic service for interacting with the GitHub API.
 type GitHubService struct {
 	owner  string
 	repo   string
 	client *http.Client
 }
 
+// GitHubRelease is a struct that represents a GitHub release.
 type GitHubRelease struct {
 	TagName string `json:"tag_name"` //nolint:tagliatelle // Upstream response doesnt camelCase.
 }
 
+// NewGitHubService creates a new GitHubService.
 func NewGitHubService(owner, repo string) *GitHubService {
 	return &GitHubService{
 		owner: owner,

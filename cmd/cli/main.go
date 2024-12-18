@@ -21,14 +21,13 @@ import (
 func main() {
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
-
-	// Enable color output
 	log.SetFormatter(&logrus.TextFormatter{
 		ForceColors:   true,
 		DisableColors: false,
 	})
 
-	// Set up log rotation for CLI logs
+	// Set up log rotation for CLI logs.
+	// TODO(@matty): Move this to install.sh?
 	logDir := filepath.Join(os.Getenv("HOME"), ".contributoor", "logs")
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		fmt.Printf("Failed to create log directory: %v\n", err)

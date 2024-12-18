@@ -21,11 +21,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// RunMethods defines the possible ways to run the contributoor service.
 const (
 	RunMethodDocker = "docker"
 	RunMethodBinary = "binary"
 )
 
+// ContributoorConfig is the configuration for the contributoor service.
 type ContributoorConfig struct {
 	Version               string              `yaml:"version"`
 	ContributoorDirectory string              `yaml:"contributoorDirectory"`
@@ -35,11 +37,13 @@ type ContributoorConfig struct {
 	OutputServer          *OutputServerConfig `yaml:"outputServer"`
 }
 
+// OutputServerConfig is the configuration for the output server.
 type OutputServerConfig struct {
 	Address     string `yaml:"address"`
 	Credentials string `yaml:"credentials,omitempty"`
 }
 
+// ConfigService is a basic service for interacting with file configuration.
 type ConfigService struct {
 	logger     *logrus.Logger
 	configPath string
@@ -47,14 +51,17 @@ type ConfigService struct {
 	config     *ContributoorConfig
 }
 
+// ConfigNotFoundError is an error that occurs when the file config is not found.
 type ConfigNotFoundError struct {
 	Path string
 }
 
+// Error returns the error message.
 func (e *ConfigNotFoundError) Error() string {
 	return fmt.Sprintf("Config file not found at [%s]. Please run 'contributoor install' first", e.Path)
 }
 
+// NewConfigService creates a new ConfigService.
 func NewConfigService(logger *logrus.Logger, configPath string) (*ConfigService, error) {
 	// Expand home directory
 	path, err := homedir.Expand(configPath)
@@ -120,6 +127,7 @@ func NewConfigService(logger *logrus.Logger, configPath string) (*ConfigService,
 	}, nil
 }
 
+// Update updates the file config with the given updates.
 func (s *ConfigService) Update(updates func(*ContributoorConfig)) error {
 	// Apply updates to a copy
 	updatedConfig := *s.config
@@ -151,14 +159,17 @@ func (s *ConfigService) Update(updates func(*ContributoorConfig)) error {
 	return nil
 }
 
+// Get returns the current file config.
 func (s *ConfigService) Get() *ContributoorConfig {
 	return s.config
 }
 
+// GetConfigDir returns the directory of the file config.
 func (s *ConfigService) GetConfigDir() string {
 	return s.configDir
 }
 
+// WriteConfig writes the file config to the given path.
 func WriteConfig(path string, cfg *ContributoorConfig) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)

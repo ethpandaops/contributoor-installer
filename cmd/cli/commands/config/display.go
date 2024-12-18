@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ConfigDisplay is the main display for the config UI.
 type ConfigDisplay struct {
 	app                    *tview.Application
 	pages                  *tview.Pages
@@ -24,6 +25,7 @@ type ConfigDisplay struct {
 	closeButton            *tview.Button
 }
 
+// NewConfigDisplay creates a new ConfigDisplay.
 func NewConfigDisplay(log *logrus.Logger, app *tview.Application, configService *service.ConfigService) *ConfigDisplay {
 	display := &ConfigDisplay{
 		app:           app,
@@ -34,39 +36,45 @@ func NewConfigDisplay(log *logrus.Logger, app *tview.Application, configService 
 
 	display.homePage = newPage(nil, "config-home", "Categories", "", nil)
 
-	// Create settings subpages
+	// Create all the config sub-pages.
 	display.networkPage = NewNetworkConfigPage(display)
 	display.OutputServerConfigPage = NewOutputServerConfigPage(display)
-
 	display.settingsPages = []settingsPage{
 		display.networkPage,
 		display.OutputServerConfigPage,
 	}
 
-	// Add subpages to display
+	// Add all the sub-pages to the display.
 	for _, subpage := range display.settingsPages {
 		display.pages.AddPage(subpage.GetPage().ID, subpage.GetPage().Content, true, false)
 	}
 
+	// Initialize the page layout.
 	display.initPage()
 	display.homePage.Content = display.content
 	display.pages.AddPage(display.homePage.ID, display.content, true, false)
-
 	display.setupGrid()
 
-	// Set initial page to home
+	// ... and finally, set the home page as the current page.
 	display.setPage(display.homePage)
 
 	return display
 }
 
+// Run starts the application.
+func (d *ConfigDisplay) Run() error {
+	return d.app.Run()
+}
+
+// setupGrid creates the main content area and adds the pages to it.
 func (d *ConfigDisplay) setupGrid() {
-	// Create the main content area
+	// Create the main content area.
 	content := tview.NewFlex().SetDirection(tview.FlexRow)
 
+	// Add the pages to the content area.
 	content.AddItem(d.pages, 0, 1, true)
 
-	// Create the frame around the content
+	// Create the frame around the content. This holds breadcrumbs, page counts, etc.
 	frame := display.CreatePageFrame(display.PageFrameOptions{
 		Content:  content,
 		Title:    display.TitleSettings,
@@ -83,9 +91,10 @@ func (d *ConfigDisplay) setupGrid() {
 	d.app.SetRoot(frame, true)
 }
 
+// setPage sets the current page and updates the frame.
 func (d *ConfigDisplay) setPage(page *page) {
-	// Update the frame title to show current location
 	d.frame.Clear()
+
 	frame := display.CreatePageFrame(display.PageFrameOptions{
 		Content:  d.pages,
 		Title:    page.Title,
@@ -102,24 +111,20 @@ func (d *ConfigDisplay) setPage(page *page) {
 	d.pages.SwitchToPage(page.ID)
 }
 
-func (d *ConfigDisplay) Run() error {
-	return d.app.Run()
-}
-
 func (d *ConfigDisplay) initPage() {
-	// Create category list
+	// Create the list of config categories.
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 			// Update description when selection changes
 			if index >= 0 && index < len(d.settingsPages) {
-				d.updateDescription(d.settingsPages[index].GetPage().Description)
+				d.descriptionBox.SetText(d.settingsPages[index].GetPage().Description)
 			}
 		})
 	categoryList.SetBackgroundColor(display.ColorFormBackground)
 	categoryList.SetBorderPadding(0, 0, 1, 1)
 	d.categoryList = categoryList
 
-	// Create description box
+	// Create the description box. This will show help text for the current page.
 	d.descriptionBox = tview.NewTextView()
 	d.descriptionBox.
 		SetDynamicColors(true).
@@ -131,33 +136,33 @@ func (d *ConfigDisplay) initPage() {
 	d.descriptionBox.SetBorderPadding(0, 0, 1, 1)
 	d.descriptionBox.SetBorderColor(display.ColorBorder)
 
-	// Set initial description
+	// Set the initial description to the first page.
 	if len(d.settingsPages) > 0 {
-		d.updateDescription(d.settingsPages[0].GetPage().Description)
+		d.descriptionBox.SetText(d.settingsPages[0].GetPage().Description)
 	}
 
-	// Set tab handling for the category list
+	// Define key bindings for the category list.
 	categoryList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyTab:
-			d.app.SetFocus(d.closeButton)
-			return nil
-		case tcell.KeyBacktab:
+		case tcell.KeyTab, tcell.KeyBacktab:
 			d.app.SetFocus(d.closeButton)
 			return nil
 		}
 		return event
 	})
 
-	// Add categories
+	// Add categories to the list.
 	for _, subpage := range d.settingsPages {
 		categoryList.AddItem(subpage.GetPage().Title, "", 0, nil)
 	}
+
+	// Bind the category list to the page selection. This ensures that when a category
+	// is selected, the corresponding page is shown.
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
 		d.setPage(d.settingsPages[i].GetPage())
 	})
 
-	// Create a frame around the category list
+	// Create a frame around the category list.
 	categoryFrame := tview.NewFrame(categoryList)
 	categoryFrame.SetBorder(true)
 	categoryFrame.SetTitle("Select a Category")
@@ -165,19 +170,16 @@ func (d *ConfigDisplay) initPage() {
 	categoryFrame.SetBorderColor(display.ColorBorder)
 	categoryFrame.SetBackgroundColor(display.ColorFormBackground)
 
-	// Create close button
+	// Create the close button, providing users a way to bail.
 	closeButton := tview.NewButton(display.ButtonClose)
 	closeButton.SetBackgroundColorActivated(display.ColorButtonActivated)
 	closeButton.SetLabelColorActivated(display.ColorButtonText)
 	d.closeButton = closeButton
 
-	// Set tab handling for the close button
+	// Define key bindings for the close button.
 	closeButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyTab:
-			d.app.SetFocus(d.categoryList)
-			return nil
-		case tcell.KeyBacktab:
+		case tcell.KeyTab, tcell.KeyBacktab:
 			d.app.SetFocus(d.categoryList)
 			return nil
 		case tcell.KeyUp, tcell.KeyDown:
@@ -187,11 +189,12 @@ func (d *ConfigDisplay) initPage() {
 		return event
 	})
 
+	// Define the action for the close button.
 	closeButton.SetSelectedFunc(func() {
 		d.app.Stop()
 	})
 
-	// Layout everything in a flex container
+	// Layout everything in a flex container.
 	buttonBar := tview.NewFlex().
 		AddItem(nil, 0, 1, false).
 		AddItem(closeButton, len(display.ButtonClose)+4, 0, false).
@@ -203,7 +206,6 @@ func (d *ConfigDisplay) initPage() {
 		AddItem(d.descriptionBox, 0, 1, false)
 	contentFlex.SetBackgroundColor(display.ColorBackground)
 
-	// Main flex container
 	flex := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(contentFlex, 0, 1, true).
@@ -212,11 +214,6 @@ func (d *ConfigDisplay) initPage() {
 	flex.SetBackgroundColor(display.ColorBackground)
 
 	d.content = flex
-}
-
-// Helper function to update description text
-func (d *ConfigDisplay) updateDescription(text string) {
-	d.descriptionBox.SetText(text)
 }
 
 type settingsPage interface {

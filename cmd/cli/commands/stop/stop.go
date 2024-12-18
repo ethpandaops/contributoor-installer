@@ -33,6 +33,7 @@ func stopContributoor(c *cli.Context, opts *options.CommandOpts) error {
 		return fmt.Errorf("%sError loading config: %v%s", display.TerminalColorRed, err, display.TerminalColorReset)
 	}
 
+	// Stop the service via whatever method the user has configured (docker or binary).
 	switch configService.Get().RunMethod {
 	case service.RunMethodDocker:
 		log.WithField("version", configService.Get().Version).Info("Stopping Contributoor")
@@ -52,6 +53,7 @@ func stopContributoor(c *cli.Context, opts *options.CommandOpts) error {
 			return err
 		}
 
+		// If the service is not running, we can just return.
 		if !running {
 			return fmt.Errorf("%sContributoor is not running. Use 'contributoor start' to start it%s", display.TerminalColorRed, display.TerminalColorReset)
 		}
@@ -64,11 +66,13 @@ func stopContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	case service.RunMethodBinary:
 		binaryService := service.NewBinaryService(log, configService)
 
+		// Check if the service is currently running.
 		running, err := binaryService.IsRunning()
 		if err != nil {
 			return fmt.Errorf("failed to check service status: %v", err)
 		}
 
+		// If the service is not running, we can just return.
 		if !running {
 			return fmt.Errorf("%sContributoor is not running%s", display.TerminalColorRed, display.TerminalColorReset)
 		}

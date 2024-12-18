@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// DockerService is a basic service for interacting with the docker container.
 type DockerService struct {
 	logger        *logrus.Logger
 	config        *ContributoorConfig
@@ -19,6 +20,7 @@ type DockerService struct {
 	configService *ConfigService
 }
 
+// NewDockerService creates a new DockerService.
 func NewDockerService(logger *logrus.Logger, configService *ConfigService) (*DockerService, error) {
 	composePath, err := findComposeFile()
 	if err != nil {

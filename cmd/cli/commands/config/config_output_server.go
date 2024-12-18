@@ -11,6 +11,7 @@ import (
 	"github.com/rivo/tview"
 )
 
+// OutputServerConfigPage is the page for configuring the output server.
 type OutputServerConfigPage struct {
 	display     *ConfigDisplay
 	page        *page
@@ -19,6 +20,7 @@ type OutputServerConfigPage struct {
 	description *tview.TextView
 }
 
+// NewOutputServerConfigPage creates a new OutputServerConfigPage.
 func NewOutputServerConfigPage(display *ConfigDisplay) *OutputServerConfigPage {
 	OutputServerConfigPage := &OutputServerConfigPage{
 		display: display,
@@ -36,17 +38,19 @@ func NewOutputServerConfigPage(display *ConfigDisplay) *OutputServerConfigPage {
 	return OutputServerConfigPage
 }
 
+// GetPage returns the page.
 func (p *OutputServerConfigPage) GetPage() *display.Page {
 	return p.page
 }
 
+// initPage initializes the page.
 func (p *OutputServerConfigPage) initPage() {
-	// Create form
+	// Create a form to collect user input.
 	form := tview.NewForm()
 	p.form = form
 	form.SetBackgroundColor(display.ColorFormBackground)
 
-	// Create description box
+	// Create a description box to display help text.
 	p.description = tview.NewTextView()
 	p.description.
 		SetDynamicColors(true).
@@ -58,7 +62,7 @@ func (p *OutputServerConfigPage) initPage() {
 	p.description.SetBorderPadding(0, 0, 1, 1)
 	p.description.SetBorderColor(display.ColorBorder)
 
-	// Field descriptions
+	// Define our field descriptions.
 	descriptions := map[string]string{
 		"Output Server":  "Select the output server to send your data to.",
 		"Username":       "Your output server username for authentication.",
@@ -66,7 +70,7 @@ func (p *OutputServerConfigPage) initPage() {
 		"Server Address": "The address of your custom output server.",
 	}
 
-	// Server options from display constants
+	// Pull together a list of possible output servers and their descriptions.
 	serverLabels := make([]string, len(display.AvailableOutputServers))
 	serverDescriptions := make(map[string]string)
 	for i, server := range display.AvailableOutputServers {
@@ -75,11 +79,13 @@ func (p *OutputServerConfigPage) initPage() {
 		descriptions["Output Server"] = server.Description
 	}
 
-	// Find current server index based on the URL
+	// We might already have a server configured, so we need to find the index
+	// of the current server so we can prepopulate the form with the current
+	// values.
 	defaultIndex := 0
 	currentAddress := p.display.configService.Get().OutputServer.Address
 
-	// Check if it's a custom address
+	// Check if it's a custom output server address.
 	if !strings.Contains(currentAddress, "platform.ethpandaops.io") {
 		// Set to Custom option
 		for i, server := range display.AvailableOutputServers {
@@ -89,7 +95,7 @@ func (p *OutputServerConfigPage) initPage() {
 			}
 		}
 	} else {
-		// Find matching ethPandaOps server
+		// Otherwise, it'll be an ethPandaOps server.
 		for i, server := range display.AvailableOutputServers {
 			if server.Value == currentAddress {
 				defaultIndex = i
@@ -98,42 +104,49 @@ func (p *OutputServerConfigPage) initPage() {
 		}
 	}
 
-	// Add form fields without immediate config updates
+	// Setup our dropdown to select the output server.
 	dropdown := tview.NewDropDown().
 		SetLabel("Output Server ").
 		SetOptions(serverLabels, func(option string, index int) {
-			// Update description when server changes
-			p.updateDescription(serverDescriptions[option])
+			// Update description when server changes.
+			p.description.SetText(serverDescriptions[option])
 
-			// Remove all fields except the dropdown
+			// We've got to do some trickery here. Remove all fields except the dropdown
+			// and then add the appropriate fields based on the selection.
 			for i := form.GetFormItemCount() - 1; i > 0; i-- {
 				form.RemoveFormItem(i)
 			}
 
-			// Add appropriate fields based on selection
+			// Add appropriate fields based on selection.
 			if option == "Custom" {
+				// If it's a custom server, we need to add the server address field.
 				defaultAddress := p.display.configService.Get().OutputServer.Address
 				if strings.Contains(defaultAddress, "platform.ethpandaops.io") {
 					defaultAddress = ""
 				}
 
-				username, password := getCredentialsFromConfig(p.display.configService.Get())
+				// Add the server address field.
 				form.AddInputField("Server Address", defaultAddress, 0, nil, nil)
+
+				// Add the username and password fields.
+				username, password := getCredentialsFromConfig(p.display.configService.Get())
 				form.AddInputField("Username", username, 0, nil, nil)
 				form.AddPasswordField("Password", password, 0, '*', nil)
 			} else {
+				// Otherwise, it's an ethPandaOps server.
 				username, password := getCredentialsFromConfig(p.display.configService.Get())
 				form.AddInputField("Username", username, 0, nil, nil)
 				form.AddPasswordField("Password", password, 0, '*', nil)
 			}
+
 			p.display.app.SetFocus(form)
 		})
 
-	// Add dropdown to form and set initial selection
+	// Add dropdown to our form and set initial selection.
 	form.AddFormItem(dropdown)
 	dropdown.SetCurrentOption(defaultIndex)
 
-	// Create save button with validation
+	// Build our save button out.
 	saveButton := tview.NewButton(display.ButtonSaveSettings)
 	saveButton.SetSelectedFunc(func() {
 		validateAndUpdateOutputServer(p)
@@ -141,20 +154,17 @@ func (p *OutputServerConfigPage) initPage() {
 	saveButton.SetBackgroundColorActivated(display.ColorButtonActivated)
 	saveButton.SetLabelColorActivated(display.ColorButtonText)
 
-	// Handle save button input
+	// Define key bindings for the save button.
 	saveButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyTab:
-			p.display.app.SetFocus(form)
-			return nil
-		case tcell.KeyBacktab:
+		case tcell.KeyTab, tcell.KeyBacktab:
 			p.display.app.SetFocus(form)
 			return nil
 		}
 		return event
 	})
 
-	// Set up form input capture with access to saveButton
+	// Define key bindings for the form.
 	form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		// Get the currently focused item
 		formIndex, _ := form.GetFocusedItemIndex()
@@ -166,7 +176,7 @@ func (p *OutputServerConfigPage) initPage() {
 				p.display.app.SetFocus(saveButton)
 				return nil
 			}
-			// Otherwise, let the form handle tab navigation
+
 			return event
 		case tcell.KeyBacktab:
 			// If we're on the first form item, move to save button
@@ -174,18 +184,14 @@ func (p *OutputServerConfigPage) initPage() {
 				p.display.app.SetFocus(saveButton)
 				return nil
 			}
-			// Otherwise, let the form handle tab navigation
+
 			return event
 		default:
-			// Update description for current field
-			if item := form.GetFormItem(formIndex); item != nil {
-				p.updateDescription(descriptions[item.GetLabel()])
-			}
 			return event
 		}
 	})
 
-	// Create frame for the form
+	// We wrap the form in a frame to add a border and title.
 	formFrame := tview.NewFrame(form)
 	formFrame.SetBorder(true)
 	formFrame.SetTitle("Output Server Settings")
@@ -193,20 +199,20 @@ func (p *OutputServerConfigPage) initPage() {
 	formFrame.SetBorderColor(display.ColorBorder)
 	formFrame.SetBackgroundColor(display.ColorFormBackground)
 
-	// Create button container
+	// Create a button container to hold the save button.
 	buttonFlex := tview.NewFlex().
 		SetDirection(tview.FlexColumn).
 		AddItem(nil, 0, 1, false).
 		AddItem(saveButton, len(display.ButtonSaveSettings)+4, 0, true).
 		AddItem(nil, 0, 1, false)
 
-	// Create horizontal flex for form and description
+	// Create a horizontal flex to hold the form and description.
 	formDescriptionFlex := tview.NewFlex().
 		SetDirection(tview.FlexColumn).
 		AddItem(formFrame, 0, 2, true).
 		AddItem(p.description, 0, 1, false)
 
-	// Create main layout with form+description and save button
+	// Create a main layout to hold the form and description and save button.
 	mainFlex := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(formDescriptionFlex, 0, 1, true).
@@ -218,12 +224,8 @@ func (p *OutputServerConfigPage) initPage() {
 	p.content = mainFlex
 }
 
-// Helper function to update description text
-func (p *OutputServerConfigPage) updateDescription(text string) {
-	p.description.SetText(text)
-}
-
 func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
+	// Get the currently selected server.
 	dropdown := p.form.GetFormItem(0).(*tview.DropDown)
 	_, serverLabel := dropdown.GetCurrentOption()
 
@@ -236,6 +238,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 		}
 	}
 
+	// If it's a custom server, we need to get the server address and validate it.
 	if serverAddress == "custom" {
 		// Get and validate custom address
 		customAddress := p.form.GetFormItem(1).(*tview.InputField).GetText()
@@ -252,7 +255,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 			return
 		}
 
-		// Validate URL format
+		// Validate URL format.
 		if !strings.HasPrefix(customAddress, "http://") && !strings.HasPrefix(customAddress, "https://") {
 			errorModal := display.CreateErrorModal(
 				p.display.app,
@@ -266,13 +269,16 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 			return
 		}
 
+		// Set the server address.
 		serverAddress = customAddress
 
-		// Get optional credentials
-		username := p.form.GetFormItem(2).(*tview.InputField)
-		password := p.form.GetFormItem(3).(*tview.InputField)
-		usernameText := username.GetText()
-		passwordText := password.GetText()
+		// Get credentials, these are optional for custom servers.
+		var (
+			username     = p.form.GetFormItem(2).(*tview.InputField)
+			password     = p.form.GetFormItem(3).(*tview.InputField)
+			usernameText = username.GetText()
+			passwordText = password.GetText()
+		)
 
 		// Only set credentials if both username and password are provided
 		if usernameText != "" && passwordText != "" {
@@ -297,15 +303,19 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 					p.display.app.SetFocus(p.form)
 				},
 			)
+
 			p.display.app.SetRoot(errorModal, true)
+
 			return
 		}
 	} else {
-		// Get and validate credentials
-		username := p.form.GetFormItem(1).(*tview.InputField)
-		password := p.form.GetFormItem(2).(*tview.InputField)
-		usernameText := username.GetText()
-		passwordText := password.GetText()
+		// Get and validate credentials, these are required for ethPandaOps servers.
+		var (
+			username     = p.form.GetFormItem(1).(*tview.InputField)
+			password     = p.form.GetFormItem(2).(*tview.InputField)
+			usernameText = username.GetText()
+			passwordText = password.GetText()
+		)
 
 		if usernameText == "" || passwordText == "" {
 			errorModal := display.CreateErrorModal(
@@ -320,7 +330,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 			return
 		}
 
-		// Update credentials
+		// Update credentials.
 		credentials := fmt.Sprintf("%s:%s", usernameText, passwordText)
 		p.display.configService.Update(func(cfg *service.ContributoorConfig) {
 			cfg.OutputServer.Address = serverAddress
@@ -328,19 +338,10 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 		})
 	}
 
-	// Update config
-	p.display.configService.Update(func(cfg *service.ContributoorConfig) {
-		cfg.OutputServer.Address = serverAddress
-		if serverAddress == "custom" {
-			cfg.OutputServer.Credentials = "" // Clear credentials for custom server
-		}
-	})
-
-	// Return to settings home
 	p.display.setPage(p.display.homePage)
 }
 
-// Helper to decode credentials
+// getCredentialsFromConfig is a helper function to get the user/pass from the config.
 func getCredentialsFromConfig(cfg *service.ContributoorConfig) (username, password string) {
 	if cfg.OutputServer.Credentials == "" {
 		return "", ""

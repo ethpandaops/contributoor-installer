@@ -7,6 +7,8 @@ import (
 	"github.com/rivo/tview"
 )
 
+// HelpType is the type of help to display. This allows us to tweak the help text
+// for the installer wizard and config pages.
 type HelpType int
 
 const (
@@ -14,6 +16,7 @@ const (
 	HelpSettings
 )
 
+// PageFrameOptions is the options for the PageFrame.
 type PageFrameOptions struct {
 	Content  tview.Primitive
 	Step     int
@@ -23,7 +26,7 @@ type PageFrameOptions struct {
 	HelpType HelpType
 }
 
-// CreatePageFrame creates a standardized frame for wizard or config pages.
+// CreatePageFrame creates a standardised frame for the installer wizard or contributoor config pages.
 func CreatePageFrame(opts PageFrameOptions) *tview.Frame {
 	frame := tview.NewFrame(opts.Content)
 	frame.SetBorders(2, 2, 2, 2, 4, 4)

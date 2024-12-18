@@ -67,7 +67,8 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 		}
 	}()
 
-	// Determine target version
+	// Determine target version. If we were passed a version, use that.
+	// If not, get the latest version from GitHub.
 	if c.IsSet("version") {
 		targetVersion = c.String("version")
 
@@ -97,7 +98,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 		log.WithField("version", targetVersion).Info("Latest version detected")
 	}
 
-	// Check if update is even needed.
+	// We don't need to update if the target version is the same as the current version.
 	if targetVersion == configService.Get().Version {
 		if c.IsSet("version") {
 			log.Infof(
@@ -131,6 +132,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 		return err
 	}
 
+	// Update the service via whatever method the user has configured (docker or binary).
 	switch configService.Get().RunMethod {
 	case service.RunMethodDocker:
 		dockerService, err := service.NewDockerService(log, configService)
@@ -146,13 +148,16 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 			return e
 		}
 
-		// Check if service is running
+		// Check if service is currently running.
 		running, err := dockerService.IsRunning()
 		if err != nil {
 			log.Errorf("could not check service status: %v", err)
 			return err
 		}
 
+		// If the service is running, we need to restart it with the new version.
+		// Given its docker, we can ask the user if they want to restart it. Otherwise,
+		// we'll just let it run with the previous version until next restart.
 		if running {
 			if display.Confirm("Service is running. Would you like to restart it with the new version?") {
 				if err := dockerService.Stop(); err != nil {
@@ -179,13 +184,14 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 
 		log.WithField("version", configService.Get().Version).Info("Updating Contributoor")
 
-		// Check if service is running
+		// Check if service is currently running.
 		running, err := binaryService.IsRunning()
 		if err != nil {
 			log.Errorf("could not check service status: %v", err)
 			return err
 		}
 
+		// If the service is running, we need to stop it before we can update the binary.
 		if running {
 			if display.Confirm("Service is running. In order to update, it must be stopped. Would you like to stop it?") {
 				if err := binaryService.Stop(); err != nil {
@@ -210,7 +216,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 			return err
 		}
 
-		// If it was running, start it again.
+		// If it was running, start it again for them.
 		if running {
 			if err := binaryService.Start(); err != nil {
 				return fmt.Errorf("failed to start service: %w", err)

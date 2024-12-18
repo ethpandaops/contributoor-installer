@@ -10,6 +10,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+// TerminalColor's are used to style the terminal output.
 const (
 	TerminalColorReset     = "\033[0m"
 	TerminalColorBold      = "\033[1m"

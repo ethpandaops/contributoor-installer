@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// BinaryService is a basic service for interacting with the contributoor binary.
 type BinaryService struct {
 	logger *logrus.Logger
 	config *ContributoorConfig
@@ -21,6 +22,7 @@ type BinaryService struct {
 	stderr *os.File
 }
 
+// NewBinaryService creates a new BinaryService.
 func NewBinaryService(logger *logrus.Logger, configService *ConfigService) *BinaryService {
 	expandedDir, err := homedir.Expand(configService.Get().ContributoorDirectory)
 	if err != nil {
@@ -61,6 +63,7 @@ func NewBinaryService(logger *logrus.Logger, configService *ConfigService) *Bina
 	}
 }
 
+// Start starts the binary service.
 func (s *BinaryService) Start() error {
 	binaryPath := filepath.Join(s.config.ContributoorDirectory, "bin", "sentry")
 	if _, err := os.Stat(binaryPath); err != nil {
@@ -106,6 +109,7 @@ func (s *BinaryService) Start() error {
 	return nil
 }
 
+// Stop stops the binary service.
 func (s *BinaryService) Stop() error {
 	pidFile := filepath.Join(s.config.ContributoorDirectory, "contributoor.pid")
 	pidBytes, err := os.ReadFile(pidFile)
@@ -137,6 +141,7 @@ func (s *BinaryService) Stop() error {
 	return nil
 }
 
+// IsRunning checks if the binary service is running.
 func (s *BinaryService) IsRunning() (bool, error) {
 	pidFile := filepath.Join(s.config.ContributoorDirectory, "contributoor.pid")
 	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
@@ -160,6 +165,7 @@ func (s *BinaryService) IsRunning() (bool, error) {
 	return true, nil
 }
 
+// Update updates the binary service.
 func (s *BinaryService) Update() error {
 	expandedDir, err := homedir.Expand(s.config.ContributoorDirectory)
 	if err != nil {
