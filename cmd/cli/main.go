@@ -13,7 +13,7 @@ import (
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/stop"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/update"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
-	"github.com/ethpandaops/contributoor-installer/internal/display"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -44,7 +44,7 @@ func main() {
 		os.Exit(0)
 	}()
 
-	cli.AppHelpTemplate = display.AppHelpTemplate
+	cli.AppHelpTemplate = tui.AppHelpTemplate
 	app := cli.NewApp()
 	app.Name = "contributoor"
 	app.Usage = "Xatu Contributoor CLI"

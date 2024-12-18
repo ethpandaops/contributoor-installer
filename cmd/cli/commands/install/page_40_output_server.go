@@ -3,28 +3,28 @@ package install
 import (
 	"strings"
 
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
 type OutputServerPage struct {
 	display *InstallDisplay
-	page    *display.Page
+	page    *tui.Page
 	content tview.Primitive
 	form    *tview.Form
 }
 
-func NewOutputServerPage(id *InstallDisplay) *OutputServerPage {
+func NewOutputServerPage(display *InstallDisplay) *OutputServerPage {
 	outputPage := &OutputServerPage{
-		display: id,
+		display: display,
 	}
 
 	outputPage.initPage()
 
-	outputPage.page = display.NewPage(
-		id.beaconPage.GetPage(), // Set parent to beacon page
+	outputPage.page = tui.NewPage(
+		display.beaconPage.GetPage(), // Set parent to beacon page
 		"install-output",
 		"Output Server",
 		"Select the output server you'd like to use",
@@ -34,7 +34,7 @@ func NewOutputServerPage(id *InstallDisplay) *OutputServerPage {
 	return outputPage
 }
 
-func (p *OutputServerPage) GetPage() *display.Page {
+func (p *OutputServerPage) GetPage() *tui.Page {
 	return p.page
 }
 
@@ -44,21 +44,21 @@ func (p *OutputServerPage) initPage() {
 		modalWidth   = 70 // Match other pages' width
 		lines        = tview.WordWrap("Select which output server you'd like to use", modalWidth-4)
 		height       = len(lines) + 4
-		serverLabels = make([]string, len(display.AvailableOutputServers))
+		serverLabels = make([]string, len(tui.AvailableOutputServers))
 	)
 
 	// Create server options
-	for i, server := range display.AvailableOutputServers {
+	for i, server := range tui.AvailableOutputServers {
 		serverLabels[i] = server.Label
 	}
 
 	// Initialize form with proper background
 	form := tview.NewForm()
-	form.SetBackgroundColor(display.ColorFormBackground)
+	form.SetBackgroundColor(tui.ColorFormBackground)
 	form.SetBorderPadding(0, 0, 0, 0)
 	form.SetFieldBackgroundColor(tcell.ColorBlack)
 	form.SetLabelColor(tcell.ColorLightGray)
-	form.SetButtonBackgroundColor(display.ColorFormBackground)
+	form.SetButtonBackgroundColor(tui.ColorFormBackground)
 	form.SetButtonsAlign(tview.AlignCenter)
 	p.form = form
 
@@ -70,7 +70,7 @@ func (p *OutputServerPage) initPage() {
 	if currentAddress != "" {
 		if !strings.Contains(currentAddress, "platform.ethpandaops.io") {
 			// Set to Custom option
-			for i, server := range display.AvailableOutputServers {
+			for i, server := range tui.AvailableOutputServers {
 				if server.Label == "Custom" {
 					defaultIndex = i
 					break
@@ -78,7 +78,7 @@ func (p *OutputServerPage) initPage() {
 			}
 		} else {
 			// Find matching ethPandaOps server
-			for i, server := range display.AvailableOutputServers {
+			for i, server := range tui.AvailableOutputServers {
 				if server.Value == currentAddress {
 					defaultIndex = i
 					break
@@ -89,7 +89,7 @@ func (p *OutputServerPage) initPage() {
 
 	// Add dropdown with proper background and current selection
 	form.AddDropDown("Output Server", serverLabels, defaultIndex, func(text string, index int) {
-		selectedValue := display.AvailableOutputServers[index].Value
+		selectedValue := tui.AvailableOutputServers[index].Value
 
 		// Remove any existing Server Address field first
 		if item := form.GetFormItemByLabel("Server Address"); item != nil {
@@ -112,7 +112,7 @@ func (p *OutputServerPage) initPage() {
 					cfg.OutputServer.Address = address
 				})
 			})
-			input.SetBackgroundColor(display.ColorFormBackground)
+			input.SetBackgroundColor(tui.ColorFormBackground)
 		} else {
 			// Only update config when explicitly selecting a standard server
 			p.display.configService.Update(func(cfg *service.ContributoorConfig) {
@@ -128,7 +128,7 @@ func (p *OutputServerPage) initPage() {
 	}
 
 	// Add Next button with padding
-	form.AddButton(display.ButtonNext, func() {
+	form.AddButton(tui.ButtonNext, func() {
 		// Validate custom server address
 		selectedValue, _ := form.GetFormItemByLabel("Output Server").(*tview.DropDown).GetCurrentOption()
 		if selectedValue == 2 { // Custom option
@@ -136,7 +136,7 @@ func (p *OutputServerPage) initPage() {
 				address := input.(*tview.InputField).GetText()
 				if address == "" {
 					// Show error modal
-					errorModal := display.CreateErrorModal(
+					errorModal := tui.CreateErrorModal(
 						p.display.app,
 						"Server address is required for custom server",
 						func() {
@@ -150,7 +150,7 @@ func (p *OutputServerPage) initPage() {
 
 				// Validate URL format
 				if !strings.HasPrefix(address, "http://") && !strings.HasPrefix(address, "https://") {
-					errorModal := display.CreateErrorModal(
+					errorModal := tui.CreateErrorModal(
 						p.display.app,
 						"Server address must start with http:// or https://",
 						func() {
@@ -176,7 +176,7 @@ func (p *OutputServerPage) initPage() {
 			Background(tview.Styles.PrimitiveBackgroundColor).
 			Foreground(tcell.ColorLightGray))
 		form.SetButtonActivatedStyle(tcell.StyleDefault.
-			Background(display.ColorButtonActivated).
+			Background(tui.ColorButtonActivated).
 			Foreground(tcell.ColorBlack))
 	}
 
@@ -184,7 +184,7 @@ func (p *OutputServerPage) initPage() {
 	contentGrid := tview.NewGrid()
 	contentGrid.SetRows(2, 3, 1, 6, 1, 2)
 	contentGrid.SetColumns(1, -4, 1)
-	contentGrid.SetBackgroundColor(display.ColorFormBackground)
+	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 
 	// Create the main text view
 	textView := tview.NewTextView()
@@ -192,25 +192,25 @@ func (p *OutputServerPage) initPage() {
 	textView.SetTextAlign(tview.AlignCenter)
 	textView.SetWordWrap(true)
 	textView.SetTextColor(tview.Styles.PrimaryTextColor)
-	textView.SetBackgroundColor(display.ColorFormBackground)
+	textView.SetBackgroundColor(tui.ColorFormBackground)
 	textView.SetBorderPadding(0, 0, 0, 0)
 
 	// Add items to content grid
-	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(display.ColorFormBackground), 0, 0, 1, 3, 0, 0, false)
+	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 0, 0, 1, 3, 0, 0, false)
 	contentGrid.AddItem(textView, 1, 0, 1, 3, 0, 0, false)
-	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(display.ColorFormBackground), 2, 0, 1, 3, 0, 0, false)
+	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 2, 0, 1, 3, 0, 0, false)
 	contentGrid.AddItem(form, 3, 0, 1, 3, 0, 0, true)
-	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(display.ColorFormBackground), 5, 0, 1, 3, 0, 0, false)
+	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 5, 0, 1, 3, 0, 0, false)
 
 	// Create border grid
 	borderGrid := tview.NewGrid()
 	borderGrid.SetColumns(0, modalWidth, 0)
 	borderGrid.SetRows(0, height+9, 0, 2)
-	borderGrid.SetBackgroundColor(display.ColorFormBackground)
+	borderGrid.SetBackgroundColor(tui.ColorFormBackground)
 
 	contentGrid.SetBorder(true)
 	contentGrid.SetTitle(" Output Server ")
-	contentGrid.SetBackgroundColor(display.ColorFormBackground)
+	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 	borderGrid.AddItem(contentGrid, 1, 1, 1, 1, 0, 0, true)
 
 	p.content = borderGrid

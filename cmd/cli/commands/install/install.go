@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -41,7 +41,7 @@ func installContributoor(c *cli.Context, opts *options.CommandOpts) error {
 
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
-		return fmt.Errorf("%sError loading config: %v%s", display.TerminalColorRed, err, display.TerminalColorReset)
+		return fmt.Errorf("%sError loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
 	app := tview.NewApplication()
@@ -50,13 +50,13 @@ func installContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	// Run the display
 	if err := d.Run(); err != nil {
 		log.Errorf("Error running display: %v", err)
-		return fmt.Errorf("%sDisplay error: %w%s", display.TerminalColorRed, err, display.TerminalColorReset)
+		return fmt.Errorf("%sDisplay error: %w%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
 	// Handle completion
 	if err := d.OnComplete(); err != nil {
 		log.Errorf("Error completing installation: %v", err)
-		return fmt.Errorf("%sCompletion error: %w%s", display.TerminalColorRed, err, display.TerminalColorReset)
+		return fmt.Errorf("%sCompletion error: %w%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
 	return nil

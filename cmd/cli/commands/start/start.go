@@ -6,8 +6,8 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 )
 
 func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
@@ -28,10 +28,10 @@ func startContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
 		if _, ok := err.(*service.ConfigNotFoundError); ok {
-			return fmt.Errorf("%s%v%s", display.TerminalColorRed, err, display.TerminalColorReset)
+			return fmt.Errorf("%s%v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 		}
 
-		return fmt.Errorf("%sError loading config: %v%s", display.TerminalColorRed, err, display.TerminalColorReset)
+		return fmt.Errorf("%sError loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
 	// Start the service via whatever method the user has configured (docker or binary).
@@ -56,7 +56,7 @@ func startContributoor(c *cli.Context, opts *options.CommandOpts) error {
 
 		// If the service is already running, we can just return.
 		if running {
-			return fmt.Errorf("%sContributoor is already running. Use 'contributoor stop' first if you want to restart it%s", display.TerminalColorRed, display.TerminalColorReset)
+			return fmt.Errorf("%sContributoor is already running. Use 'contributoor stop' first if you want to restart it%s", tui.TerminalColorRed, tui.TerminalColorReset)
 		}
 
 		if err := dockerService.Start(); err != nil {
@@ -76,7 +76,7 @@ func startContributoor(c *cli.Context, opts *options.CommandOpts) error {
 
 		// If the service is already running, we can just return.
 		if running {
-			return fmt.Errorf("%sContributoor is already running%s", display.TerminalColorRed, display.TerminalColorReset)
+			return fmt.Errorf("%sContributoor is already running%s", tui.TerminalColorRed, tui.TerminalColorReset)
 		}
 
 		if err := binaryService.Start(); err != nil {

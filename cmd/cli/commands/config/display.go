@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
@@ -15,50 +15,50 @@ type ConfigDisplay struct {
 	frame                  *tview.Frame
 	log                    *logrus.Logger
 	configService          *service.ConfigService
-	homePage               *display.Page
+	homePage               *tui.Page
 	categoryList           *tview.List
 	content                tview.Primitive
-	settingsPages          []display.PageInterface
-	networkPage            *NetworkConfigPage
-	OutputServerConfigPage *OutputServerConfigPage
+	settingsPages          []tui.PageInterface
 	descriptionBox         *tview.TextView
 	closeButton            *tview.Button
+	networkConfigPage      *NetworkConfigPage
+	outputServerConfigPage *OutputServerConfigPage
 }
 
-// NewConfigDisplay creates a new ConfigDisplay.
+// NewConfigDisplay creates a new Configtui.
 func NewConfigDisplay(log *logrus.Logger, app *tview.Application, configService *service.ConfigService) *ConfigDisplay {
-	cd := &ConfigDisplay{
+	display := &ConfigDisplay{
 		app:           app,
 		pages:         tview.NewPages(),
 		log:           log,
 		configService: configService,
 	}
 
-	cd.homePage = display.NewPage(nil, "config-home", "Categories", "", nil)
+	display.homePage = tui.NewPage(nil, "config-home", "Categories", "", nil)
 
 	// Create all the config sub-pages.
-	cd.networkPage = NewNetworkConfigPage(cd)
-	cd.OutputServerConfigPage = NewOutputServerConfigPage(cd)
-	cd.settingsPages = []display.PageInterface{
-		cd.networkPage,
-		cd.OutputServerConfigPage,
+	display.networkConfigPage = NewNetworkConfigPage(display)
+	display.outputServerConfigPage = NewOutputServerConfigPage(display)
+	display.settingsPages = []tui.PageInterface{
+		display.networkConfigPage,
+		display.outputServerConfigPage,
 	}
 
-	// Add all the sub-pages to the display.
-	for _, subpage := range cd.settingsPages {
-		cd.pages.AddPage(subpage.GetPage().ID, subpage.GetPage().Content, true, false)
+	// Add all the sub-pages to the tui.
+	for _, subpage := range display.settingsPages {
+		display.pages.AddPage(subpage.GetPage().ID, subpage.GetPage().Content, true, false)
 	}
 
 	// Initialize the page layout.
-	cd.initPage()
-	cd.homePage.Content = cd.content
-	cd.pages.AddPage(cd.homePage.ID, cd.content, true, false)
-	cd.setupGrid()
+	display.initPage()
+	display.homePage.Content = display.content
+	display.pages.AddPage(display.homePage.ID, display.content, true, false)
+	display.setupGrid()
 
 	// ... and finally, set the home page as the current page.
-	cd.setPage(cd.homePage)
+	display.setPage(display.homePage)
 
-	return cd
+	return display
 }
 
 // Run starts the application.
@@ -75,10 +75,10 @@ func (d *ConfigDisplay) setupGrid() {
 	content.AddItem(d.pages, 0, 1, true)
 
 	// Create the frame around the content. This holds breadcrumbs, page counts, etc.
-	frame := display.CreatePageFrame(display.PageFrameOptions{
+	frame := tui.CreatePageFrame(tui.PageFrameOptions{
 		Content:  content,
-		Title:    display.TitleSettings,
-		HelpType: display.HelpSettings,
+		Title:    tui.TitleSettings,
+		HelpType: tui.HelpSettings,
 		OnEsc: func() {
 			// If we're not on the home page, go back to it.
 			if d.pages.HasPage("config-home") {
@@ -92,13 +92,13 @@ func (d *ConfigDisplay) setupGrid() {
 }
 
 // setPage sets the current page and updates the frame.
-func (d *ConfigDisplay) setPage(page *display.Page) {
+func (d *ConfigDisplay) setPage(page *tui.Page) {
 	d.frame.Clear()
 
-	frame := display.CreatePageFrame(display.PageFrameOptions{
+	frame := tui.CreatePageFrame(tui.PageFrameOptions{
 		Content:  d.pages,
 		Title:    page.Title,
-		HelpType: display.HelpSettings,
+		HelpType: tui.HelpSettings,
 		OnEsc: func() {
 			if d.pages.HasPage("config-home") {
 				d.setPage(d.homePage)
@@ -120,7 +120,7 @@ func (d *ConfigDisplay) initPage() {
 				d.descriptionBox.SetText(d.settingsPages[index].GetPage().Description)
 			}
 		})
-	categoryList.SetBackgroundColor(display.ColorFormBackground)
+	categoryList.SetBackgroundColor(tui.ColorFormBackground)
 	categoryList.SetBorderPadding(0, 0, 1, 1)
 	d.categoryList = categoryList
 
@@ -130,11 +130,11 @@ func (d *ConfigDisplay) initPage() {
 		SetDynamicColors(true).
 		SetWordWrap(true).
 		SetTextAlign(tview.AlignLeft).
-		SetBackgroundColor(display.ColorFormBackground)
+		SetBackgroundColor(tui.ColorFormBackground)
 	d.descriptionBox.SetBorder(true)
-	d.descriptionBox.SetTitle(display.TitleDescription)
+	d.descriptionBox.SetTitle(tui.TitleDescription)
 	d.descriptionBox.SetBorderPadding(0, 0, 1, 1)
-	d.descriptionBox.SetBorderColor(display.ColorBorder)
+	d.descriptionBox.SetBorderColor(tui.ColorBorder)
 
 	// Set the initial description to the first page.
 	if len(d.settingsPages) > 0 {
@@ -167,13 +167,13 @@ func (d *ConfigDisplay) initPage() {
 	categoryFrame.SetBorder(true)
 	categoryFrame.SetTitle("Select a Category")
 	categoryFrame.SetBorderPadding(0, 0, 1, 1)
-	categoryFrame.SetBorderColor(display.ColorBorder)
-	categoryFrame.SetBackgroundColor(display.ColorFormBackground)
+	categoryFrame.SetBorderColor(tui.ColorBorder)
+	categoryFrame.SetBackgroundColor(tui.ColorFormBackground)
 
 	// Create the close button, providing users a way to bail.
-	closeButton := tview.NewButton(display.ButtonClose)
-	closeButton.SetBackgroundColorActivated(display.ColorButtonActivated)
-	closeButton.SetLabelColorActivated(display.ColorButtonText)
+	closeButton := tview.NewButton(tui.ButtonClose)
+	closeButton.SetBackgroundColorActivated(tui.ColorButtonActivated)
+	closeButton.SetLabelColorActivated(tui.ColorButtonText)
 	d.closeButton = closeButton
 
 	// Define key bindings for the close button.
@@ -197,21 +197,21 @@ func (d *ConfigDisplay) initPage() {
 	// Layout everything in a flex container.
 	buttonBar := tview.NewFlex().
 		AddItem(nil, 0, 1, false).
-		AddItem(closeButton, len(display.ButtonClose)+4, 0, false).
+		AddItem(closeButton, len(tui.ButtonClose)+4, 0, false).
 		AddItem(nil, 0, 1, false)
 
 	// Create horizontal flex for category and description
 	contentFlex := tview.NewFlex().
 		AddItem(categoryFrame, 0, 2, true).
 		AddItem(d.descriptionBox, 0, 1, false)
-	contentFlex.SetBackgroundColor(display.ColorBackground)
+	contentFlex.SetBackgroundColor(tui.ColorBackground)
 
 	flex := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(contentFlex, 0, 1, true).
 		AddItem(nil, 1, 0, false).
 		AddItem(buttonBar, 1, 0, false)
-	flex.SetBackgroundColor(display.ColorBackground)
+	flex.SetBackgroundColor(tui.ColorBackground)
 
 	d.content = flex
 }

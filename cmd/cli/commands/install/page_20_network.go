@@ -1,45 +1,45 @@
 package install
 
 import (
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
-type NetworkPage struct {
+type networkConfigPage struct {
 	display *InstallDisplay
-	page    *display.Page
+	page    *tui.Page
 	content tview.Primitive
 }
 
-func NewNetworkPage(id *InstallDisplay) *NetworkPage {
-	networkPage := &NetworkPage{
-		display: id,
+func NewnetworkConfigPage(display *InstallDisplay) *networkConfigPage {
+	networkConfigPage := &networkConfigPage{
+		display: display,
 	}
 
-	networkPage.initPage()
-	networkPage.page = display.NewPage(
+	networkConfigPage.initPage()
+	networkConfigPage.page = tui.NewPage(
 		nil,
 		"install-network",
 		"Network Selection",
 		"Select which network you're using",
-		networkPage.content,
+		networkConfigPage.content,
 	)
 
-	return networkPage
+	return networkConfigPage
 }
 
-func (p *NetworkPage) GetPage() *display.Page {
+func (p *networkConfigPage) GetPage() *tui.Page {
 	return p.page
 }
 
-func (p *NetworkPage) initPage() {
+func (p *networkConfigPage) initPage() {
 	// Layout components
 	var (
 		// Selectable options
-		labels       = make([]string, len(display.AvailableNetworks))
-		descriptions = make([]string, len(display.AvailableNetworks))
+		labels       = make([]string, len(tui.AvailableNetworks))
+		descriptions = make([]string, len(tui.AvailableNetworks))
 
 		// Calculate dimensions
 		modalWidth     = 70
@@ -60,36 +60,36 @@ func (p *NetworkPage) initPage() {
 		descBox *tview.TextView
 
 		// Spacers
-		leftSpacer  = tview.NewBox().SetBackgroundColor(display.ColorFormBackground)
-		midSpacer   = tview.NewBox().SetBackgroundColor(display.ColorFormBackground)
-		rightSpacer = tview.NewBox().SetBackgroundColor(display.ColorFormBackground)
+		leftSpacer  = tview.NewBox().SetBackgroundColor(tui.ColorFormBackground)
+		midSpacer   = tview.NewBox().SetBackgroundColor(tui.ColorFormBackground)
+		rightSpacer = tview.NewBox().SetBackgroundColor(tui.ColorFormBackground)
 	)
 
 	// Populate selectable options
-	for i, network := range display.AvailableNetworks {
+	for i, network := range tui.AvailableNetworks {
 		labels[i] = network.Label
 		descriptions[i] = network.Description
 	}
 
 	// Initialize buttonGrid
 	buttonGrid.SetRows(0)
-	buttonGrid.SetBackgroundColor(display.ColorFormBackground)
+	buttonGrid.SetBackgroundColor(tui.ColorFormBackground)
 
 	// Add initial spacing for description box alignment
-	formsFlex.AddItem(tview.NewBox().SetBackgroundColor(display.ColorFormBackground), 1, 1, false)
+	formsFlex.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 1, 1, false)
 
 	// Create forms for each button
 	for i, label := range labels {
 		form := tview.NewForm()
 		form.SetButtonsAlign(tview.AlignCenter)
-		form.SetBackgroundColor(display.ColorFormBackground)
+		form.SetBackgroundColor(tui.ColorFormBackground)
 		form.SetBorderPadding(0, 0, 0, 0)
 
 		// Add button to form
 		index := i // Capture index for closure
 		form.AddButton(label, func() {
 			p.display.configService.Update(func(cfg *service.ContributoorConfig) {
-				cfg.NetworkName = display.AvailableNetworks[index].Value
+				cfg.NetworkName = tui.AvailableNetworks[index].Value
 			})
 			p.display.setPage(p.display.beaconPage.GetPage())
 		})
@@ -102,7 +102,7 @@ func (p *NetworkPage) initPage() {
 			Background(tview.Styles.PrimitiveBackgroundColor).
 			Foreground(tcell.ColorLightGray)).
 			SetButtonActivatedStyle(tcell.StyleDefault.
-				Background(display.ColorButtonActivated).
+				Background(tui.ColorButtonActivated).
 				Foreground(tcell.ColorBlack))
 
 		// Set up navigation
@@ -132,16 +132,16 @@ func (p *NetworkPage) initPage() {
 
 		forms = append(forms, form)
 		formsFlex.AddItem(form, 1, 1, true)
-		formsFlex.AddItem(tview.NewBox().SetBackgroundColor(display.ColorFormBackground), 0, 1, false)
+		formsFlex.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 0, 1, false)
 	}
 
 	// Create description box.
 	descBox = tview.NewTextView()
 	descBox.SetDynamicColors(true)
 	descBox.SetText(descriptions[0])
-	descBox.SetBackgroundColor(display.ColorFormBackground)
+	descBox.SetBackgroundColor(tui.ColorFormBackground)
 	descBox.SetBorder(true)
-	descBox.SetTitle(display.TitleDescription)
+	descBox.SetTitle(tui.TitleDescription)
 	descBox.SetBorderPadding(0, 0, 1, 1)
 
 	// Set up the grids
@@ -158,21 +158,21 @@ func (p *NetworkPage) initPage() {
 	textView.SetTextAlign(tview.AlignCenter)
 	textView.SetWordWrap(true)
 	textView.SetTextColor(tview.Styles.PrimaryTextColor)
-	textView.SetBackgroundColor(display.ColorFormBackground)
+	textView.SetBackgroundColor(tui.ColorFormBackground)
 	textView.SetBorderPadding(0, 0, 0, 0)
 
 	// Content grid
 	contentGrid.SetRows(2, 2, 1, 0, 1)
-	contentGrid.SetBackgroundColor(display.ColorFormBackground)
+	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 	contentGrid.SetBorder(true)
 	contentGrid.SetTitle(" Network ")
 
 	// Add items to content grid
-	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(display.ColorFormBackground), 0, 0, 1, 1, 0, 0, false)
+	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 0, 0, 1, 1, 0, 0, false)
 	contentGrid.AddItem(textView, 1, 0, 1, 1, 0, 0, false)
-	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(display.ColorFormBackground), 2, 0, 1, 1, 0, 0, false)
+	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 2, 0, 1, 1, 0, 0, false)
 	contentGrid.AddItem(buttonGrid, 3, 0, 1, 1, 0, 0, true)
-	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(display.ColorFormBackground), 4, 0, 1, 1, 0, 0, false)
+	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 4, 0, 1, 1, 0, 0, false)
 
 	// Border grid
 	borderGrid.SetRows(0, textViewHeight+buttonHeight+3, 0, 2)

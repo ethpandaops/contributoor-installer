@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/rivo/tview"
 	"github.com/urfave/cli"
 )
@@ -26,13 +26,13 @@ func showConfig(c *cli.Context, opts *options.CommandOpts) error {
 
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
-		return fmt.Errorf("%sError loading config: %v%s", display.TerminalColorRed, err, display.TerminalColorReset)
+		return fmt.Errorf("%sError loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
 	app := tview.NewApplication()
 
 	if err := NewConfigDisplay(log, app, configService).Run(); err != nil {
-		return fmt.Errorf("%sDisplay error: %w%s", display.TerminalColorRed, err, display.TerminalColorReset)
+		return fmt.Errorf("%sDisplay error: %w%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
 	return nil

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/urfave/cli"
 )
 
@@ -27,10 +27,10 @@ func stopContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
 		if _, ok := err.(*service.ConfigNotFoundError); ok {
-			return fmt.Errorf("%s%v%s", display.TerminalColorRed, err, display.TerminalColorReset)
+			return fmt.Errorf("%s%v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 		}
 
-		return fmt.Errorf("%sError loading config: %v%s", display.TerminalColorRed, err, display.TerminalColorReset)
+		return fmt.Errorf("%sError loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
 	// Stop the service via whatever method the user has configured (docker or binary).
@@ -55,7 +55,7 @@ func stopContributoor(c *cli.Context, opts *options.CommandOpts) error {
 
 		// If the service is not running, we can just return.
 		if !running {
-			return fmt.Errorf("%sContributoor is not running. Use 'contributoor start' to start it%s", display.TerminalColorRed, display.TerminalColorReset)
+			return fmt.Errorf("%sContributoor is not running. Use 'contributoor start' to start it%s", tui.TerminalColorRed, tui.TerminalColorReset)
 		}
 
 		if err := dockerService.Stop(); err != nil {
@@ -74,7 +74,7 @@ func stopContributoor(c *cli.Context, opts *options.CommandOpts) error {
 
 		// If the service is not running, we can just return.
 		if !running {
-			return fmt.Errorf("%sContributoor is not running%s", display.TerminalColorRed, display.TerminalColorReset)
+			return fmt.Errorf("%sContributoor is not running%s", tui.TerminalColorRed, tui.TerminalColorReset)
 		}
 
 		if err := binaryService.Stop(); err != nil {

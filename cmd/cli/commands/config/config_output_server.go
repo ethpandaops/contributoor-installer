@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -14,7 +14,7 @@ import (
 // OutputServerConfigPage is the page for configuring the output server.
 type OutputServerConfigPage struct {
 	display     *ConfigDisplay
-	page        *display.Page
+	page        *tui.Page
 	content     tview.Primitive
 	form        *tview.Form
 	description *tview.TextView
@@ -27,7 +27,7 @@ func NewOutputServerConfigPage(cd *ConfigDisplay) *OutputServerConfigPage {
 	}
 
 	OutputServerConfigPage.initPage()
-	OutputServerConfigPage.page = display.NewPage(
+	OutputServerConfigPage.page = tui.NewPage(
 		cd.homePage,
 		"config-output-server",
 		"Output Server Settings",
@@ -39,7 +39,7 @@ func NewOutputServerConfigPage(cd *ConfigDisplay) *OutputServerConfigPage {
 }
 
 // GetPage returns the page.
-func (p *OutputServerConfigPage) GetPage() *display.Page {
+func (p *OutputServerConfigPage) GetPage() *tui.Page {
 	return p.page
 }
 
@@ -48,7 +48,7 @@ func (p *OutputServerConfigPage) initPage() {
 	// Create a form to collect user input.
 	form := tview.NewForm()
 	p.form = form
-	form.SetBackgroundColor(display.ColorFormBackground)
+	form.SetBackgroundColor(tui.ColorFormBackground)
 
 	// Create a description box to display help text.
 	p.description = tview.NewTextView()
@@ -56,11 +56,11 @@ func (p *OutputServerConfigPage) initPage() {
 		SetDynamicColors(true).
 		SetWordWrap(true).
 		SetTextAlign(tview.AlignLeft).
-		SetBackgroundColor(display.ColorFormBackground)
+		SetBackgroundColor(tui.ColorFormBackground)
 	p.description.SetBorder(true)
-	p.description.SetTitle(display.TitleDescription)
+	p.description.SetTitle(tui.TitleDescription)
 	p.description.SetBorderPadding(0, 0, 1, 1)
-	p.description.SetBorderColor(display.ColorBorder)
+	p.description.SetBorderColor(tui.ColorBorder)
 
 	// Define our field descriptions.
 	descriptions := map[string]string{
@@ -71,9 +71,9 @@ func (p *OutputServerConfigPage) initPage() {
 	}
 
 	// Pull together a list of possible output servers and their descriptions.
-	serverLabels := make([]string, len(display.AvailableOutputServers))
+	serverLabels := make([]string, len(tui.AvailableOutputServers))
 	serverDescriptions := make(map[string]string)
-	for i, server := range display.AvailableOutputServers {
+	for i, server := range tui.AvailableOutputServers {
 		serverLabels[i] = server.Label
 		serverDescriptions[server.Label] = server.Description
 		descriptions["Output Server"] = server.Description
@@ -88,7 +88,7 @@ func (p *OutputServerConfigPage) initPage() {
 	// Check if it's a custom output server address.
 	if !strings.Contains(currentAddress, "platform.ethpandaops.io") {
 		// Set to Custom option
-		for i, server := range display.AvailableOutputServers {
+		for i, server := range tui.AvailableOutputServers {
 			if server.Label == "Custom" {
 				defaultIndex = i
 				break
@@ -96,7 +96,7 @@ func (p *OutputServerConfigPage) initPage() {
 		}
 	} else {
 		// Otherwise, it'll be an ethPandaOps server.
-		for i, server := range display.AvailableOutputServers {
+		for i, server := range tui.AvailableOutputServers {
 			if server.Value == currentAddress {
 				defaultIndex = i
 				break
@@ -147,12 +147,12 @@ func (p *OutputServerConfigPage) initPage() {
 	dropdown.SetCurrentOption(defaultIndex)
 
 	// Build our save button out.
-	saveButton := tview.NewButton(display.ButtonSaveSettings)
+	saveButton := tview.NewButton(tui.ButtonSaveSettings)
 	saveButton.SetSelectedFunc(func() {
 		validateAndUpdateOutputServer(p)
 	})
-	saveButton.SetBackgroundColorActivated(display.ColorButtonActivated)
-	saveButton.SetLabelColorActivated(display.ColorButtonText)
+	saveButton.SetBackgroundColorActivated(tui.ColorButtonActivated)
+	saveButton.SetLabelColorActivated(tui.ColorButtonText)
 
 	// Define key bindings for the save button.
 	saveButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -196,14 +196,14 @@ func (p *OutputServerConfigPage) initPage() {
 	formFrame.SetBorder(true)
 	formFrame.SetTitle("Output Server Settings")
 	formFrame.SetBorderPadding(0, 0, 1, 1)
-	formFrame.SetBorderColor(display.ColorBorder)
-	formFrame.SetBackgroundColor(display.ColorFormBackground)
+	formFrame.SetBorderColor(tui.ColorBorder)
+	formFrame.SetBackgroundColor(tui.ColorFormBackground)
 
 	// Create a button container to hold the save button.
 	buttonFlex := tview.NewFlex().
 		SetDirection(tview.FlexColumn).
 		AddItem(nil, 0, 1, false).
-		AddItem(saveButton, len(display.ButtonSaveSettings)+4, 0, true).
+		AddItem(saveButton, len(tui.ButtonSaveSettings)+4, 0, true).
 		AddItem(nil, 0, 1, false)
 
 	// Create a horizontal flex to hold the form and description.
@@ -219,7 +219,7 @@ func (p *OutputServerConfigPage) initPage() {
 		AddItem(nil, 1, 0, false).
 		AddItem(buttonFlex, 1, 0, false).
 		AddItem(nil, 1, 0, false)
-	mainFlex.SetBackgroundColor(display.ColorBackground)
+	mainFlex.SetBackgroundColor(tui.ColorBackground)
 
 	p.content = mainFlex
 }
@@ -231,7 +231,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 
 	// Find the corresponding URL
 	var serverAddress string
-	for _, server := range display.AvailableOutputServers {
+	for _, server := range tui.AvailableOutputServers {
 		if server.Label == serverLabel {
 			serverAddress = server.Value
 			break
@@ -243,7 +243,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 		// Get and validate custom address
 		customAddress := p.form.GetFormItem(1).(*tview.InputField).GetText()
 		if customAddress == "" {
-			errorModal := display.CreateErrorModal(
+			errorModal := tui.CreateErrorModal(
 				p.display.app,
 				"Server address is required for custom server",
 				func() {
@@ -257,7 +257,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 
 		// Validate URL format.
 		if !strings.HasPrefix(customAddress, "http://") && !strings.HasPrefix(customAddress, "https://") {
-			errorModal := display.CreateErrorModal(
+			errorModal := tui.CreateErrorModal(
 				p.display.app,
 				"Server address must start with http:// or https://",
 				func() {
@@ -295,7 +295,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 			})
 		} else {
 			// One is empty but not both
-			errorModal := display.CreateErrorModal(
+			errorModal := tui.CreateErrorModal(
 				p.display.app,
 				"Both username and password must be provided if using credentials",
 				func() {
@@ -318,7 +318,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 		)
 
 		if usernameText == "" || passwordText == "" {
-			errorModal := display.CreateErrorModal(
+			errorModal := tui.CreateErrorModal(
 				p.display.app,
 				"Username and password are required for ethPandaOps servers",
 				func() {

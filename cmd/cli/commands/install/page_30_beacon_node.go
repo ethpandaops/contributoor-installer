@@ -6,28 +6,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
 type BeaconNodePage struct {
 	display     *InstallDisplay
-	page        *display.Page
+	page        *tui.Page
 	content     tview.Primitive
 	form        *tview.Form
 	description *tview.TextView
 }
 
-func NewBeaconNodePage(id *InstallDisplay) *BeaconNodePage {
+func NewBeaconNodePage(display *InstallDisplay) *BeaconNodePage {
 	beaconPage := &BeaconNodePage{
-		display: id,
+		display: display,
 	}
 
 	beaconPage.initPage()
-	beaconPage.page = display.NewPage(
-		id.networkPage.GetPage(), // Set parent to network page
+	beaconPage.page = tui.NewPage(
+		display.networkConfigPage.GetPage(), // Set parent to network page
 		"install-beacon",
 		"Beacon Node",
 		"Configure your beacon node connection",
@@ -37,7 +37,7 @@ func NewBeaconNodePage(id *InstallDisplay) *BeaconNodePage {
 	return beaconPage
 }
 
-func (p *BeaconNodePage) GetPage() *display.Page {
+func (p *BeaconNodePage) GetPage() *tui.Page {
 	return p.page
 }
 
@@ -61,7 +61,7 @@ func (p *BeaconNodePage) initPage() {
 	// Initialize form
 	form.SetButtonsAlign(tview.AlignCenter)
 	form.SetFieldBackgroundColor(tcell.ColorBlack)
-	form.SetBackgroundColor(display.ColorFormBackground)
+	form.SetBackgroundColor(tui.ColorFormBackground)
 	form.SetBorderPadding(0, 0, 0, 0) // Reset padding
 	form.SetLabelColor(tcell.ColorLightGray)
 
@@ -77,10 +77,10 @@ func (p *BeaconNodePage) initPage() {
 	// Create form frame
 	formFrame := tview.NewFrame(form)
 	formFrame.SetBorderPadding(0, 0, 0, 0) // Reset padding
-	formFrame.SetBackgroundColor(display.ColorFormBackground)
+	formFrame.SetBackgroundColor(tui.ColorFormBackground)
 
 	// Add Next button
-	form.AddButton(display.ButtonNext, func() {
+	form.AddButton(tui.ButtonNext, func() {
 		validateAndUpdate(p)
 	})
 
@@ -92,7 +92,7 @@ func (p *BeaconNodePage) initPage() {
 			Background(tview.Styles.PrimitiveBackgroundColor).
 			Foreground(tcell.ColorLightGray))
 		form.SetButtonActivatedStyle(tcell.StyleDefault.
-			Background(display.ColorButtonActivated).
+			Background(tui.ColorButtonActivated).
 			Foreground(tcell.ColorBlack))
 	}
 
@@ -102,21 +102,21 @@ func (p *BeaconNodePage) initPage() {
 	textView.SetTextAlign(tview.AlignCenter)
 	textView.SetWordWrap(true)
 	textView.SetTextColor(tview.Styles.PrimaryTextColor)
-	textView.SetBackgroundColor(display.ColorFormBackground)
+	textView.SetBackgroundColor(tui.ColorFormBackground)
 	textView.SetBorderPadding(0, 0, 0, 0)
 
 	// Content grid
 	contentGrid.SetRows(2, 2, 1, 4, 1, 2, 2)
-	contentGrid.SetBackgroundColor(display.ColorFormBackground)
+	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 	contentGrid.SetBorder(true)
 	contentGrid.SetTitle(" Beacon Node ")
 
 	// Add items to content grid with proper background boxes
-	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(display.ColorFormBackground), 0, 0, 1, 1, 0, 0, false)
+	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 0, 0, 1, 1, 0, 0, false)
 	contentGrid.AddItem(textView, 1, 0, 1, 1, 0, 0, false)
-	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(display.ColorFormBackground), 2, 0, 1, 1, 0, 0, false)
+	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 2, 0, 1, 1, 0, 0, false)
 	contentGrid.AddItem(formFrame, 3, 0, 2, 1, 0, 0, true)
-	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(display.ColorFormBackground), 5, 0, 2, 1, 0, 0, false)
+	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 5, 0, 2, 1, 0, 0, false)
 
 	// Border grid
 	borderGrid.SetRows(0, textViewHeight+formHeight+4, 0, 2)
@@ -133,7 +133,7 @@ func validateAndUpdate(p *BeaconNodePage) {
 	address := inputField.GetText()
 
 	// Show loading modal while validating
-	loadingModal := display.CreateLoadingModal(
+	loadingModal := tui.CreateLoadingModal(
 		p.display.app,
 		"\n[yellow]Validating beacon node connection...\nPlease wait...[white]",
 	)
@@ -146,7 +146,7 @@ func validateAndUpdate(p *BeaconNodePage) {
 		p.display.app.QueueUpdateDraw(func() {
 			if err != nil {
 				// Show error modal
-				errorModal := display.CreateErrorModal(
+				errorModal := tui.CreateErrorModal(
 					p.display.app,
 					err.Error(),
 					func() {

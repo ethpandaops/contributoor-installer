@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -15,7 +15,7 @@ import (
 // NetworkConfigPage is a page that allows the user to configure the network settings.
 type NetworkConfigPage struct {
 	display     *ConfigDisplay
-	page        *display.Page
+	page        *tui.Page
 	content     tview.Primitive
 	form        *tview.Form
 	description *tview.TextView
@@ -23,24 +23,24 @@ type NetworkConfigPage struct {
 
 // NewNetworkConfigPage creates a new NetworkConfigPage.
 func NewNetworkConfigPage(cd *ConfigDisplay) *NetworkConfigPage {
-	networkPage := &NetworkConfigPage{
+	networkConfigPage := &NetworkConfigPage{
 		display: cd,
 	}
 
-	networkPage.initPage()
-	networkPage.page = display.NewPage(
+	networkConfigPage.initPage()
+	networkConfigPage.page = tui.NewPage(
 		cd.homePage,
 		"config-network",
 		"Network Settings",
 		"Configure network settings including client endpoints and network selection",
-		networkPage.content,
+		networkConfigPage.content,
 	)
 
-	return networkPage
+	return networkConfigPage
 }
 
 // GetPage returns the page.
-func (p *NetworkConfigPage) GetPage() *display.Page {
+func (p *NetworkConfigPage) GetPage() *tui.Page {
 	return p.page
 }
 
@@ -49,7 +49,7 @@ func (p *NetworkConfigPage) initPage() {
 	// Create a form to collect user input.
 	form := tview.NewForm()
 	p.form = form
-	form.SetBackgroundColor(display.ColorFormBackground)
+	form.SetBackgroundColor(tui.ColorFormBackground)
 
 	// Create a description box to display help text.
 	p.description = tview.NewTextView()
@@ -57,16 +57,16 @@ func (p *NetworkConfigPage) initPage() {
 		SetDynamicColors(true).
 		SetWordWrap(true).
 		SetTextAlign(tview.AlignLeft).
-		SetBackgroundColor(display.ColorFormBackground)
+		SetBackgroundColor(tui.ColorFormBackground)
 	p.description.SetBorder(true)
-	p.description.SetTitle(display.TitleDescription)
+	p.description.SetTitle(tui.TitleDescription)
 	p.description.SetBorderPadding(0, 0, 1, 1)
-	p.description.SetBorderColor(display.ColorBorder)
+	p.description.SetBorderColor(tui.ColorBorder)
 
 	// Grab the available networks and their descriptions.
-	networks := make([]string, len(display.AvailableNetworks))
+	networks := make([]string, len(tui.AvailableNetworks))
 	networkDescriptions := make(map[string]string)
-	for i, network := range display.AvailableNetworks {
+	for i, network := range tui.AvailableNetworks {
 		networks[i] = network.Value
 		networkDescriptions[network.Value] = network.Description
 	}
@@ -78,12 +78,12 @@ func (p *NetworkConfigPage) initPage() {
 	form.AddInputField("Beacon Node Address", p.display.configService.Get().BeaconNodeAddress, 0, nil, nil)
 
 	// Add a save button and ensure we validate the input.
-	saveButton := tview.NewButton(display.ButtonSaveSettings)
+	saveButton := tview.NewButton(tui.ButtonSaveSettings)
 	saveButton.SetSelectedFunc(func() {
 		validateAndUpdate(p, form.GetFormItem(1).(*tview.InputField))
 	})
-	saveButton.SetBackgroundColorActivated(display.ColorButtonActivated)
-	saveButton.SetLabelColorActivated(display.ColorButtonText)
+	saveButton.SetBackgroundColorActivated(tui.ColorButtonActivated)
+	saveButton.SetLabelColorActivated(tui.ColorButtonText)
 
 	// Define key bindings for the save button.
 	saveButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -127,14 +127,14 @@ func (p *NetworkConfigPage) initPage() {
 	formFrame.SetBorder(true)
 	formFrame.SetTitle("Network Settings")
 	formFrame.SetBorderPadding(0, 0, 1, 1)
-	formFrame.SetBorderColor(display.ColorBorder)
-	formFrame.SetBackgroundColor(display.ColorFormBackground)
+	formFrame.SetBorderColor(tui.ColorBorder)
+	formFrame.SetBackgroundColor(tui.ColorFormBackground)
 
 	// Create a button container to hold the save button.
 	buttonFlex := tview.NewFlex().
 		SetDirection(tview.FlexColumn).
 		AddItem(nil, 0, 1, false).
-		AddItem(saveButton, len(display.ButtonSaveSettings)+4, 0, true).
+		AddItem(saveButton, len(tui.ButtonSaveSettings)+4, 0, true).
 		AddItem(nil, 0, 1, false)
 
 	// Create a horizontal flex to hold the form and description.
@@ -150,7 +150,7 @@ func (p *NetworkConfigPage) initPage() {
 		AddItem(nil, 1, 0, false).
 		AddItem(buttonFlex, 1, 0, false).
 		AddItem(nil, 1, 0, false)
-	mainFlex.SetBackgroundColor(display.ColorBackground)
+	mainFlex.SetBackgroundColor(tui.ColorBackground)
 
 	p.content = mainFlex
 }
@@ -188,7 +188,7 @@ func validateAndUpdate(p *NetworkConfigPage, input *tview.InputField) {
 	// Show loading modal while validating, we reach out to the beacon node
 	// to validate the address, which can lock-up the UI while it does it.
 	// Better to show a loading modal than the user seeing a blank screen.
-	loadingModal := display.CreateLoadingModal(
+	loadingModal := tui.CreateLoadingModal(
 		p.display.app,
 		"\n[yellow]Validating configuration\nPlease wait...[white]",
 	)
@@ -199,7 +199,7 @@ func validateAndUpdate(p *NetworkConfigPage, input *tview.InputField) {
 
 		p.display.app.QueueUpdateDraw(func() {
 			if err != nil {
-				errorModal := display.CreateErrorModal(
+				errorModal := tui.CreateErrorModal(
 					p.display.app,
 					err.Error(),
 					func() {

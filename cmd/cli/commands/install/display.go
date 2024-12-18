@@ -1,8 +1,8 @@
 package install
 
 import (
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 )
@@ -13,10 +13,10 @@ type InstallDisplay struct {
 	frame                       *tview.Frame
 	log                         *logrus.Logger
 	configService               *service.ConfigService
-	homePage                    *display.Page
+	homePage                    *tui.Page
 	content                     tview.Primitive
-	installPages                []display.PageInterface
-	networkPage                 *NetworkPage
+	installPages                []tui.PageInterface
+	networkConfigPage           *networkConfigPage
 	beaconPage                  *BeaconNodePage
 	outputPage                  *OutputServerPage
 	description                 *tview.TextView
@@ -35,14 +35,14 @@ func NewInstallDisplay(log *logrus.Logger, app *tview.Application, configService
 
 	// Create pages
 	id.welcomePage = NewWelcomePage(id)
-	id.networkPage = NewNetworkPage(id)
+	id.networkConfigPage = NewnetworkConfigPage(id)
 	id.beaconPage = NewBeaconNodePage(id)
 	id.outputPage = NewOutputServerPage(id)
 	id.outputServerCredentialsPage = NewOutputServerCredentialsPage(id)
 	id.finishedPage = NewFinishedPage(id)
-	id.installPages = []display.PageInterface{
+	id.installPages = []tui.PageInterface{
 		id.welcomePage,
-		id.networkPage,
+		id.networkConfigPage,
 		id.beaconPage,
 		id.outputPage,
 		id.outputServerCredentialsPage,
@@ -55,10 +55,10 @@ func NewInstallDisplay(log *logrus.Logger, app *tview.Application, configService
 	}
 
 	// Create initial frame
-	frame := display.CreatePageFrame(display.PageFrameOptions{
+	frame := tui.CreatePageFrame(tui.PageFrameOptions{
 		Content:  id.pages,
 		Title:    id.welcomePage.GetPage().Title,
-		HelpType: display.HelpWizard,
+		HelpType: tui.HelpWizard,
 		Step:     1,
 		Total:    len(id.installPages),
 	})
@@ -97,16 +97,16 @@ func (d *InstallDisplay) getCurrentStep() int {
 	return 1
 }
 
-func (d *InstallDisplay) setPage(page *display.Page) {
+func (d *InstallDisplay) setPage(page *tui.Page) {
 	// Switch to the new page first
 	d.pages.SwitchToPage(page.ID)
 
 	// Then create the frame with the updated step number
 	d.frame.Clear()
-	frame := display.CreatePageFrame(display.PageFrameOptions{
+	frame := tui.CreatePageFrame(tui.PageFrameOptions{
 		Content:  d.pages,
 		Title:    page.Title,
-		HelpType: display.HelpWizard,
+		HelpType: tui.HelpWizard,
 		Step:     d.getCurrentStep(),
 		Total:    len(d.installPages),
 		OnEsc: func() {
@@ -121,7 +121,7 @@ func (d *InstallDisplay) setPage(page *display.Page) {
 }
 
 func (d *InstallDisplay) OnComplete() error {
-	d.log.Infof("%sInstallation complete%s", display.TerminalColorGreen, display.TerminalColorReset)
+	d.log.Infof("%sInstallation complete%s", tui.TerminalColorGreen, tui.TerminalColorReset)
 	d.log.Info("You can now manage contributoor using the following commands:")
 	d.log.Info("    contributoor start")
 	d.log.Info("    contributoor stop")

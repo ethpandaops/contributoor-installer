@@ -6,8 +6,8 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
-	"github.com/ethpandaops/contributoor-installer/internal/display"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 )
 
 // RegisterCommands registers the update command.
@@ -37,10 +37,10 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
 	if err != nil {
 		if _, ok := err.(*service.ConfigNotFoundError); ok {
-			return fmt.Errorf("%s%v%s", display.TerminalColorRed, err, display.TerminalColorReset)
+			return fmt.Errorf("%s%v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 		}
 
-		return fmt.Errorf("%sError loading config: %v%s", display.TerminalColorRed, err, display.TerminalColorReset)
+		return fmt.Errorf("%sError loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
 	var (
@@ -82,9 +82,9 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 		if !exists {
 			return fmt.Errorf(
 				"%sVersion %s not found. Use 'contributoor update' without --version to get the latest version%s",
-				display.TerminalColorRed,
+				tui.TerminalColorRed,
 				targetVersion,
-				display.TerminalColorReset,
+				tui.TerminalColorReset,
 			)
 		}
 	} else {
@@ -103,16 +103,16 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 		if c.IsSet("version") {
 			log.Infof(
 				"%sContributoor is already running version %s%s",
-				display.TerminalColorGreen,
+				tui.TerminalColorGreen,
 				targetVersion,
-				display.TerminalColorReset,
+				tui.TerminalColorReset,
 			)
 		} else {
 			log.Infof(
 				"%sContributoor is up to date at version %s%s",
-				display.TerminalColorGreen,
+				tui.TerminalColorGreen,
 				targetVersion,
-				display.TerminalColorReset,
+				tui.TerminalColorReset,
 			)
 		}
 
@@ -159,7 +159,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 		// Given its docker, we can ask the user if they want to restart it. Otherwise,
 		// we'll just let it run with the previous version until next restart.
 		if running {
-			if display.Confirm("Service is running. Would you like to restart it with the new version?") {
+			if tui.Confirm("Service is running. Would you like to restart it with the new version?") {
 				if err := dockerService.Stop(); err != nil {
 					return fmt.Errorf("failed to stop service: %w", err)
 				}
@@ -171,14 +171,14 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 				log.Info("Service will continue running with the previous version until next restart")
 			}
 		} else {
-			if display.Confirm("Service is not running. Would you like to start it?") {
+			if tui.Confirm("Service is not running. Would you like to start it?") {
 				if err := dockerService.Start(); err != nil {
 					return fmt.Errorf("failed to start service: %w", err)
 				}
 			}
 		}
 
-		log.Infof("%sContributoor updated successfully to version %s%s", display.TerminalColorGreen, configService.Get().Version, display.TerminalColorReset)
+		log.Infof("%sContributoor updated successfully to version %s%s", tui.TerminalColorGreen, configService.Get().Version, tui.TerminalColorReset)
 	case service.RunMethodBinary:
 		binaryService := service.NewBinaryService(log, configService)
 
@@ -193,7 +193,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 
 		// If the service is running, we need to stop it before we can update the binary.
 		if running {
-			if display.Confirm("Service is running. In order to update, it must be stopped. Would you like to stop it?") {
+			if tui.Confirm("Service is running. In order to update, it must be stopped. Would you like to stop it?") {
 				if err := binaryService.Stop(); err != nil {
 					return fmt.Errorf("failed to stop service: %w", err)
 				}
