@@ -19,6 +19,7 @@ import (
 
 var confirmResponse bool
 
+// For obvious reasons, we need to mock the confirm prompt. Tests can't be interactive.
 func init() {
 	tui.Confirm = func(string) bool {
 		return confirmResponse

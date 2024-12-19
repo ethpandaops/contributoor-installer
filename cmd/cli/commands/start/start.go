@@ -32,7 +32,10 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) error {
 				return fmt.Errorf("error creating docker sidecar service: %w", err)
 			}
 
-			binarySidecar := sidecar.NewBinarySidecar(log, sidecarConfig)
+			binarySidecar, err := sidecar.NewBinarySidecar(log, sidecarConfig, installerCfg)
+			if err != nil {
+				return fmt.Errorf("error creating binary sidecar service: %w", err)
+			}
 
 			return startContributoor(c, log, sidecarConfig, dockerSidecar, binarySidecar)
 		},

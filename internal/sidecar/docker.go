@@ -107,8 +107,8 @@ func (s *dockerSidecar) IsRunning() (bool, error) {
 func (s *dockerSidecar) Update() error {
 	cfg := s.configService.Get()
 
-	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
 	image := fmt.Sprintf("%s:%s", s.installerCfg.DockerImage, cfg.Version)
+
 	cmd := exec.Command("docker", "pull", image)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to pull image %s: %w\nOutput: %s", image, err, string(output))

@@ -58,34 +58,32 @@ type GitHubRelease struct {
 
 // githubService is a basic service for interacting with the GitHub API.
 type githubService struct {
-	log    *logrus.Logger
-	owner  string
-	repo   string
-	client *http.Client
-	config *installer.Config
+	log          *logrus.Logger
+	client       *http.Client
+	githubURL    *url.URL
+	installerCfg *installer.Config
 }
 
 // NewGitHubService creates a new GitHubService.
-func NewGitHubService(log *logrus.Logger, config *installer.Config) GitHubService {
+func NewGitHubService(log *logrus.Logger, installerCfg *installer.Config) (GitHubService, error) {
+	githubURL, err := validateGitHubURL(installerCfg.GithubOrg, installerCfg.GithubRepo)
+	if err != nil {
+		return nil, fmt.Errorf("invalid github url: %w", err)
+	}
+
 	return &githubService{
-		log:    log,
-		owner:  config.GithubOrg,
-		repo:   config.GithubRepo,
-		config: config,
+		log:          log,
+		installerCfg: installerCfg,
+		githubURL:    githubURL,
 		client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
-	}
+	}, nil
 }
 
 // GetLatestVersion returns the latest version tag (e.g., "0.0.1") from GitHub releases.
 func (s *githubService) GetLatestVersion() (string, error) {
-	u, err := validateGitHubURL(s.owner, s.repo)
-	if err != nil {
-		return "", fmt.Errorf("invalid GitHub URL: %w", err)
-	}
-
-	resp, err := s.client.Get(u.String())
+	resp, err := s.client.Get(s.githubURL.String())
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch releases: %w", err)
 	}
@@ -164,12 +162,7 @@ func (s *githubService) GetLatestVersion() (string, error) {
 
 // VersionExists checks if a specific version exists in the GitHub releases.
 func (s *githubService) VersionExists(version string) (bool, error) {
-	u, err := validateGitHubURL(s.owner, s.repo)
-	if err != nil {
-		return false, fmt.Errorf("invalid GitHub URL: %w", err)
-	}
-
-	resp, err := s.client.Get(u.String())
+	resp, err := s.client.Get(s.githubURL.String())
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch releases: %w", err)
 	}

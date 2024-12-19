@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"runtime"
 
+	"github.com/ethpandaops/contributoor-installer/internal/installer"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
@@ -23,22 +24,18 @@ type BinarySidecar interface {
 
 // binarySidecar is a basic service for interacting with the contributoor binary.
 type binarySidecar struct {
-	logger *logrus.Logger
-	config ConfigManager
-	stdout *os.File
-	stderr *os.File
+	logger       *logrus.Logger
+	config       ConfigManager
+	installerCfg *installer.Config
+	stdout       *os.File
+	stderr       *os.File
 }
 
 // NewBinarySidecar creates a new BinarySidecar.
-func NewBinarySidecar(logger *logrus.Logger, configService ConfigManager) BinarySidecar {
+func NewBinarySidecar(logger *logrus.Logger, configService ConfigManager, installerCfg *installer.Config) (BinarySidecar, error) {
 	expandedDir, err := homedir.Expand(configService.Get().ContributoorDirectory)
 	if err != nil {
-		logger.Errorf("Failed to expand config path: %v", err)
-
-		return &binarySidecar{
-			logger: logger,
-			config: configService,
-		}
+		return nil, fmt.Errorf("failed to expand config path: %w", err)
 	}
 
 	logsDir := filepath.Join(expandedDir, "logs")
@@ -46,32 +43,23 @@ func NewBinarySidecar(logger *logrus.Logger, configService ConfigManager) Binary
 	// Open log files
 	stdout, err := os.OpenFile(filepath.Join(logsDir, "debug.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		logger.Errorf("Failed to open stdout log file: %v", err)
-
-		return &binarySidecar{
-			logger: logger,
-			config: configService,
-		}
+		return nil, fmt.Errorf("failed to open stdout log file: %w", err)
 	}
 
 	stderr, err := os.OpenFile(filepath.Join(logsDir, "service.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		stdout.Close()
 
-		logger.Errorf("Failed to open stderr log file: %v", err)
-
-		return &binarySidecar{
-			logger: logger,
-			config: configService,
-		}
+		return nil, fmt.Errorf("failed to open stderr log file: %w", err)
 	}
 
 	return &binarySidecar{
-		logger: logger,
-		config: configService,
-		stdout: stdout,
-		stderr: stderr,
-	}
+		logger:       logger,
+		config:       configService,
+		stdout:       stdout,
+		stderr:       stderr,
+		installerCfg: installerCfg,
+	}, nil
 }
 
 // Start starts the binary service.
@@ -208,7 +196,9 @@ func (s *binarySidecar) Update() error {
 
 	// Download and verify checksums.
 	checksumURL := fmt.Sprintf(
-		"https://github.com/ethpandaops/contributoor/releases/download/v%s/contributoor_%s_checksums.txt",
+		"https://github.com/%s/%s/releases/download/v%s/contributoor_%s_checksums.txt",
+		s.installerCfg.GithubOrg,
+		s.installerCfg.GithubRepo,
 		cfg.Version,
 		cfg.Version,
 	)
@@ -232,7 +222,9 @@ func (s *binarySidecar) Update() error {
 	}
 
 	binaryURL := fmt.Sprintf(
-		"https://github.com/ethpandaops/contributoor/releases/download/v%s/contributoor_%s_%s_%s.tar.gz",
+		"https://github.com/%s/%s/releases/download/v%s/contributoor_%s_%s_%s.tar.gz",
+		s.installerCfg.GithubOrg,
+		s.installerCfg.GithubRepo,
 		cfg.Version,
 		cfg.Version,
 		platform,

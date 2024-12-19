@@ -72,7 +72,12 @@ func TestGitHubService_GetLatestVersion(t *testing.T) {
 			}
 			defer func() { validateGitHubURL = validate }()
 
-			svc := NewGitHubService(logrus.New(), installer.NewConfig())
+			svc, err := NewGitHubService(logrus.New(), installer.NewConfig())
+			if err != nil {
+				t.Errorf("NewGitHubService() error = %v", err)
+
+				return
+			}
 
 			got, err := svc.GetLatestVersion()
 			if (err != nil) != tt.wantErr {
@@ -143,7 +148,12 @@ func TestGitHubService_VersionExists(t *testing.T) {
 			}
 			defer func() { validateGitHubURL = validate }()
 
-			svc := NewGitHubService(logrus.New(), installer.NewConfig())
+			svc, err := NewGitHubService(logrus.New(), installer.NewConfig())
+			if err != nil {
+				t.Errorf("NewGitHubService() error = %v", err)
+
+				return
+			}
 
 			exists, err := svc.VersionExists(tt.version)
 
