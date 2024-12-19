@@ -91,7 +91,7 @@ func (p *NetworkConfigPage) initPage() {
 
 		// Add button to our form.
 		form.AddButton(label, func() {
-			if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
+			if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
 				cfg.NetworkName = tui.AvailableNetworks[index].Value
 			}); err != nil {
 				p.openErrorModal(err)

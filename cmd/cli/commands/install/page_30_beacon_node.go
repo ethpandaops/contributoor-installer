@@ -66,7 +66,7 @@ func (p *BeaconNodePage) initPage() {
 	// Add input field to our form to capture the users beacon node address.
 	inputField := tview.NewInputField().
 		SetLabel("Beacon Node Address: ").
-		SetText(p.display.sidecarConfig.Get().BeaconNodeAddress).
+		SetText(p.display.sidecarCfg.Get().BeaconNodeAddress).
 		SetFieldBackgroundColor(tcell.ColorBlack).
 		SetLabelColor(tcell.ColorLightGray)
 	form.AddFormItem(inputField)
@@ -133,7 +133,7 @@ func validateAndUpdate(p *BeaconNodePage, input *tview.InputField) {
 		return
 	}
 
-	if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
+	if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
 		cfg.BeaconNodeAddress = input.GetText()
 	}); err != nil {
 		p.openErrorModal(err)

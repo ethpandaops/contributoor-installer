@@ -13,7 +13,7 @@ type InstallDisplay struct {
 	pages                       *tview.Pages
 	frame                       *tview.Frame
 	log                         *logrus.Logger
-	sidecarConfig               sidecar.ConfigManager
+	sidecarCfg                  sidecar.ConfigManager
 	installPages                []tui.PageInterface
 	welcomePage                 *WelcomePage
 	networkConfigPage           *NetworkConfigPage
@@ -24,12 +24,12 @@ type InstallDisplay struct {
 }
 
 // NewInstallDisplay creates a new InstallDisplay.
-func NewInstallDisplay(log *logrus.Logger, app *tview.Application, sidecarConfig sidecar.ConfigManager) *InstallDisplay {
+func NewInstallDisplay(log *logrus.Logger, app *tview.Application, sidecarCfg sidecar.ConfigManager) *InstallDisplay {
 	display := &InstallDisplay{
-		app:           app,
-		pages:         tview.NewPages(),
-		log:           log,
-		sidecarConfig: sidecarConfig,
+		app:        app,
+		pages:      tview.NewPages(),
+		log:        log,
+		sidecarCfg: sidecarCfg,
 	}
 
 	// Create all of our install wizard pages.
@@ -71,7 +71,7 @@ func NewInstallDisplay(log *logrus.Logger, app *tview.Application, sidecarConfig
 func (d *InstallDisplay) Run() error {
 	d.setPage(d.welcomePage.GetPage())
 
-	cfg := d.sidecarConfig.Get()
+	cfg := d.sidecarCfg.Get()
 
 	d.log.WithFields(logrus.Fields{
 		"config_path": cfg.ContributoorDirectory,

@@ -25,9 +25,9 @@ func TestOutputServerPage(t *testing.T) {
 		mockConfig.EXPECT().Update(gomock.Any()).Return(nil).AnyTimes()
 
 		return &InstallDisplay{
-			app:           tview.NewApplication(),
-			log:           logrus.New(),
-			sidecarConfig: mockConfig,
+			app:        tview.NewApplication(),
+			log:        logrus.New(),
+			sidecarCfg: mockConfig,
 			beaconPage: &BeaconNodePage{
 				page: &tui.Page{ID: "beacon-node"},
 			},

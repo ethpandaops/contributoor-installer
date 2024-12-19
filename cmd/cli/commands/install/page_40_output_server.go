@@ -68,8 +68,8 @@ func (p *OutputServerPage) initPage() {
 	p.form = form
 
 	// Get current selection from config
-	if p.display.sidecarConfig.Get().OutputServer == nil {
-		if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
+	if p.display.sidecarCfg.Get().OutputServer == nil {
+		if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
 			cfg.OutputServer = &sidecar.OutputServerConfig{}
 		}); err != nil {
 			p.openErrorModal(err)
@@ -78,7 +78,7 @@ func (p *OutputServerPage) initPage() {
 		}
 	}
 
-	currentAddress := p.display.sidecarConfig.Get().OutputServer.Address
+	currentAddress := p.display.sidecarCfg.Get().OutputServer.Address
 	defaultIndex := 0 // Default to first option
 
 	// Check if it's a custom server address.
@@ -114,13 +114,13 @@ func (p *OutputServerPage) initPage() {
 		}
 
 		// Clear credentials when switching server types
-		currentAddress := p.display.sidecarConfig.Get().OutputServer.Address
+		currentAddress := p.display.sidecarCfg.Get().OutputServer.Address
 		wasEthPandaOps := validate.IsEthPandaOpsServer(currentAddress)
 		isEthPandaOps := validate.IsEthPandaOpsServer(selectedValue)
 
 		if wasEthPandaOps != isEthPandaOps {
 			// Server type changed, clear credentials
-			if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
+			if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
 				cfg.OutputServer.Credentials = ""
 			}); err != nil {
 				p.openErrorModal(err)
@@ -132,12 +132,12 @@ func (p *OutputServerPage) initPage() {
 		// Handle custom server field.
 		if selectedValue == "custom" {
 			// If we're switching to custom, preserve existing custom address.
-			existingAddress := p.display.sidecarConfig.Get().OutputServer.Address
+			existingAddress := p.display.sidecarCfg.Get().OutputServer.Address
 			if strings.Contains(existingAddress, "platform.ethpandaops.io") {
 				existingAddress = ""
 			}
 
-			if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
+			if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
 				cfg.OutputServer.Address = existingAddress
 			}); err != nil {
 				p.openErrorModal(err)
@@ -146,7 +146,7 @@ func (p *OutputServerPage) initPage() {
 			}
 
 			input := form.AddInputField("Server Address", existingAddress, 40, nil, func(address string) {
-				if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
+				if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
 					cfg.OutputServer.Address = address
 				}); err != nil {
 					p.openErrorModal(err)
@@ -157,7 +157,7 @@ func (p *OutputServerPage) initPage() {
 			input.SetBackgroundColor(tui.ColorFormBackground)
 		} else {
 			// Only update config when explicitly selecting a standard server.
-			if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
+			if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
 				cfg.OutputServer.Address = selectedValue
 			}); err != nil {
 				p.openErrorModal(err)
@@ -203,7 +203,7 @@ func (p *OutputServerPage) initPage() {
 		}
 
 		// Update config with validated address
-		if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
+		if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
 			cfg.OutputServer.Address = address
 		}); err != nil {
 			p.openErrorModal(err)

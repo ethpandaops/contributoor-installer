@@ -20,9 +20,9 @@ func TestBeaconNodePage(t *testing.T) {
 		mockConfig.EXPECT().Get().Return(cfg).AnyTimes()
 
 		return &InstallDisplay{
-			app:           tview.NewApplication(),
-			log:           logrus.New(),
-			sidecarConfig: mockConfig,
+			app:        tview.NewApplication(),
+			log:        logrus.New(),
+			sidecarCfg: mockConfig,
 			networkConfigPage: &NetworkConfigPage{
 				page: &tui.Page{ID: "network-config"},
 			},

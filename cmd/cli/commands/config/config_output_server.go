@@ -84,7 +84,7 @@ func (p *OutputServerConfigPage) initPage() {
 	// of the current server so we can prepopulate the form with the current
 	// values.
 	defaultIndex := 0
-	currentAddress := p.display.sidecarConfig.Get().OutputServer.Address
+	currentAddress := p.display.sidecarCfg.Get().OutputServer.Address
 
 	// Check if it's a custom output server address.
 	if !strings.Contains(currentAddress, "platform.ethpandaops.io") {
@@ -123,7 +123,7 @@ func (p *OutputServerConfigPage) initPage() {
 			// Add appropriate fields based on selection.
 			if option == "Custom" {
 				// If it's a custom server, we need to add the server address field.
-				defaultAddress := p.display.sidecarConfig.Get().OutputServer.Address
+				defaultAddress := p.display.sidecarCfg.Get().OutputServer.Address
 				if strings.Contains(defaultAddress, "platform.ethpandaops.io") {
 					defaultAddress = ""
 				}
@@ -132,12 +132,12 @@ func (p *OutputServerConfigPage) initPage() {
 				form.AddInputField("Server Address", defaultAddress, 0, nil, nil)
 
 				// Add the username and password fields.
-				username, password := getCredentialsFromConfig(p.display.sidecarConfig.Get())
+				username, password := getCredentialsFromConfig(p.display.sidecarCfg.Get())
 				form.AddInputField("Username", username, 0, nil, nil)
 				form.AddPasswordField("Password", password, 0, '*', nil)
 			} else {
 				// Otherwise, it's an ethPandaOps server.
-				username, password := getCredentialsFromConfig(p.display.sidecarConfig.Get())
+				username, password := getCredentialsFromConfig(p.display.sidecarCfg.Get())
 				form.AddInputField("Username", username, 0, nil, nil)
 				form.AddPasswordField("Password", password, 0, '*', nil)
 			}
@@ -312,7 +312,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 	}
 
 	// Update config with validated values.
-	if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
+	if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
 		cfg.OutputServer.Address = serverAddress
 		if username != "" && password != "" {
 			cfg.OutputServer.Credentials = validate.EncodeCredentials(username, password)

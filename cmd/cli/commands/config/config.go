@@ -19,20 +19,20 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 		Action: func(c *cli.Context) error {
 			log := opts.Logger()
 
-			sidecarConfig, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
+			sidecarCfg, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
 			if err != nil {
 				return fmt.Errorf("%serror loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 			}
 
-			return configureContributoor(c, log, sidecarConfig)
+			return configureContributoor(c, log, sidecarCfg)
 		},
 	})
 }
 
-func configureContributoor(c *cli.Context, log *logrus.Logger, sidecarConfig sidecar.ConfigManager) error {
+func configureContributoor(c *cli.Context, log *logrus.Logger, sidecarCfg sidecar.ConfigManager) error {
 	var (
 		app     = tview.NewApplication()
-		display = NewConfigDisplay(log, app, sidecarConfig)
+		display = NewConfigDisplay(log, app, sidecarCfg)
 	)
 
 	if err := display.Run(); err != nil {

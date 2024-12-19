@@ -21,12 +21,12 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 		Action: func(c *cli.Context) error {
 			log := opts.Logger()
 
-			sidecarConfig, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
+			sidecarCfg, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
 			if err != nil {
 				return fmt.Errorf("error loading config: %w", err)
 			}
 
-			return installContributoor(c, log, sidecarConfig)
+			return installContributoor(c, log, sidecarCfg)
 		},
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -43,10 +43,10 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 	})
 }
 
-func installContributoor(c *cli.Context, log *logrus.Logger, sidecarConfig sidecar.ConfigManager) error {
+func installContributoor(c *cli.Context, log *logrus.Logger, sidecarCfg sidecar.ConfigManager) error {
 	var (
 		app     = tview.NewApplication()
-		display = NewInstallDisplay(log, app, sidecarConfig)
+		display = NewInstallDisplay(log, app, sidecarCfg)
 	)
 
 	// Run the display.

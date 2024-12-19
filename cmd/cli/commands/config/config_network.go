@@ -70,7 +70,7 @@ func (p *NetworkConfigPage) initPage() {
 
 	// Add our form fields.
 	// Find the index of the current network (from the sidecar config) in the list.
-	currentNetwork := p.display.sidecarConfig.Get().NetworkName
+	currentNetwork := p.display.sidecarCfg.Get().NetworkName
 	currentNetworkIndex := 0
 
 	for i, network := range networks {
@@ -84,7 +84,7 @@ func (p *NetworkConfigPage) initPage() {
 	form.AddDropDown("Network", networks, currentNetworkIndex, func(option string, index int) {
 		p.description.SetText(networkDescriptions[option])
 	})
-	form.AddInputField("Beacon Node Address", p.display.sidecarConfig.Get().BeaconNodeAddress, 0, nil, nil)
+	form.AddInputField("Beacon Node Address", p.display.sidecarCfg.Get().BeaconNodeAddress, 0, nil, nil)
 
 	// Add a save button and ensure we validate the input.
 	saveButton := tview.NewButton(tui.ButtonSaveSettings)
@@ -176,7 +176,7 @@ func validateAndUpdate(p *NetworkConfigPage, input *tview.InputField) {
 		return
 	}
 
-	if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
+	if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
 		cfg.BeaconNodeAddress = input.GetText()
 	}); err != nil {
 		p.openErrorModal(err)

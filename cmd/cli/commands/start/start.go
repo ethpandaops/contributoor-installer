@@ -22,22 +22,22 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 
 			installerCfg := installer.NewConfig()
 
-			sidecarConfig, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
+			sidecarCfg, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
 			if err != nil {
 				return fmt.Errorf("error loading config: %w", err)
 			}
 
-			dockerSidecar, err := sidecar.NewDockerSidecar(log, sidecarConfig, installerCfg)
+			dockerSidecar, err := sidecar.NewDockerSidecar(log, sidecarCfg, installerCfg)
 			if err != nil {
 				return fmt.Errorf("error creating docker sidecar service: %w", err)
 			}
 
-			binarySidecar, err := sidecar.NewBinarySidecar(log, sidecarConfig, installerCfg)
+			binarySidecar, err := sidecar.NewBinarySidecar(log, sidecarCfg, installerCfg)
 			if err != nil {
 				return fmt.Errorf("error creating binary sidecar service: %w", err)
 			}
 
-			return startContributoor(c, log, sidecarConfig, dockerSidecar, binarySidecar)
+			return startContributoor(c, log, sidecarCfg, dockerSidecar, binarySidecar)
 		},
 	})
 }

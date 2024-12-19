@@ -20,15 +20,15 @@ type DockerSidecar interface {
 
 // dockerSidecar is a basic service for interacting with the docker container.
 type dockerSidecar struct {
-	logger        *logrus.Logger
-	composePath   string
-	configPath    string
-	configService ConfigManager
-	installerCfg  *installer.Config
+	logger       *logrus.Logger
+	composePath  string
+	configPath   string
+	sidecarCfg   ConfigManager
+	installerCfg *installer.Config
 }
 
 // NewDockerSidecar creates a new DockerSidecar.
-func NewDockerSidecar(logger *logrus.Logger, configService ConfigManager, installerCfg *installer.Config) (DockerSidecar, error) {
+func NewDockerSidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installerCfg *installer.Config) (DockerSidecar, error) {
 	composePath, err := findComposeFile()
 	if err != nil {
 		return nil, fmt.Errorf("failed to find docker-compose.yml: %w", err)
@@ -39,11 +39,11 @@ func NewDockerSidecar(logger *logrus.Logger, configService ConfigManager, instal
 	}
 
 	return &dockerSidecar{
-		logger:        logger,
-		composePath:   filepath.Clean(composePath),
-		configPath:    configService.GetConfigPath(),
-		configService: configService,
-		installerCfg:  installerCfg,
+		logger:       logger,
+		composePath:  filepath.Clean(composePath),
+		configPath:   sidecarCfg.GetConfigPath(),
+		sidecarCfg:   sidecarCfg,
+		installerCfg: installerCfg,
 	}, nil
 }
 
@@ -105,7 +105,7 @@ func (s *dockerSidecar) IsRunning() (bool, error) {
 
 // Update pulls the latest image and restarts the container.
 func (s *dockerSidecar) Update() error {
-	cfg := s.configService.Get()
+	cfg := s.sidecarCfg.Get()
 
 	image := fmt.Sprintf("%s:%s", s.installerCfg.DockerImage, cfg.Version)
 
@@ -125,7 +125,7 @@ func (s *dockerSidecar) Update() error {
 }
 
 func (s *dockerSidecar) getComposeEnv() []string {
-	cfg := s.configService.Get()
+	cfg := s.sidecarCfg.Get()
 
 	return append(os.Environ(),
 		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", filepath.Dir(s.configPath)),

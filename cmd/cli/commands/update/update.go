@@ -30,17 +30,17 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 
 			installerCfg := installer.NewConfig()
 
-			sidecarConfig, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
+			sidecarCfg, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
 			if err != nil {
 				return fmt.Errorf("error loading config: %w", err)
 			}
 
-			dockerSidecar, err := sidecar.NewDockerSidecar(log, sidecarConfig, installerCfg)
+			dockerSidecar, err := sidecar.NewDockerSidecar(log, sidecarCfg, installerCfg)
 			if err != nil {
 				return fmt.Errorf("error creating docker sidecar service: %w", err)
 			}
 
-			binarySidecar, err := sidecar.NewBinarySidecar(log, sidecarConfig, installerCfg)
+			binarySidecar, err := sidecar.NewBinarySidecar(log, sidecarCfg, installerCfg)
 			if err != nil {
 				return fmt.Errorf("error creating binary sidecar service: %w", err)
 			}
@@ -50,7 +50,7 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 				return fmt.Errorf("error creating github service: %w", err)
 			}
 
-			return updateContributoor(c, log, sidecarConfig, dockerSidecar, binarySidecar, githubService)
+			return updateContributoor(c, log, sidecarCfg, dockerSidecar, binarySidecar, githubService)
 		},
 	})
 }
@@ -58,7 +58,7 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 func updateContributoor(
 	c *cli.Context,
 	log *logrus.Logger,
-	sidecarConfig sidecar.ConfigManager,
+	sidecarCfg sidecar.ConfigManager,
 	docker sidecar.DockerSidecar,
 	binary sidecar.BinarySidecar,
 	github service.GitHubService,
@@ -66,7 +66,7 @@ func updateContributoor(
 	var (
 		success        bool
 		targetVersion  string
-		cfg            = sidecarConfig.Get()
+		cfg            = sidecarCfg.Get()
 		currentVersion = cfg.Version
 	)
 
@@ -74,7 +74,7 @@ func updateContributoor(
 
 	defer func() {
 		if !success {
-			if err := rollbackVersion(log, sidecarConfig, currentVersion); err != nil {
+			if err := rollbackVersion(log, sidecarCfg, currentVersion); err != nil {
 				log.Error(err)
 			}
 		}
@@ -100,12 +100,12 @@ func updateContributoor(
 	}
 
 	// Update config version.
-	if uerr := updateConfigVersion(sidecarConfig, targetVersion); uerr != nil {
+	if uerr := updateConfigVersion(sidecarCfg, targetVersion); uerr != nil {
 		return uerr
 	}
 
 	// Refresh our config state, given it was updated above.
-	cfg = sidecarConfig.Get()
+	cfg = sidecarCfg.Get()
 
 	log.WithField("version", cfg.Version).Info("Updating Contributoor")
 

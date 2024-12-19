@@ -25,15 +25,15 @@ type BinarySidecar interface {
 // binarySidecar is a basic service for interacting with the contributoor binary.
 type binarySidecar struct {
 	logger       *logrus.Logger
-	config       ConfigManager
+	sidecarCfg   ConfigManager
 	installerCfg *installer.Config
 	stdout       *os.File
 	stderr       *os.File
 }
 
 // NewBinarySidecar creates a new BinarySidecar.
-func NewBinarySidecar(logger *logrus.Logger, configService ConfigManager, installerCfg *installer.Config) (BinarySidecar, error) {
-	expandedDir, err := homedir.Expand(configService.Get().ContributoorDirectory)
+func NewBinarySidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installerCfg *installer.Config) (BinarySidecar, error) {
+	expandedDir, err := homedir.Expand(sidecarCfg.Get().ContributoorDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to expand config path: %w", err)
 	}
@@ -55,16 +55,16 @@ func NewBinarySidecar(logger *logrus.Logger, configService ConfigManager, instal
 
 	return &binarySidecar{
 		logger:       logger,
-		config:       configService,
 		stdout:       stdout,
 		stderr:       stderr,
+		sidecarCfg:   sidecarCfg,
 		installerCfg: installerCfg,
 	}, nil
 }
 
 // Start starts the binary service.
 func (s *binarySidecar) Start() error {
-	cfg := s.config.Get()
+	cfg := s.sidecarCfg.Get()
 
 	binaryPath := filepath.Join(cfg.ContributoorDirectory, "bin", "sentry")
 	if _, err := os.Stat(binaryPath); err != nil {
@@ -112,7 +112,7 @@ func (s *binarySidecar) Start() error {
 
 // Stop stops the binary service.
 func (s *binarySidecar) Stop() error {
-	cfg := s.config.Get()
+	cfg := s.sidecarCfg.Get()
 
 	pidFile := filepath.Join(cfg.ContributoorDirectory, "contributoor.pid")
 
@@ -152,7 +152,7 @@ func (s *binarySidecar) Stop() error {
 
 // IsRunning checks if the binary service is running.
 func (s *binarySidecar) IsRunning() (bool, error) {
-	cfg := s.config.Get()
+	cfg := s.sidecarCfg.Get()
 
 	pidFile := filepath.Join(cfg.ContributoorDirectory, "contributoor.pid")
 	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
@@ -184,7 +184,7 @@ func (s *binarySidecar) IsRunning() (bool, error) {
 
 // Update updates the binary service.
 func (s *binarySidecar) Update() error {
-	cfg := s.config.Get()
+	cfg := s.sidecarCfg.Get()
 
 	expandedDir, err := homedir.Expand(cfg.ContributoorDirectory)
 	if err != nil {

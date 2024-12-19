@@ -22,9 +22,9 @@ func TestFinishedPage(t *testing.T) {
 		}).AnyTimes()
 
 		display := &InstallDisplay{
-			app:           tview.NewApplication(),
-			log:           logrus.New(),
-			sidecarConfig: mockConfig,
+			app:        tview.NewApplication(),
+			log:        logrus.New(),
+			sidecarCfg: mockConfig,
 		}
 
 		// Initialize requiredpages

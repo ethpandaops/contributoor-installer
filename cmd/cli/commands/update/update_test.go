@@ -277,7 +277,7 @@ func TestRegisterCommands(t *testing.T) {
 			}
 
 			// Now test!
-			err = RegisterCommands(
+			RegisterCommands(
 				app,
 				options.NewCommandOpts(
 					options.WithName("update"),
