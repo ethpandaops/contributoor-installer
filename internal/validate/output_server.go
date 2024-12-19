@@ -45,6 +45,10 @@ func IsEthPandaOpsServer(address string) bool {
 
 // EncodeCredentials creates a base64 encoded string of username:password.
 func EncodeCredentials(username, password string) string {
+	if username == "" && password == "" {
+		return ""
+	}
+
 	return base64.StdEncoding.EncodeToString(
 		[]byte(fmt.Sprintf("%s:%s", username, password)),
 	)
@@ -61,7 +65,7 @@ func DecodeCredentials(encoded string) (username, password string, err error) {
 		return "", "", err
 	}
 
-	parts := strings.Split(string(decoded), ":")
+	parts := strings.SplitN(string(decoded), ":", 2)
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("invalid credentials format")
 	}
