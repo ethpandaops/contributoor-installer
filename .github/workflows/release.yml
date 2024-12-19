@@ -9,20 +9,28 @@ permissions:
   contents: write
 
 jobs:
-  pre-release-checks:
+  go-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Go Tests
-        uses: ./.github/workflows/go-test.yml
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/go-setup
+      - run: go test -v ./...
 
-      - name: Shell Tests
-        uses: ./.github/workflows/shell-test.yml
+  shell-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y bats
+      - run: bats install.bats
 
-      - name: Linting
-        uses: ./.github/workflows/golangci-lint.yml
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: golangci/golangci-lint-action@v3
 
   goreleaser:
-    needs: pre-release-checks
+    needs: [go-test, shell-test, lint]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
