@@ -9,7 +9,20 @@ permissions:
   contents: write
 
 jobs:
+  pre-release-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Go Tests
+        uses: ./.github/workflows/go-test.yml
+
+      - name: Shell Tests
+        uses: ./.github/workflows/shell-test.yml
+
+      - name: Linting
+        uses: ./.github/workflows/golangci-lint.yml
+
   goreleaser:
+    needs: pre-release-checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,7 +33,7 @@ jobs:
       - name: Set up Go
         uses: ./.github/workflows/go-setup
 
-      - name: Run GoReleaser
+      - name: Release
         uses: goreleaser/goreleaser-action@v5
         with:
           distribution: goreleaser
