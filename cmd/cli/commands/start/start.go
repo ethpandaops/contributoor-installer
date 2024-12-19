@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
-	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -19,19 +19,19 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) error {
 		Action: func(c *cli.Context) error {
 			log := opts.Logger()
 
-			configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
+			sidecarConfig, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
 			if err != nil {
 				return fmt.Errorf("error loading config: %w", err)
 			}
 
-			dockerService, err := service.NewDockerService(log, configService)
+			dockerSidecar, err := sidecar.NewDockerSidecar(log, sidecarConfig)
 			if err != nil {
-				return fmt.Errorf("error creating docker service: %w", err)
+				return fmt.Errorf("error creating docker sidecar service: %w", err)
 			}
 
-			binaryService := service.NewBinaryService(log, configService)
+			binarySidecar := sidecar.NewBinarySidecar(log, sidecarConfig)
 
-			return startContributoor(c, log, configService, dockerService, binaryService)
+			return startContributoor(c, log, sidecarConfig, dockerSidecar, binarySidecar)
 		},
 	})
 
@@ -41,36 +41,36 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) error {
 func startContributoor(
 	c *cli.Context,
 	log *logrus.Logger,
-	config service.ConfigManager,
-	docker service.DockerService,
-	binary service.BinaryService,
+	config sidecar.ConfigManager,
+	docker sidecar.DockerSidecar,
+	binary sidecar.BinarySidecar,
 ) error {
 	var (
-		runner service.ServiceRunner
+		runner sidecar.SidecarRunner
 		cfg    = config.Get()
 	)
 
 	log.WithField("version", cfg.Version).Info("Starting Contributoor")
 
-	// Start the service via whatever method the user has configured (docker or binary).
+	// Start the sidecar via whatever method the user has configured (docker or binary).
 	switch cfg.RunMethod {
-	case service.RunMethodDocker:
+	case sidecar.RunMethodDocker:
 		runner = docker
-	case service.RunMethodBinary:
+	case sidecar.RunMethodBinary:
 		runner = binary
 	default:
-		return fmt.Errorf("invalid run method: %s", cfg.RunMethod)
+		return fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
 	}
 
-	// Check if the service is already running.
+	// Check if the sidecar is already running.
 	running, err := runner.IsRunning()
 	if err != nil {
-		log.Errorf("could not check service status: %v", err)
+		log.Errorf("could not check sidecar status: %v", err)
 
 		return err
 	}
 
-	// If the service is already running, we can just return.
+	// If the sidecar is already running, we can just return.
 	if running {
 		return fmt.Errorf("%sContributoor is already running. Use 'contributoor stop' first if you want to restart it%s", tui.TerminalColorRed, tui.TerminalColorReset)
 	}

@@ -1,14 +1,4 @@
-/*
-Package service provides the configuration management system for Contributoor.
-It handles loading, saving, and migrating user configurations while preserving
-user settings during updates. This is necessary to handle scenarios like:
-
-- Adding new config fields in newer versions
-- Changing the format/structure of existing fields
-- Preserving user customizations during updates
-- Ensuring safe atomic writes of config files
-*/
-package service
+package sidecar
 
 import (
 	"fmt"
@@ -21,10 +11,35 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:generate mockgen -package mock -destination mock/config.mock.go github.com/ethpandaops/contributoor-installer/internal/service ConfigManager
+//go:generate mockgen -package mock -destination mock/config.mock.go github.com/ethpandaops/contributoor-installer/internal/sidecar ConfigManager
 
-// ContributoorConfig is the configuration for the contributoor service.
-type ContributoorConfig struct {
+// ConfigManager provides the configuration management system for the Contributoor sidecar.
+// It handles loading, saving, and migrating user configurations while preserving
+// user settings during updates. This is necessary to handle scenarios like:
+//
+// - Adding new config fields in newer versions.
+// - Changing the format/structure of existing fields.
+// - Preserving user customizations during updates.
+// - Ensuring safe atomic writes of config files.
+type ConfigManager interface {
+	// Update modifies the configuration using the provided update function.
+	Update(updates func(*Config)) error
+
+	// Get returns the current configuration.
+	Get() *Config
+
+	// GetConfigDir returns the directory containing the config file.
+	GetConfigDir() string
+
+	// GetConfigPath returns the path of the file config.
+	GetConfigPath() string
+
+	// Save persists the current configuration to disk.
+	Save() error
+}
+
+// Config is the configuration for the contributoor sidecar.
+type Config struct {
 	Logging               string              `yaml:"logging"`
 	Version               string              `yaml:"version"`
 	ContributoorDirectory string              `yaml:"contributoorDirectory"`
@@ -40,15 +55,15 @@ type OutputServerConfig struct {
 	Credentials string `yaml:"credentials,omitempty"`
 }
 
-// ConfigService is a basic service for interacting with file configuration.
+// configService is a basic service for interacting with file configuration.
 type configService struct {
 	logger     *logrus.Logger
 	configPath string
 	configDir  string
-	config     *ContributoorConfig
+	config     *Config
 }
 
-// NewConfigService creates a new ConfigService.
+// NewConfigService creates a new ConfigManager.
 func NewConfigService(logger *logrus.Logger, configPath string) (ConfigManager, error) {
 	// Expand home directory
 	path, err := homedir.Expand(configPath)
@@ -80,7 +95,7 @@ func NewConfigService(logger *logrus.Logger, configPath string) (ConfigManager, 
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
 
-	oldConfig := &ContributoorConfig{}
+	oldConfig := &Config{}
 	if err := yaml.Unmarshal(data, oldConfig); err != nil {
 		return nil, err
 	}
@@ -115,7 +130,7 @@ func NewConfigService(logger *logrus.Logger, configPath string) (ConfigManager, 
 }
 
 // Update updates the file config with the given updates.
-func (s *configService) Update(updates func(*ContributoorConfig)) error {
+func (s *configService) Update(updates func(*Config)) error {
 	// Apply updates to a copy
 	updatedConfig := *s.config
 	updates(&updatedConfig)
@@ -147,7 +162,7 @@ func (s *configService) Update(updates func(*ContributoorConfig)) error {
 }
 
 // Get returns the current file config.
-func (s *configService) Get() *ContributoorConfig {
+func (s *configService) Get() *Config {
 	return s.config
 }
 
@@ -162,7 +177,7 @@ func (s *configService) GetConfigPath() string {
 }
 
 // WriteConfig writes the file config to the given path.
-func WriteConfig(path string, cfg *ContributoorConfig) error {
+func WriteConfig(path string, cfg *Config) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
@@ -179,8 +194,8 @@ func WriteConfig(path string, cfg *ContributoorConfig) error {
 	return nil
 }
 
-func newDefaultConfig() *ContributoorConfig {
-	return &ContributoorConfig{
+func newDefaultConfig() *Config {
+	return &Config{
 		Logging:           logrus.InfoLevel.String(),
 		Version:           "latest",
 		RunMethod:         RunMethodDocker,
@@ -189,7 +204,7 @@ func newDefaultConfig() *ContributoorConfig {
 	}
 }
 
-func (s *configService) validate(cfg *ContributoorConfig) error {
+func (s *configService) validate(cfg *Config) error {
 	if cfg.Version == "" {
 		return fmt.Errorf("version is required")
 	}
@@ -214,7 +229,7 @@ func (s *configService) validate(cfg *ContributoorConfig) error {
 }
 
 // mergeConfig merges old config values into new config.
-func mergeConfig(target, source *ContributoorConfig) error {
+func mergeConfig(target, source *Config) error {
 	// Use reflection to copy non-zero values from old to new
 	newVal := reflect.ValueOf(target).Elem()
 	oldVal := reflect.ValueOf(source).Elem()
@@ -232,7 +247,7 @@ func mergeConfig(target, source *ContributoorConfig) error {
 }
 
 // migrateConfig handles version-specific migrations.
-func migrateConfig(target, source *ContributoorConfig) error {
+func migrateConfig(target, source *Config) error {
 	/*
 		switch source.Version {
 			case "0.0.1":

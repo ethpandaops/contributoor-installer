@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/ethpandaops/contributoor-installer/internal/validate"
 	"github.com/gdamore/tcell/v2"
@@ -69,10 +69,22 @@ func (p *NetworkConfigPage) initPage() {
 	}
 
 	// Add our form fields.
-	form.AddDropDown("Network", networks, 0, func(option string, index int) {
+	// Find the index of the current network (from the sidecar config) in the list.
+	currentNetwork := p.display.sidecarConfig.Get().NetworkName
+	currentNetworkIndex := 0
+
+	for i, network := range networks {
+		if network == currentNetwork {
+			currentNetworkIndex = i
+
+			break
+		}
+	}
+
+	form.AddDropDown("Network", networks, currentNetworkIndex, func(option string, index int) {
 		p.description.SetText(networkDescriptions[option])
 	})
-	form.AddInputField("Beacon Node Address", p.display.configService.Get().BeaconNodeAddress, 0, nil, nil)
+	form.AddInputField("Beacon Node Address", p.display.sidecarConfig.Get().BeaconNodeAddress, 0, nil, nil)
 
 	// Add a save button and ensure we validate the input.
 	saveButton := tview.NewButton(tui.ButtonSaveSettings)
@@ -164,7 +176,7 @@ func validateAndUpdate(p *NetworkConfigPage, input *tview.InputField) {
 		return
 	}
 
-	if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+	if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
 		cfg.BeaconNodeAddress = input.GetText()
 	}); err != nil {
 		p.openErrorModal(err)

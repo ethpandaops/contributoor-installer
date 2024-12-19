@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
-	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
@@ -21,12 +21,12 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 		Action: func(c *cli.Context) error {
 			log := opts.Logger()
 
-			configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
+			sidecarConfig, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
 			if err != nil {
-				return fmt.Errorf("%serror loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
+				return fmt.Errorf("error loading config: %w", err)
 			}
 
-			return installContributoor(c, log, configService)
+			return installContributoor(c, log, sidecarConfig)
 		},
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -37,16 +37,16 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 			cli.StringFlag{
 				Name:  "run-method, r",
 				Usage: "The method to run contributoor",
-				Value: service.RunMethodDocker,
+				Value: sidecar.RunMethodDocker,
 			},
 		},
 	})
 }
 
-func installContributoor(c *cli.Context, log *logrus.Logger, config service.ConfigManager) error {
+func installContributoor(c *cli.Context, log *logrus.Logger, sidecarConfig sidecar.ConfigManager) error {
 	var (
 		app     = tview.NewApplication()
-		display = NewInstallDisplay(log, app, config)
+		display = NewInstallDisplay(log, app, sidecarConfig)
 	)
 
 	// Run the display.

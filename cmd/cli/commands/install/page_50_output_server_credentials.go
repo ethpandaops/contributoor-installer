@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/ethpandaops/contributoor-installer/internal/validate"
 	"github.com/gdamore/tcell/v2"
@@ -63,7 +63,7 @@ func (p *OutputServerCredentialsPage) initPage() {
 	p.form = form
 
 	// Get existing credentials if any
-	if currentCreds := p.display.configService.Get().OutputServer.Credentials; currentCreds != "" {
+	if currentCreds := p.display.sidecarConfig.Get().OutputServer.Credentials; currentCreds != "" {
 		if decoded, err := base64.StdEncoding.DecodeString(currentCreds); err == nil {
 			parts := strings.Split(string(decoded), ":")
 			if len(parts) == 2 {
@@ -156,7 +156,7 @@ func validateAndSaveCredentials(p *OutputServerCredentialsPage) {
 		}
 	}
 
-	currentAddress := p.display.configService.Get().OutputServer.Address
+	currentAddress := p.display.sidecarConfig.Get().OutputServer.Address
 	isEthPandaOps := validate.IsEthPandaOpsServer(currentAddress)
 
 	if err := validate.ValidateOutputServerCredentials(username, password, isEthPandaOps); err != nil {
@@ -166,7 +166,7 @@ func validateAndSaveCredentials(p *OutputServerCredentialsPage) {
 	}
 
 	// Update config with credentials
-	if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+	if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
 		// For custom servers, allow empty credentials
 		// For ethPandaOps servers, we know credentials are valid (non-empty) due to validation.
 		if username != "" && password != "" {

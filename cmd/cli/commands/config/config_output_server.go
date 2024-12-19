@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/ethpandaops/contributoor-installer/internal/validate"
 	"github.com/gdamore/tcell/v2"
@@ -84,7 +84,7 @@ func (p *OutputServerConfigPage) initPage() {
 	// of the current server so we can prepopulate the form with the current
 	// values.
 	defaultIndex := 0
-	currentAddress := p.display.configService.Get().OutputServer.Address
+	currentAddress := p.display.sidecarConfig.Get().OutputServer.Address
 
 	// Check if it's a custom output server address.
 	if !strings.Contains(currentAddress, "platform.ethpandaops.io") {
@@ -123,7 +123,7 @@ func (p *OutputServerConfigPage) initPage() {
 			// Add appropriate fields based on selection.
 			if option == "Custom" {
 				// If it's a custom server, we need to add the server address field.
-				defaultAddress := p.display.configService.Get().OutputServer.Address
+				defaultAddress := p.display.sidecarConfig.Get().OutputServer.Address
 				if strings.Contains(defaultAddress, "platform.ethpandaops.io") {
 					defaultAddress = ""
 				}
@@ -132,12 +132,12 @@ func (p *OutputServerConfigPage) initPage() {
 				form.AddInputField("Server Address", defaultAddress, 0, nil, nil)
 
 				// Add the username and password fields.
-				username, password := getCredentialsFromConfig(p.display.configService.Get())
+				username, password := getCredentialsFromConfig(p.display.sidecarConfig.Get())
 				form.AddInputField("Username", username, 0, nil, nil)
 				form.AddPasswordField("Password", password, 0, '*', nil)
 			} else {
 				// Otherwise, it's an ethPandaOps server.
-				username, password := getCredentialsFromConfig(p.display.configService.Get())
+				username, password := getCredentialsFromConfig(p.display.sidecarConfig.Get())
 				form.AddInputField("Username", username, 0, nil, nil)
 				form.AddPasswordField("Password", password, 0, '*', nil)
 			}
@@ -312,7 +312,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 	}
 
 	// Update config with validated values.
-	if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+	if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
 		cfg.OutputServer.Address = serverAddress
 		if username != "" && password != "" {
 			cfg.OutputServer.Credentials = validate.EncodeCredentials(username, password)
@@ -339,7 +339,7 @@ func (p *OutputServerConfigPage) openErrorModal(err error) {
 }
 
 // Update getCredentialsFromConfig to use the validation package.
-func getCredentialsFromConfig(cfg *service.ContributoorConfig) (username, password string) {
+func getCredentialsFromConfig(cfg *sidecar.Config) (username, password string) {
 	username, password, err := validate.DecodeCredentials(cfg.OutputServer.Credentials)
 	if err != nil {
 		return "", ""

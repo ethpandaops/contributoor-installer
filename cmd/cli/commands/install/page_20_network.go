@@ -1,7 +1,7 @@
 package install
 
 import (
-	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -91,7 +91,7 @@ func (p *NetworkConfigPage) initPage() {
 
 		// Add button to our form.
 		form.AddButton(label, func() {
-			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+			if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
 				cfg.NetworkName = tui.AvailableNetworks[index].Value
 			}); err != nil {
 				p.openErrorModal(err)

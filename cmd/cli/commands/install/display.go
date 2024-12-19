@@ -1,7 +1,7 @@
 package install
 
 import (
-	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
@@ -13,7 +13,7 @@ type InstallDisplay struct {
 	pages                       *tview.Pages
 	frame                       *tview.Frame
 	log                         *logrus.Logger
-	configService               service.ConfigManager
+	sidecarConfig               sidecar.ConfigManager
 	installPages                []tui.PageInterface
 	welcomePage                 *WelcomePage
 	networkConfigPage           *NetworkConfigPage
@@ -24,12 +24,12 @@ type InstallDisplay struct {
 }
 
 // NewInstallDisplay creates a new InstallDisplay.
-func NewInstallDisplay(log *logrus.Logger, app *tview.Application, configService service.ConfigManager) *InstallDisplay {
+func NewInstallDisplay(log *logrus.Logger, app *tview.Application, sidecarConfig sidecar.ConfigManager) *InstallDisplay {
 	display := &InstallDisplay{
 		app:           app,
 		pages:         tview.NewPages(),
 		log:           log,
-		configService: configService,
+		sidecarConfig: sidecarConfig,
 	}
 
 	// Create all of our install wizard pages.
@@ -71,10 +71,12 @@ func NewInstallDisplay(log *logrus.Logger, app *tview.Application, configService
 func (d *InstallDisplay) Run() error {
 	d.setPage(d.welcomePage.GetPage())
 
+	cfg := d.sidecarConfig.Get()
+
 	d.log.WithFields(logrus.Fields{
-		"config_path": d.configService.Get().ContributoorDirectory,
-		"version":     d.configService.Get().Version,
-		"run_method":  d.configService.Get().RunMethod,
+		"config_path": cfg.ContributoorDirectory,
+		"version":     cfg.Version,
+		"run_method":  cfg.RunMethod,
 	}).Info("Running installation wizard")
 
 	return d.app.Run()

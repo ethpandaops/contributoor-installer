@@ -3,8 +3,8 @@ package install
 import (
 	"testing"
 
-	"github.com/ethpandaops/contributoor-installer/internal/service"
-	"github.com/ethpandaops/contributoor-installer/internal/service/mock"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
@@ -17,16 +17,24 @@ import (
 func TestFinishedPage(t *testing.T) {
 	setupMockDisplay := func(ctrl *gomock.Controller) *InstallDisplay {
 		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&service.ContributoorConfig{}).AnyTimes()
+		mockConfig.EXPECT().Get().Return(&sidecar.Config{
+			OutputServer: &sidecar.OutputServerConfig{},
+		}).AnyTimes()
 
-		return &InstallDisplay{
+		display := &InstallDisplay{
 			app:           tview.NewApplication(),
 			log:           logrus.New(),
-			configService: mockConfig,
-			outputServerCredentialsPage: &OutputServerCredentialsPage{
-				page: &tui.Page{ID: "output-server-credentials"},
-			},
+			sidecarConfig: mockConfig,
 		}
+
+		// Initialize requiredpages
+		display.outputPage = &OutputServerPage{
+			page: &tui.Page{ID: "output-server"},
+		}
+
+		display.outputServerCredentialsPage = NewOutputServerCredentialsPage(display)
+
+		return display
 	}
 
 	t.Run("creates page with correct structure", func(t *testing.T) {
@@ -65,6 +73,6 @@ func TestFinishedPage(t *testing.T) {
 		page := NewFinishedPage(mockDisplay)
 
 		// Verify parent page is set correctly.
-		assert.Equal(t, "output-server-credentials", page.page.Parent.ID)
+		assert.Equal(t, "install-credentials", page.page.Parent.ID)
 	})
 }

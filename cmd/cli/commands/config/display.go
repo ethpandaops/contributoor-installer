@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -14,7 +14,7 @@ type ConfigDisplay struct {
 	pages                  *tview.Pages
 	frame                  *tview.Frame
 	log                    *logrus.Logger
-	configService          service.ConfigManager
+	sidecarConfig          sidecar.ConfigManager
 	homePage               *tui.Page
 	categoryList           *tview.List
 	content                tview.Primitive
@@ -26,12 +26,12 @@ type ConfigDisplay struct {
 }
 
 // NewConfigDisplay creates a new Configtui.
-func NewConfigDisplay(log *logrus.Logger, app *tview.Application, configService service.ConfigManager) *ConfigDisplay {
+func NewConfigDisplay(log *logrus.Logger, app *tview.Application, sidecarConfig sidecar.ConfigManager) *ConfigDisplay {
 	display := &ConfigDisplay{
 		app:           app,
 		pages:         tview.NewPages(),
 		log:           log,
-		configService: configService,
+		sidecarConfig: sidecarConfig,
 	}
 
 	display.homePage = tui.NewPage(nil, "config-home", "Categories", "", nil)

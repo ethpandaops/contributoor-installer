@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
-	"github.com/ethpandaops/contributoor-installer/internal/service"
-	"github.com/ethpandaops/contributoor-installer/internal/service/mock"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,15 +22,15 @@ func TestStartContributoor(t *testing.T) {
 	tests := []struct {
 		name          string
 		runMethod     string
-		setupMocks    func(*mock.MockConfigManager, *mock.MockDockerService, *mock.MockBinaryService)
+		setupMocks    func(*mock.MockConfigManager, *mock.MockDockerSidecar, *mock.MockBinarySidecar)
 		expectedError string
 	}{
 		{
 			name:      "docker - starts service successfully",
-			runMethod: service.RunMethodDocker,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerService, b *mock.MockBinaryService) {
-				cfg.EXPECT().Get().Return(&service.ContributoorConfig{
-					RunMethod: service.RunMethodDocker,
+			runMethod: sidecar.RunMethodDocker,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar) {
+				cfg.EXPECT().Get().Return(&sidecar.Config{
+					RunMethod: sidecar.RunMethodDocker,
 					Version:   "latest",
 				}).Times(1)
 				d.EXPECT().IsRunning().Return(false, nil)
@@ -39,10 +39,10 @@ func TestStartContributoor(t *testing.T) {
 		},
 		{
 			name:      "docker - service already running",
-			runMethod: service.RunMethodDocker,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerService, b *mock.MockBinaryService) {
-				cfg.EXPECT().Get().Return(&service.ContributoorConfig{
-					RunMethod: service.RunMethodDocker,
+			runMethod: sidecar.RunMethodDocker,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar) {
+				cfg.EXPECT().Get().Return(&sidecar.Config{
+					RunMethod: sidecar.RunMethodDocker,
 				}).Times(1)
 				d.EXPECT().IsRunning().Return(true, nil)
 			},
@@ -50,10 +50,10 @@ func TestStartContributoor(t *testing.T) {
 		},
 		{
 			name:      "docker - start fails",
-			runMethod: service.RunMethodDocker,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerService, b *mock.MockBinaryService) {
-				cfg.EXPECT().Get().Return(&service.ContributoorConfig{
-					RunMethod: service.RunMethodDocker,
+			runMethod: sidecar.RunMethodDocker,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar) {
+				cfg.EXPECT().Get().Return(&sidecar.Config{
+					RunMethod: sidecar.RunMethodDocker,
 				}).Times(1)
 				d.EXPECT().IsRunning().Return(false, nil)
 				d.EXPECT().Start().Return(errors.New("start failed"))
@@ -62,10 +62,10 @@ func TestStartContributoor(t *testing.T) {
 		},
 		{
 			name:      "binary - starts service successfully",
-			runMethod: service.RunMethodBinary,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerService, b *mock.MockBinaryService) {
-				cfg.EXPECT().Get().Return(&service.ContributoorConfig{
-					RunMethod: service.RunMethodBinary,
+			runMethod: sidecar.RunMethodBinary,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar) {
+				cfg.EXPECT().Get().Return(&sidecar.Config{
+					RunMethod: sidecar.RunMethodBinary,
 				}).Times(1)
 				b.EXPECT().IsRunning().Return(false, nil)
 				b.EXPECT().Start().Return(nil)
@@ -73,32 +73,32 @@ func TestStartContributoor(t *testing.T) {
 		},
 		{
 			name:      "binary - service already running",
-			runMethod: service.RunMethodBinary,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerService, b *mock.MockBinaryService) {
-				cfg.EXPECT().Get().Return(&service.ContributoorConfig{
-					RunMethod: service.RunMethodBinary,
+			runMethod: sidecar.RunMethodBinary,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar) {
+				cfg.EXPECT().Get().Return(&sidecar.Config{
+					RunMethod: sidecar.RunMethodBinary,
 				}).Times(1)
 				b.EXPECT().IsRunning().Return(true, nil)
 			},
 			expectedError: "Contributoor is already running",
 		},
 		{
-			name:      "invalid run method",
+			name:      "invalid sidecar run method",
 			runMethod: "invalid",
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerService, b *mock.MockBinaryService) {
-				cfg.EXPECT().Get().Return(&service.ContributoorConfig{
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar) {
+				cfg.EXPECT().Get().Return(&sidecar.Config{
 					RunMethod: "invalid",
 				}).Times(1)
 			},
-			expectedError: "invalid run method",
+			expectedError: "invalid sidecar run method",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockConfig := mock.NewMockConfigManager(ctrl)
-			mockDocker := mock.NewMockDockerService(ctrl)
-			mockBinary := mock.NewMockBinaryService(ctrl)
+			mockDocker := mock.NewMockDockerSidecar(ctrl)
+			mockBinary := mock.NewMockBinarySidecar(ctrl)
 
 			tt.setupMocks(mockConfig, mockDocker, mockBinary)
 

@@ -3,8 +3,8 @@ package install
 import (
 	"testing"
 
-	"github.com/ethpandaops/contributoor-installer/internal/service"
-	"github.com/ethpandaops/contributoor-installer/internal/service/mock"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
@@ -15,14 +15,14 @@ import (
 // This is about the best we can do re testing TUI components.
 // They're heavily dependent on the terminal state.
 func TestBeaconNodePage(t *testing.T) {
-	setupMockDisplay := func(ctrl *gomock.Controller, cfg *service.ContributoorConfig) *InstallDisplay {
+	setupMockDisplay := func(ctrl *gomock.Controller, cfg *sidecar.Config) *InstallDisplay {
 		mockConfig := mock.NewMockConfigManager(ctrl)
 		mockConfig.EXPECT().Get().Return(cfg).AnyTimes()
 
 		return &InstallDisplay{
 			app:           tview.NewApplication(),
 			log:           logrus.New(),
-			configService: mockConfig,
+			sidecarConfig: mockConfig,
 			networkConfigPage: &NetworkConfigPage{
 				page: &tui.Page{ID: "network-config"},
 			},
@@ -34,7 +34,7 @@ func TestBeaconNodePage(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		mockDisplay := setupMockDisplay(ctrl, &service.ContributoorConfig{
+		mockDisplay := setupMockDisplay(ctrl, &sidecar.Config{
 			BeaconNodeAddress: "http://localhost:5052",
 		})
 
@@ -61,7 +61,7 @@ func TestBeaconNodePage(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		mockDisplay := setupMockDisplay(ctrl, &service.ContributoorConfig{
+		mockDisplay := setupMockDisplay(ctrl, &sidecar.Config{
 			BeaconNodeAddress: "http://localhost:5052",
 		})
 

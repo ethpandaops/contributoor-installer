@@ -1,7 +1,7 @@
 package install
 
 import (
-	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/ethpandaops/contributoor-installer/internal/validate"
 	"github.com/gdamore/tcell/v2"
@@ -66,7 +66,7 @@ func (p *BeaconNodePage) initPage() {
 	// Add input field to our form to capture the users beacon node address.
 	inputField := tview.NewInputField().
 		SetLabel("Beacon Node Address: ").
-		SetText(p.display.configService.Get().BeaconNodeAddress).
+		SetText(p.display.sidecarConfig.Get().BeaconNodeAddress).
 		SetFieldBackgroundColor(tcell.ColorBlack).
 		SetLabelColor(tcell.ColorLightGray)
 	form.AddFormItem(inputField)
@@ -133,7 +133,7 @@ func validateAndUpdate(p *BeaconNodePage, input *tview.InputField) {
 		return
 	}
 
-	if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+	if err := p.display.sidecarConfig.Update(func(cfg *sidecar.Config) {
 		cfg.BeaconNodeAddress = input.GetText()
 	}); err != nil {
 		p.openErrorModal(err)

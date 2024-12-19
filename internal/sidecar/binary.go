@@ -1,4 +1,4 @@
-package service
+package sidecar
 
 import (
 	"fmt"
@@ -15,27 +15,27 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//go:generate mockgen -package mock -destination mock/binary.mock.go github.com/ethpandaops/contributoor-installer/internal/service BinaryService
+//go:generate mockgen -package mock -destination mock/binary.mock.go github.com/ethpandaops/contributoor-installer/internal/sidecar BinarySidecar
 
-type BinaryService interface {
-	ServiceRunner
+type BinarySidecar interface {
+	SidecarRunner
 }
 
-// BinaryService is a basic service for interacting with the contributoor binary.
-type binaryService struct {
+// binarySidecar is a basic service for interacting with the contributoor binary.
+type binarySidecar struct {
 	logger *logrus.Logger
 	config ConfigManager
 	stdout *os.File
 	stderr *os.File
 }
 
-// NewBinaryService creates a new BinaryService.
-func NewBinaryService(logger *logrus.Logger, configService ConfigManager) BinaryService {
+// NewBinarySidecar creates a new BinarySidecar.
+func NewBinarySidecar(logger *logrus.Logger, configService ConfigManager) BinarySidecar {
 	expandedDir, err := homedir.Expand(configService.Get().ContributoorDirectory)
 	if err != nil {
 		logger.Errorf("Failed to expand config path: %v", err)
 
-		return &binaryService{
+		return &binarySidecar{
 			logger: logger,
 			config: configService,
 		}
@@ -48,7 +48,7 @@ func NewBinaryService(logger *logrus.Logger, configService ConfigManager) Binary
 	if err != nil {
 		logger.Errorf("Failed to open stdout log file: %v", err)
 
-		return &binaryService{
+		return &binarySidecar{
 			logger: logger,
 			config: configService,
 		}
@@ -60,13 +60,13 @@ func NewBinaryService(logger *logrus.Logger, configService ConfigManager) Binary
 
 		logger.Errorf("Failed to open stderr log file: %v", err)
 
-		return &binaryService{
+		return &binarySidecar{
 			logger: logger,
 			config: configService,
 		}
 	}
 
-	return &binaryService{
+	return &binarySidecar{
 		logger: logger,
 		config: configService,
 		stdout: stdout,
@@ -75,7 +75,7 @@ func NewBinaryService(logger *logrus.Logger, configService ConfigManager) Binary
 }
 
 // Start starts the binary service.
-func (s *binaryService) Start() error {
+func (s *binarySidecar) Start() error {
 	cfg := s.config.Get()
 
 	binaryPath := filepath.Join(cfg.ContributoorDirectory, "bin", "sentry")
@@ -123,7 +123,7 @@ func (s *binaryService) Start() error {
 }
 
 // Stop stops the binary service.
-func (s *binaryService) Stop() error {
+func (s *binarySidecar) Stop() error {
 	cfg := s.config.Get()
 
 	pidFile := filepath.Join(cfg.ContributoorDirectory, "contributoor.pid")
@@ -163,7 +163,7 @@ func (s *binaryService) Stop() error {
 }
 
 // IsRunning checks if the binary service is running.
-func (s *binaryService) IsRunning() (bool, error) {
+func (s *binarySidecar) IsRunning() (bool, error) {
 	cfg := s.config.Get()
 
 	pidFile := filepath.Join(cfg.ContributoorDirectory, "contributoor.pid")
@@ -195,7 +195,7 @@ func (s *binaryService) IsRunning() (bool, error) {
 }
 
 // Update updates the binary service.
-func (s *binaryService) Update() error {
+func (s *binarySidecar) Update() error {
 	cfg := s.config.Get()
 
 	expandedDir, err := homedir.Expand(cfg.ContributoorDirectory)

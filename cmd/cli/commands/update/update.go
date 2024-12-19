@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -26,20 +27,20 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) error {
 		Action: func(c *cli.Context) error {
 			log := opts.Logger()
 
-			configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
+			sidecarConfig, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
 			if err != nil {
 				return fmt.Errorf("error loading config: %w", err)
 			}
 
-			dockerService, err := service.NewDockerService(log, configService)
+			dockerSidecar, err := sidecar.NewDockerSidecar(log, sidecarConfig)
 			if err != nil {
-				return fmt.Errorf("error creating docker service: %w", err)
+				return fmt.Errorf("error creating docker sidecar service: %w", err)
 			}
 
-			binaryService := service.NewBinaryService(log, configService)
+			binarySidecar := sidecar.NewBinarySidecar(log, sidecarConfig)
 			githubService := service.NewGitHubService("ethpandaops", "contributoor")
 
-			return updateContributoor(c, log, configService, dockerService, binaryService, githubService)
+			return updateContributoor(c, log, sidecarConfig, dockerSidecar, binarySidecar, githubService)
 		},
 	})
 
@@ -49,15 +50,15 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) error {
 func updateContributoor(
 	c *cli.Context,
 	log *logrus.Logger,
-	config service.ConfigManager,
-	docker service.DockerService,
-	binary service.BinaryService,
+	sidecarConfig sidecar.ConfigManager,
+	docker sidecar.DockerSidecar,
+	binary sidecar.BinarySidecar,
 	github service.GitHubService,
 ) error {
 	var (
 		success        bool
 		targetVersion  string
-		cfg            = config.Get()
+		cfg            = sidecarConfig.Get()
 		currentVersion = cfg.Version
 	)
 
@@ -65,7 +66,7 @@ func updateContributoor(
 
 	defer func() {
 		if !success {
-			if err := rollbackVersion(log, config, currentVersion); err != nil {
+			if err := rollbackVersion(log, sidecarConfig, currentVersion); err != nil {
 				log.Error(err)
 			}
 		}
@@ -91,17 +92,17 @@ func updateContributoor(
 	}
 
 	// Update config version.
-	if uerr := updateConfigVersion(config, targetVersion); uerr != nil {
+	if uerr := updateConfigVersion(sidecarConfig, targetVersion); uerr != nil {
 		return uerr
 	}
 
 	// Refresh our config state, given it was updated above.
-	cfg = config.Get()
+	cfg = sidecarConfig.Get()
 
-	// Update the service.
 	log.WithField("version", cfg.Version).Info("Updating Contributoor")
 
-	success, err = updateService(log, cfg, docker, binary)
+	// Update the sidecar.
+	success, err = updateSidecar(log, cfg, docker, binary)
 	if err != nil {
 		return err
 	}
@@ -116,31 +117,31 @@ func updateContributoor(
 	return nil
 }
 
-func updateService(log *logrus.Logger, cfg *service.ContributoorConfig, docker service.DockerService, binary service.BinaryService) (bool, error) {
+func updateSidecar(log *logrus.Logger, cfg *sidecar.Config, docker sidecar.DockerSidecar, binary sidecar.BinarySidecar) (bool, error) {
 	switch cfg.RunMethod {
-	case service.RunMethodDocker:
+	case sidecar.RunMethodDocker:
 		return updateDocker(log, cfg, docker)
-	case service.RunMethodBinary:
+	case sidecar.RunMethodBinary:
 		return updateBinary(log, cfg, binary)
 	default:
-		return false, fmt.Errorf("invalid run method: %s", cfg.RunMethod)
+		return false, fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
 	}
 }
 
-func updateBinary(log *logrus.Logger, cfg *service.ContributoorConfig, binary service.BinaryService) (bool, error) {
-	// Check if service is currently running.
+func updateBinary(log *logrus.Logger, cfg *sidecar.Config, binary sidecar.BinarySidecar) (bool, error) {
+	// Check if sidecar is currently running.
 	running, err := binary.IsRunning()
 	if err != nil {
-		log.Errorf("could not check service status: %v", err)
+		log.Errorf("could not check sidecar status: %v", err)
 
 		return false, err
 	}
 
-	// If the service is running, we need to stop it before we can update the binary.
+	// If the sidecar is running, we need to stop it before we can update the binary.
 	if running {
-		if tui.Confirm("Service is running. In order to update, it must be stopped. Would you like to stop it?") {
+		if tui.Confirm("Contributoor is running. In order to update, it must be stopped. Would you like to stop it?") {
 			if err := binary.Stop(); err != nil {
-				return false, fmt.Errorf("failed to stop service: %w", err)
+				return false, fmt.Errorf("failed to stop sidecar: %w", err)
 			}
 		} else {
 			log.Error("update process was cancelled")
@@ -150,27 +151,22 @@ func updateBinary(log *logrus.Logger, cfg *service.ContributoorConfig, binary se
 	}
 
 	if err := binary.Update(); err != nil {
-		log.Errorf("could not update service: %v", err)
+		log.Errorf("could not update sidecar: %v", err)
 
 		return false, err
 	}
 
-	// if err := config.Save(); err != nil {
-	// 	log.Errorf("could not save updated config: %v", err)
-	// 	return false, err
-	// }
-
 	// If it was running, start it again for them.
 	if running {
 		if err := binary.Start(); err != nil {
-			return true, fmt.Errorf("failed to start service: %w", err)
+			return true, fmt.Errorf("failed to start sidecar: %w", err)
 		}
 	}
 
 	return true, nil
 }
 
-func updateDocker(log *logrus.Logger, cfg *service.ContributoorConfig, docker service.DockerService) (bool, error) {
+func updateDocker(log *logrus.Logger, cfg *sidecar.Config, docker sidecar.DockerSidecar) (bool, error) {
 	if err := docker.Update(); err != nil {
 		log.Errorf("could not update service: %v", err)
 
@@ -180,26 +176,26 @@ func updateDocker(log *logrus.Logger, cfg *service.ContributoorConfig, docker se
 	// Check if service is currently running.
 	running, err := docker.IsRunning()
 	if err != nil {
-		log.Errorf("could not check service status: %v", err)
+		log.Errorf("could not check sidecar status: %v", err)
 
 		return true, err
 	}
 
 	// If the service is running, we need to restart it with the new version.
 	if running {
-		if tui.Confirm("Service is running. Would you like to restart it with the new version?") {
+		if tui.Confirm("Contributoor is running. Would you like to restart it with the new version?") {
 			if err := docker.Stop(); err != nil {
-				return true, fmt.Errorf("failed to stop service: %w", err)
+				return true, fmt.Errorf("failed to stop sidecar: %w", err)
 			}
 
 			if err := docker.Start(); err != nil {
-				return true, fmt.Errorf("failed to start service: %w", err)
+				return true, fmt.Errorf("failed to start sidecar: %w", err)
 			}
 		} else {
 			log.Info("service will continue running with the previous version until next restart")
 		}
 	} else {
-		if tui.Confirm("Service is not running. Would you like to start it?") {
+		if tui.Confirm("Contributoor is not running. Would you like to start it?") {
 			if err := docker.Start(); err != nil {
 				return true, fmt.Errorf("failed to start service: %w", err)
 			}
@@ -238,29 +234,29 @@ func determineTargetVersion(c *cli.Context, github service.GitHubService) (strin
 	return version, nil
 }
 
-func updateConfigVersion(config service.ConfigManager, version string) error {
-	if err := config.Update(func(cfg *service.ContributoorConfig) {
+func updateConfigVersion(config sidecar.ConfigManager, version string) error {
+	if err := config.Update(func(cfg *sidecar.Config) {
 		cfg.Version = version
 	}); err != nil {
-		return fmt.Errorf("failed to update config version: %w", err)
+		return fmt.Errorf("failed to update sidecar config version: %w", err)
 	}
 
 	if err := config.Save(); err != nil {
-		return fmt.Errorf("could not save updated config: %w", err)
+		return fmt.Errorf("could not save updated sidecar config: %w", err)
 	}
 
 	return nil
 }
 
-func rollbackVersion(log *logrus.Logger, config service.ConfigManager, version string) error {
-	if err := config.Update(func(cfg *service.ContributoorConfig) {
+func rollbackVersion(log *logrus.Logger, config sidecar.ConfigManager, version string) error {
+	if err := config.Update(func(cfg *sidecar.Config) {
 		cfg.Version = version
 	}); err != nil {
-		return fmt.Errorf("failed to roll back version in config: %w", err)
+		return fmt.Errorf("failed to roll back version in sidecar config: %w", err)
 	}
 
 	if err := config.Save(); err != nil {
-		return fmt.Errorf("failed to save config after version rollback: %w", err)
+		return fmt.Errorf("failed to save sidecar config after version rollback: %w", err)
 	}
 
 	return nil

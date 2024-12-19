@@ -1,4 +1,4 @@
-package service_test
+package sidecar_test
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/ethpandaops/contributoor-installer/internal/service"
-	"github.com/ethpandaops/contributoor-installer/internal/service/mock"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -31,7 +31,7 @@ services:
       start_period: 1s
 `
 
-// TestDockerService_Integration tests the docker service.
+// TestDockerService_Integration tests the docker sidecar.
 // We use test-containers to boot an instance of docker-in-docker.
 // We can then use this to test our docker service in isolation.
 // The test uses docker-in-docker to run the tests in a real container targeting busybox.
@@ -46,10 +46,10 @@ func TestDockerService_Integration(t *testing.T) {
 		port   = 2375
 		tmpDir = t.TempDir()
 		logger = logrus.New()
-		cfg    = &service.ContributoorConfig{
+		cfg    = &sidecar.Config{
 			Version:               "latest",
 			ContributoorDirectory: tmpDir,
-			RunMethod:             service.RunMethodDocker,
+			RunMethod:             sidecar.RunMethodDocker,
 		}
 	)
 
@@ -95,7 +95,7 @@ func TestDockerService_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create docker service with mock config
-	ds, err := service.NewDockerService(logger, mockConfig)
+	ds, err := sidecar.NewDockerSidecar(logger, mockConfig)
 	require.NoError(t, err)
 
 	// Set docker host to test container.

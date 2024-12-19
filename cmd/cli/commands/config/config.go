@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
-	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
@@ -19,20 +19,20 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 		Action: func(c *cli.Context) error {
 			log := opts.Logger()
 
-			configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
+			sidecarConfig, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
 			if err != nil {
 				return fmt.Errorf("%serror loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 			}
 
-			return configureContributoor(c, log, configService)
+			return configureContributoor(c, log, sidecarConfig)
 		},
 	})
 }
 
-func configureContributoor(c *cli.Context, log *logrus.Logger, config service.ConfigManager) error {
+func configureContributoor(c *cli.Context, log *logrus.Logger, sidecarConfig sidecar.ConfigManager) error {
 	var (
 		app     = tview.NewApplication()
-		display = NewConfigDisplay(log, app, config)
+		display = NewConfigDisplay(log, app, sidecarConfig)
 	)
 
 	if err := display.Run(); err != nil {
