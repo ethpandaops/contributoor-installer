@@ -60,29 +60,22 @@ func main() {
 	install.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("install"),
 		options.WithLogger(log),
-		options.WithAliases([]string{"i"}),
 	))
 
-	if err := start.RegisterCommands(app, options.NewCommandOpts(
+	start.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("start"),
 		options.WithLogger(log),
-	)); err != nil {
-		log.Errorf("failed to register start command: %v", err)
-	}
+	))
 
-	if err := stop.RegisterCommands(app, options.NewCommandOpts(
+	stop.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("stop"),
 		options.WithLogger(log),
-	)); err != nil {
-		log.Errorf("failed to register stop command: %v", err)
-	}
+	))
 
-	if err := update.RegisterCommands(app, options.NewCommandOpts(
+	update.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("update"),
 		options.WithLogger(log),
-	)); err != nil {
-		log.Errorf("failed to register update command: %v", err)
-	}
+	))
 
 	config.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("config"),

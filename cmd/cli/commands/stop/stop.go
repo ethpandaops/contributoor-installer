@@ -11,7 +11,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func RegisterCommands(app *cli.App, opts *options.CommandOpts) error {
+func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:      opts.Name(),
 		Aliases:   opts.Aliases(),
@@ -40,8 +40,6 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) error {
 			return stopContributoor(c, log, sidecarConfig, dockerSidecar, binarySidecar)
 		},
 	})
-
-	return nil
 }
 
 func stopContributoor(
