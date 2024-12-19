@@ -131,7 +131,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 		return err
 	}
 
-	var updateFn func(log *logrus.Logger, configService *service.ConfigService) (bool, error)
+	var updateFn func(log *logrus.Logger, configService service.ConfigManager) (bool, error)
 
 	// Update the service via whatever method the user has configured (docker or binary).
 	switch configService.Get().RunMethod {
@@ -156,7 +156,7 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	return nil
 }
 
-func updateBinary(log *logrus.Logger, configService *service.ConfigService) (bool, error) {
+func updateBinary(log *logrus.Logger, configService service.ConfigManager) (bool, error) {
 	binaryService := service.NewBinaryService(log, configService)
 
 	log.WithField("version", configService.Get().Version).Info("Updating Contributoor")
@@ -204,7 +204,7 @@ func updateBinary(log *logrus.Logger, configService *service.ConfigService) (boo
 	return true, nil
 }
 
-func updateDocker(log *logrus.Logger, configService *service.ConfigService) (bool, error) {
+func updateDocker(log *logrus.Logger, configService service.ConfigManager) (bool, error) {
 	dockerService, err := service.NewDockerService(log, configService)
 	if err != nil {
 		log.Errorf("could not create docker service: %v", err)

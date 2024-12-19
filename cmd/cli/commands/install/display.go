@@ -13,7 +13,7 @@ type InstallDisplay struct {
 	pages                       *tview.Pages
 	frame                       *tview.Frame
 	log                         *logrus.Logger
-	configService               *service.ConfigService
+	configService               service.ConfigManager
 	installPages                []tui.PageInterface
 	welcomePage                 *WelcomePage
 	networkConfigPage           *NetworkConfigPage
@@ -24,7 +24,7 @@ type InstallDisplay struct {
 }
 
 // NewInstallDisplay creates a new InstallDisplay.
-func NewInstallDisplay(log *logrus.Logger, app *tview.Application, configService *service.ConfigService) *InstallDisplay {
+func NewInstallDisplay(log *logrus.Logger, app *tview.Application, configService service.ConfigManager) *InstallDisplay {
 	display := &InstallDisplay{
 		app:           app,
 		pages:         tview.NewPages(),

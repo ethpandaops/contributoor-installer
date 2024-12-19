@@ -11,17 +11,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+//go:generate mockgen -package mock -destination mock/docker.mock.go github.com/ethpandaops/contributoor-installer/internal/service DockerService
+
+type DockerService interface {
+	ServiceRunner
+}
+
 // DockerService is a basic service for interacting with the docker container.
-type DockerService struct {
+type dockerService struct {
 	logger        *logrus.Logger
 	config        *ContributoorConfig
 	composePath   string
 	configPath    string
-	configService *ConfigService
+	configService ConfigManager
 }
 
 // NewDockerService creates a new DockerService.
-func NewDockerService(logger *logrus.Logger, configService *ConfigService) (*DockerService, error) {
+func NewDockerService(logger *logrus.Logger, configService ConfigManager) (DockerService, error) {
 	composePath, err := findComposeFile()
 	if err != nil {
 		return nil, fmt.Errorf("failed to find docker-compose.yml: %w", err)
@@ -31,17 +37,17 @@ func NewDockerService(logger *logrus.Logger, configService *ConfigService) (*Doc
 		return nil, fmt.Errorf("invalid docker-compose file: %w", err)
 	}
 
-	return &DockerService{
+	return &dockerService{
 		logger:        logger,
 		config:        configService.Get(),
 		composePath:   filepath.Clean(composePath),
-		configPath:    configService.configPath,
+		configPath:    configService.GetConfigPath(),
 		configService: configService,
 	}, nil
 }
 
 // Start starts the docker container using docker-compose.
-func (s *DockerService) Start() error {
+func (s *dockerService) Start() error {
 	cmd := exec.Command("docker", "compose", "-f", s.composePath, "up", "-d", "--pull", "always") //nolint:gosec // validateComposePath() and filepath.Clean() in-use.
 	cmd.Env = s.getComposeEnv()
 
@@ -55,7 +61,7 @@ func (s *DockerService) Start() error {
 }
 
 // Stop stops and removes the docker container using docker-compose.
-func (s *DockerService) Stop() error {
+func (s *dockerService) Stop() error {
 	// Stop and remove containers, volumes, and networks
 	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
 	cmd := exec.Command("docker", "compose", "-f", s.composePath, "down",
@@ -75,7 +81,7 @@ func (s *DockerService) Stop() error {
 }
 
 // IsRunning checks if the docker container is running.
-func (s *DockerService) IsRunning() (bool, error) {
+func (s *dockerService) IsRunning() (bool, error) {
 	cmd := exec.Command("docker", "compose", "-f", s.composePath, "ps", "--format", "{{.State}}") //nolint:gosec // validateComposePath() and filepath.Clean() in-use.
 	cmd.Env = s.getComposeEnv()
 
@@ -95,7 +101,7 @@ func (s *DockerService) IsRunning() (bool, error) {
 }
 
 // Update pulls the latest image and restarts the container.
-func (s *DockerService) Update() error {
+func (s *dockerService) Update() error {
 	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
 	cmd := exec.Command("docker", "pull", fmt.Sprintf("ethpandaops/contributoor:%s", s.config.Version))
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -111,7 +117,7 @@ func (s *DockerService) Update() error {
 	return nil
 }
 
-func (s *DockerService) getComposeEnv() []string {
+func (s *dockerService) getComposeEnv() []string {
 	return append(os.Environ(),
 		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", s.configService.GetConfigDir()),
 		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", s.configService.Get().Version),

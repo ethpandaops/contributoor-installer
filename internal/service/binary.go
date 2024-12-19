@@ -15,8 +15,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+//go:generate mockgen -package mock -destination mock/binary.mock.go github.com/ethpandaops/contributoor-installer/internal/service BinaryService
+
+type BinaryService interface {
+	ServiceRunner
+}
+
 // BinaryService is a basic service for interacting with the contributoor binary.
-type BinaryService struct {
+type binaryService struct {
 	logger *logrus.Logger
 	config *ContributoorConfig
 	stdout *os.File
@@ -24,12 +30,12 @@ type BinaryService struct {
 }
 
 // NewBinaryService creates a new BinaryService.
-func NewBinaryService(logger *logrus.Logger, configService *ConfigService) *BinaryService {
+func NewBinaryService(logger *logrus.Logger, configService ConfigManager) BinaryService {
 	expandedDir, err := homedir.Expand(configService.Get().ContributoorDirectory)
 	if err != nil {
 		logger.Errorf("Failed to expand config path: %v", err)
 
-		return &BinaryService{
+		return &binaryService{
 			logger: logger,
 			config: configService.Get(),
 		}
@@ -42,7 +48,7 @@ func NewBinaryService(logger *logrus.Logger, configService *ConfigService) *Bina
 	if err != nil {
 		logger.Errorf("Failed to open stdout log file: %v", err)
 
-		return &BinaryService{
+		return &binaryService{
 			logger: logger,
 			config: configService.Get(),
 		}
@@ -54,13 +60,13 @@ func NewBinaryService(logger *logrus.Logger, configService *ConfigService) *Bina
 
 		logger.Errorf("Failed to open stderr log file: %v", err)
 
-		return &BinaryService{
+		return &binaryService{
 			logger: logger,
 			config: configService.Get(),
 		}
 	}
 
-	return &BinaryService{
+	return &binaryService{
 		logger: logger,
 		config: configService.Get(),
 		stdout: stdout,
@@ -69,7 +75,7 @@ func NewBinaryService(logger *logrus.Logger, configService *ConfigService) *Bina
 }
 
 // Start starts the binary service.
-func (s *BinaryService) Start() error {
+func (s *binaryService) Start() error {
 	binaryPath := filepath.Join(s.config.ContributoorDirectory, "bin", "sentry")
 	if _, err := os.Stat(binaryPath); err != nil {
 		return fmt.Errorf("binary not found at %s - please reinstall", binaryPath)
@@ -115,7 +121,7 @@ func (s *BinaryService) Start() error {
 }
 
 // Stop stops the binary service.
-func (s *BinaryService) Stop() error {
+func (s *binaryService) Stop() error {
 	pidFile := filepath.Join(s.config.ContributoorDirectory, "contributoor.pid")
 
 	pidBytes, err := os.ReadFile(pidFile)
@@ -153,7 +159,7 @@ func (s *BinaryService) Stop() error {
 }
 
 // IsRunning checks if the binary service is running.
-func (s *BinaryService) IsRunning() (bool, error) {
+func (s *binaryService) IsRunning() (bool, error) {
 	pidFile := filepath.Join(s.config.ContributoorDirectory, "contributoor.pid")
 	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
 		return false, nil
@@ -183,7 +189,7 @@ func (s *BinaryService) IsRunning() (bool, error) {
 }
 
 // Update updates the binary service.
-func (s *BinaryService) Update() error {
+func (s *binaryService) Update() error {
 	expandedDir, err := homedir.Expand(s.config.ContributoorDirectory)
 	if err != nil {
 		return fmt.Errorf("failed to expand config path: %w", err)

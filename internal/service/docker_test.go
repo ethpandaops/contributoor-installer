@@ -1,4 +1,4 @@
-package service
+package service_test
 
 import (
 	"context"
@@ -9,10 +9,13 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/ethpandaops/contributoor-installer/internal/service"
+	"github.com/ethpandaops/contributoor-installer/internal/service/mock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.uber.org/mock/gomock"
 )
 
 const composeFile = `
@@ -43,18 +46,21 @@ func TestDockerService_Integration(t *testing.T) {
 		port   = 2375
 		tmpDir = t.TempDir()
 		logger = logrus.New()
-		cfg    = &ContributoorConfig{
+		cfg    = &service.ContributoorConfig{
 			Version:               "latest",
 			ContributoorDirectory: tmpDir,
-			RunMethod:             RunMethodDocker,
-		}
-		cfgSvc = &ConfigService{
-			logger:     logger,
-			configPath: filepath.Join(tmpDir, "config.yaml"),
-			configDir:  tmpDir,
-			config:     cfg,
+			RunMethod:             service.RunMethodDocker,
 		}
 	)
+
+	// Create mock config manager
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockConfig := mock.NewMockConfigManager(ctrl)
+	mockConfig.EXPECT().Get().Return(cfg).AnyTimes()
+	mockConfig.EXPECT().GetConfigDir().Return(tmpDir).AnyTimes()
+	mockConfig.EXPECT().GetConfigPath().Return(filepath.Join(tmpDir, "config.yaml")).AnyTimes()
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -88,8 +94,8 @@ func TestDockerService_Integration(t *testing.T) {
 	containerPort, err := container.MappedPort(ctx, nat.Port(fmt.Sprintf("%d/tcp", port)))
 	require.NoError(t, err)
 
-	// Create docker service with test docker host.
-	ds, err := NewDockerService(logger, cfgSvc)
+	// Create docker service with mock config
+	ds, err := service.NewDockerService(logger, mockConfig)
 	require.NoError(t, err)
 
 	// Set docker host to test container.

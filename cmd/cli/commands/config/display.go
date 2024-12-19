@@ -14,7 +14,7 @@ type ConfigDisplay struct {
 	pages                  *tview.Pages
 	frame                  *tview.Frame
 	log                    *logrus.Logger
-	configService          *service.ConfigService
+	configService          service.ConfigManager
 	homePage               *tui.Page
 	categoryList           *tview.List
 	content                tview.Primitive
@@ -26,7 +26,7 @@ type ConfigDisplay struct {
 }
 
 // NewConfigDisplay creates a new Configtui.
-func NewConfigDisplay(log *logrus.Logger, app *tview.Application, configService *service.ConfigService) *ConfigDisplay {
+func NewConfigDisplay(log *logrus.Logger, app *tview.Application, configService service.ConfigManager) *ConfigDisplay {
 	display := &ConfigDisplay{
 		app:           app,
 		pages:         tview.NewPages(),

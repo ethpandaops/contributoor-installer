@@ -68,10 +68,12 @@ func main() {
 		options.WithLogger(log),
 	))
 
-	stop.RegisterCommands(app, options.NewCommandOpts(
+	if err := stop.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("stop"),
 		options.WithLogger(log),
-	))
+	)); err != nil {
+		log.Errorf("failed to register stop command: %v", err)
+	}
 
 	update.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("update"),

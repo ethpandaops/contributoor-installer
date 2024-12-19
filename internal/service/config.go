@@ -21,11 +21,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// RunMethods defines the possible ways to run the contributoor service.
-const (
-	RunMethodDocker = "docker"
-	RunMethodBinary = "binary"
-)
+//go:generate mockgen -package mock -destination mock/config.mock.go github.com/ethpandaops/contributoor-installer/internal/service ConfigManager
 
 // ContributoorConfig is the configuration for the contributoor service.
 type ContributoorConfig struct {
@@ -45,7 +41,7 @@ type OutputServerConfig struct {
 }
 
 // ConfigService is a basic service for interacting with file configuration.
-type ConfigService struct {
+type configService struct {
 	logger     *logrus.Logger
 	configPath string
 	configDir  string
@@ -53,7 +49,7 @@ type ConfigService struct {
 }
 
 // NewConfigService creates a new ConfigService.
-func NewConfigService(logger *logrus.Logger, configPath string) (*ConfigService, error) {
+func NewConfigService(logger *logrus.Logger, configPath string) (ConfigManager, error) {
 	// Expand home directory
 	path, err := homedir.Expand(configPath)
 	if err != nil {
@@ -110,7 +106,7 @@ func NewConfigService(logger *logrus.Logger, configPath string) (*ConfigService,
 		}
 	}
 
-	return &ConfigService{
+	return &configService{
 		logger:     logger,
 		configPath: fullConfigPath,
 		configDir:  filepath.Dir(fullConfigPath),
@@ -119,7 +115,7 @@ func NewConfigService(logger *logrus.Logger, configPath string) (*ConfigService,
 }
 
 // Update updates the file config with the given updates.
-func (s *ConfigService) Update(updates func(*ContributoorConfig)) error {
+func (s *configService) Update(updates func(*ContributoorConfig)) error {
 	// Apply updates to a copy
 	updatedConfig := *s.config
 	updates(&updatedConfig)
@@ -151,13 +147,18 @@ func (s *ConfigService) Update(updates func(*ContributoorConfig)) error {
 }
 
 // Get returns the current file config.
-func (s *ConfigService) Get() *ContributoorConfig {
+func (s *configService) Get() *ContributoorConfig {
 	return s.config
 }
 
 // GetConfigDir returns the directory of the file config.
-func (s *ConfigService) GetConfigDir() string {
+func (s *configService) GetConfigDir() string {
 	return s.configDir
+}
+
+// GetConfigPath returns the path of the file config.
+func (s *configService) GetConfigPath() string {
+	return s.configPath
 }
 
 // WriteConfig writes the file config to the given path.
@@ -188,7 +189,7 @@ func newDefaultConfig() *ContributoorConfig {
 	}
 }
 
-func (s *ConfigService) validate(cfg *ContributoorConfig) error {
+func (s *configService) validate(cfg *ContributoorConfig) error {
 	if cfg.Version == "" {
 		return fmt.Errorf("version is required")
 	}
@@ -246,6 +247,6 @@ func migrateConfig(target, source *ContributoorConfig) error {
 	return nil
 }
 
-func (s *ConfigService) Save() error {
+func (s *configService) Save() error {
 	return WriteConfig(s.configPath, s.config)
 }
