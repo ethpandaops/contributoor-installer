@@ -504,3 +504,73 @@ EOF
     [ "$status" -eq 1 ]
     echo "$output" | grep -q "Failed to extract contributoor binary"
 }
+
+@test "check_docker fails when docker not installed" {
+    # Mock command to simulate docker not being installed
+    function command() {
+        case "$2" in
+            "docker") return 1 ;;
+            *) command "$@" ;;
+        esac
+    }
+    export -f command
+
+    run check_docker 2>/dev/null
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -F -q "**ERROR**"
+    echo "$output" | grep -q "Docker is not installed. Please install Docker first: https://docs.docker.com/get-docker/"
+}
+
+@test "check_docker fails when docker daemon not running" {
+    # Mock docker info to simulate daemon not running
+    function docker() {
+        case "$1" in
+            "info") return 1 ;;
+            *) return 0 ;;
+        esac
+    }
+    export -f docker
+
+    run check_docker 2>/dev/null
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -F -q "**ERROR**"
+    echo "$output" | grep -q "Docker daemon is not running. Please start Docker and try again."
+}
+
+@test "check_docker fails when docker compose not available" {
+    # Mock docker and command to simulate compose missing
+    function docker() {
+        case "$1" in
+            "compose")
+                return 1
+                ;;
+            "info") return 0 ;;  # Need docker daemon to appear running
+            *) return 0 ;;
+        esac
+    }
+    function docker-compose() {
+        return 1
+    }
+    export -f docker docker-compose
+
+    run check_docker 2>/dev/null
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -F -q "**ERROR**"
+    echo "$output" | grep -q "Docker Compose is not installed. Please install Docker Compose: https://docs.docker.com/compose/install/"
+}
+
+@test "check_docker succeeds when everything available" {
+    # Mock successful docker environment
+    function docker() {
+        case "$1" in
+            "info") return 0 ;;
+            "compose") return 0 ;;
+            *) return 0 ;;
+        esac
+    }
+    export -f docker
+
+    run check_docker
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}

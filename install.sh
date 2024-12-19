@@ -267,6 +267,24 @@ setup_binary_contributoor() {
     fi
 }
 
+# Check if docker is installed and running
+check_docker() {
+    # Check if docker command exists
+    if ! command -v docker >/dev/null 2>&1; then
+        fail "Docker is not installed. Please install Docker first: https://docs.docker.com/get-docker/"
+    fi
+
+    # Check if docker daemon is running
+    if ! docker info >/dev/null 2>&1; then
+        fail "Docker daemon is not running. Please start Docker and try again."
+    fi
+
+    # Check if docker compose is available (either as plugin or standalone)
+    if ! (docker compose version >/dev/null 2>&1 || docker-compose version >/dev/null 2>&1); then
+        fail "Docker Compose is not installed. Please install Docker Compose: https://docs.docker.com/compose/install/"
+    fi
+}
+
 ###############################################################################
 # Version Management
 ###############################################################################
@@ -420,6 +438,8 @@ main() {
                     printf "Selected: "
                     if [ "$selected" = 1 ]; then
                         INSTALL_MODE="docker"
+                        # Check docker is available before proceeding
+                        check_docker
                         printf "${COLOR_GREEN}Docker${COLOR_RESET}"
                     else
                         INSTALL_MODE="binary"
