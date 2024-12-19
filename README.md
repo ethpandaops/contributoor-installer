@@ -24,6 +24,12 @@ Or just run the short tests:
 go test -test.short ./...
 ```
 
+Or with coverage:
+
+```bash
+go test -failfast -cover -coverpkg=./... -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
+```
+
 ### Shell Tests
 
 You'll need [`bats`](https://github.com/bats-core/bats-core) installed if you don't already.
@@ -31,3 +37,12 @@ You'll need [`bats`](https://github.com/bats-core/bats-core) installed if you do
 ```bash
 bats *.bats
 ```
+
+If you want to run the tests with coverage, install `kcov` and you can use the following command:
+
+```bash
+kcov --bash-parser="$(which bash)" /path/to/coverage/output bats --tap install.bats
+```
+
+
+
