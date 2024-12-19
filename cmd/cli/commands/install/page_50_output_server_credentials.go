@@ -105,10 +105,17 @@ func (p *OutputServerCredentialsPage) initPage() {
 
 		if p.username != "" && p.password != "" {
 			// Set credentials only when validated.
-			credentials := fmt.Sprintf("%s:%s", p.username, p.password)
-			p.display.configService.Update(func(cfg *service.ContributoorConfig) {
-				cfg.OutputServer.Credentials = base64.StdEncoding.EncodeToString([]byte(credentials))
-			})
+			credentials := base64.StdEncoding.EncodeToString(
+				[]byte(fmt.Sprintf("%s:%s", p.username, p.password)),
+			)
+
+			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+				cfg.OutputServer.Credentials = credentials
+			}); err != nil {
+				p.openErrorModal(err)
+
+				return
+			}
 		}
 
 		p.display.setPage(p.display.finishedPage.GetPage())
@@ -183,15 +190,29 @@ func validateAndSaveCredentials(p *OutputServerCredentialsPage) {
 	}
 
 	// Update config with credentials.
-	p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+	if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
 		if username != "" && password != "" {
 			credentials := fmt.Sprintf("%s:%s", username, password)
 			cfg.OutputServer.Credentials = base64.StdEncoding.EncodeToString([]byte(credentials))
 		} else {
 			cfg.OutputServer.Credentials = ""
 		}
-	})
+	}); err != nil {
+		p.openErrorModal(err)
+
+		return
+	}
 
 	// Installation complete.
 	p.display.app.Stop()
+}
+
+func (p *OutputServerCredentialsPage) openErrorModal(err error) {
+	p.display.app.SetRoot(tui.CreateErrorModal(
+		p.display.app,
+		err.Error(),
+		func() {
+			p.display.app.SetRoot(p.display.frame, true)
+		},
+	), true)
 }

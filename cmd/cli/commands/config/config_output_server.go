@@ -295,29 +295,31 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 
 		// Only set credentials if both username and password are provided
 		if usernameText != "" && passwordText != "" {
-			credentials := fmt.Sprintf("%s:%s", usernameText, passwordText)
-			p.display.configService.Update(func(cfg *service.ContributoorConfig) {
-				cfg.OutputServer.Address = serverAddress
-				cfg.OutputServer.Credentials = base64.StdEncoding.EncodeToString([]byte(credentials))
-			})
-		} else if usernameText == "" && passwordText == "" {
-			// Both empty - clear credentials
-			p.display.configService.Update(func(cfg *service.ContributoorConfig) {
-				cfg.OutputServer.Address = serverAddress
-				cfg.OutputServer.Credentials = ""
-			})
-		} else {
-			// One is empty but not both
-			errorModal := tui.CreateErrorModal(
-				p.display.app,
-				"Both username and password must be provided if using credentials",
-				func() {
-					p.display.app.SetRoot(p.display.frame, true)
-					p.display.app.SetFocus(p.form)
-				},
+			credentials := base64.StdEncoding.EncodeToString(
+				[]byte(fmt.Sprintf("%s:%s", usernameText, passwordText)),
 			)
 
-			p.display.app.SetRoot(errorModal, true)
+			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+				cfg.OutputServer.Address = serverAddress
+				cfg.OutputServer.Credentials = credentials
+			}); err != nil {
+				p.openErrorModal(err)
+
+				return
+			}
+		} else if usernameText == "" && passwordText == "" {
+			// Both empty - clear credentials
+			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+				cfg.OutputServer.Address = serverAddress
+				cfg.OutputServer.Credentials = ""
+			}); err != nil {
+				p.openErrorModal(err)
+
+				return
+			}
+		} else {
+			// One is empty but not both
+			p.openErrorModal(fmt.Errorf("both username and password must be provided if using credentials"))
 
 			return
 		}
@@ -346,11 +348,18 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 		}
 
 		// Update credentials.
-		credentials := fmt.Sprintf("%s:%s", usernameText, passwordText)
-		p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+		credentials := base64.StdEncoding.EncodeToString(
+			[]byte(fmt.Sprintf("%s:%s", usernameText, passwordText)),
+		)
+
+		if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
 			cfg.OutputServer.Address = serverAddress
-			cfg.OutputServer.Credentials = base64.StdEncoding.EncodeToString([]byte(credentials))
-		})
+			cfg.OutputServer.Credentials = credentials
+		}); err != nil {
+			p.openErrorModal(err)
+
+			return
+		}
 	}
 
 	p.display.setPage(p.display.homePage)
@@ -373,4 +382,14 @@ func getCredentialsFromConfig(cfg *service.ContributoorConfig) (username, passwo
 	}
 
 	return parts[0], parts[1]
+}
+
+func (p *OutputServerConfigPage) openErrorModal(err error) {
+	p.display.app.SetRoot(tui.CreateErrorModal(
+		p.display.app,
+		err.Error(),
+		func() {
+			p.display.app.SetRoot(p.display.frame, true)
+		},
+	), true)
 }

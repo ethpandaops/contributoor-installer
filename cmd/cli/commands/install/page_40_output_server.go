@@ -107,22 +107,35 @@ func (p *OutputServerPage) initPage() {
 			existingAddress := p.display.configService.Get().OutputServer.Address
 			if strings.Contains(existingAddress, "platform.ethpandaops.io") {
 				existingAddress = ""
-				p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+
+				if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
 					cfg.OutputServer.Address = existingAddress
-				})
+				}); err != nil {
+					p.openErrorModal(err)
+
+					return
+				}
 			}
 
 			input := form.AddInputField("Server Address", existingAddress, 40, nil, func(address string) {
-				p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+				if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
 					cfg.OutputServer.Address = address
-				})
+				}); err != nil {
+					p.openErrorModal(err)
+
+					return
+				}
 			})
 			input.SetBackgroundColor(tui.ColorFormBackground)
 		} else {
 			// Only update config when explicitly selecting a standard server.
-			p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
 				cfg.OutputServer.Address = selectedValue
-			})
+			}); err != nil {
+				p.openErrorModal(err)
+
+				return
+			}
 		}
 	})
 
@@ -220,4 +233,14 @@ func (p *OutputServerPage) initPage() {
 	borderGrid.AddItem(contentGrid, 1, 1, 1, 1, 0, 0, true)
 
 	p.content = borderGrid
+}
+
+func (p *OutputServerPage) openErrorModal(err error) {
+	p.display.app.SetRoot(tui.CreateErrorModal(
+		p.display.app,
+		err.Error(),
+		func() {
+			p.display.app.SetRoot(p.display.frame, true)
+		},
+	), true)
 }

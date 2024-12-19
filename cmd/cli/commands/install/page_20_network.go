@@ -91,9 +91,14 @@ func (p *NetworkConfigPage) initPage() {
 
 		// Add button to our form.
 		form.AddButton(label, func() {
-			p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
 				cfg.NetworkName = tui.AvailableNetworks[index].Value
-			})
+			}); err != nil {
+				p.openErrorModal(err)
+
+				return
+			}
+
 			p.display.setPage(p.display.beaconPage.GetPage())
 		})
 
@@ -192,4 +197,14 @@ func (p *NetworkConfigPage) initPage() {
 	descBox.SetText(descriptions[0])
 
 	p.content = borderGrid
+}
+
+func (p *NetworkConfigPage) openErrorModal(err error) {
+	p.display.app.SetRoot(tui.CreateErrorModal(
+		p.display.app,
+		err.Error(),
+		func() {
+			p.display.app.SetRoot(p.display.frame, true)
+		},
+	), true)
 }

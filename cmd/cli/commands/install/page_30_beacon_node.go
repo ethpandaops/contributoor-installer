@@ -164,9 +164,13 @@ func validateAndUpdate(p *BeaconNodePage) {
 			}
 
 			// Update config if validation passes
-			p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
 				cfg.BeaconNodeAddress = address
-			})
+			}); err != nil {
+				p.openErrorModal(err)
+
+				return
+			}
 
 			// Move to next page
 			p.display.setPage(p.display.outputPage.GetPage())
@@ -195,4 +199,14 @@ func validateBeaconNode(address string) error {
 	}
 
 	return nil
+}
+
+func (p *BeaconNodePage) openErrorModal(err error) {
+	p.display.app.SetRoot(tui.CreateErrorModal(
+		p.display.app,
+		err.Error(),
+		func() {
+			p.display.app.SetRoot(p.display.frame, true)
+		},
+	), true)
 }

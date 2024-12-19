@@ -3,6 +3,7 @@ package update
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
@@ -40,26 +41,26 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	}
 
 	var (
-		updateSuccessful bool
-		targetVersion    string
-		currentVersion   = configService.Get().Version
-		github           = service.NewGitHubService("ethpandaops", "contributoor")
+		success        bool
+		targetVersion  string
+		currentVersion = configService.Get().Version
+		github         = service.NewGitHubService("ethpandaops", "contributoor")
 	)
 
 	log.WithField("version", currentVersion).Info("Current version")
 
 	defer func() {
-		if !updateSuccessful {
-			if err := configService.Update(func(cfg *service.ContributoorConfig) {
+		if !success {
+			if uerr := configService.Update(func(cfg *service.ContributoorConfig) {
 				cfg.Version = currentVersion
-			}); err != nil {
-				log.Errorf("Failed to roll back version in config: %v", err)
+			}); uerr != nil {
+				log.Errorf("Failed to roll back version in config: %v", uerr)
 
 				return
 			}
 
-			if err := configService.Save(); err != nil {
-				log.Errorf("Failed to save config after version rollback: %v", err)
+			if rerr := configService.Save(); rerr != nil {
+				log.Errorf("Failed to save config after version rollback: %v", rerr)
 			}
 		}
 	}()
@@ -71,9 +72,9 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 
 		log.WithField("version", targetVersion).Info("Update version provided")
 
-		exists, err := github.VersionExists(targetVersion)
-		if err != nil {
-			return fmt.Errorf("failed to check version: %w", err)
+		exists, verr := github.VersionExists(targetVersion)
+		if verr != nil {
+			return fmt.Errorf("failed to check version: %w", verr)
 		}
 
 		if !exists {
@@ -85,11 +86,11 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 			)
 		}
 	} else {
-		var err error
+		var verr error
 
-		targetVersion, err = github.GetLatestVersion()
-		if err != nil {
-			return fmt.Errorf("failed to get latest version: %w", err)
+		targetVersion, verr = github.GetLatestVersion()
+		if verr != nil {
+			return fmt.Errorf("failed to get latest version: %w", verr)
 		}
 
 		log.WithField("version", targetVersion).Info("Latest version detected")
@@ -117,116 +118,138 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	}
 
 	// Update config version.
-	if err := configService.Update(func(cfg *service.ContributoorConfig) {
+	if uerr := configService.Update(func(cfg *service.ContributoorConfig) {
 		cfg.Version = targetVersion
-	}); err != nil {
-		return fmt.Errorf("failed to update config version: %w", err)
+	}); uerr != nil {
+		return fmt.Errorf("failed to update config version: %w", uerr)
 	}
 
 	// Save the updated config.
-	if err := configService.Save(); err != nil {
-		log.Errorf("could not save updated config: %v", err)
+	if serr := configService.Save(); serr != nil {
+		log.Errorf("could not save updated config: %v", serr)
 
 		return err
 	}
 
+	var updateFn func(log *logrus.Logger, configService *service.ConfigService) (bool, error)
+
 	// Update the service via whatever method the user has configured (docker or binary).
 	switch configService.Get().RunMethod {
 	case service.RunMethodDocker:
-		dockerService, err := service.NewDockerService(log, configService)
-		if err != nil {
-			log.Errorf("could not create docker service: %v", err)
+		updateFn = updateDocker
+	case service.RunMethodBinary:
+		updateFn = updateBinary
+	}
 
-			return err
-		}
+	success, err = updateFn(log, configService)
+	if err != nil {
+		return err
+	}
 
-		log.WithField("version", configService.Get().Version).Info("Updating Contributoor")
+	log.Infof(
+		"%sContributoor updated successfully to version %s%s",
+		tui.TerminalColorGreen,
+		configService.Get().Version,
+		tui.TerminalColorReset,
+	)
 
-		if e := dockerService.Update(); e != nil {
-			log.Errorf("could not update service: %v", e)
+	return nil
+}
 
-			return e
-		}
+func updateBinary(log *logrus.Logger, configService *service.ConfigService) (bool, error) {
+	binaryService := service.NewBinaryService(log, configService)
 
-		// Check if service is currently running.
-		running, err := dockerService.IsRunning()
-		if err != nil {
-			log.Errorf("could not check service status: %v", err)
+	log.WithField("version", configService.Get().Version).Info("Updating Contributoor")
 
-			return err
-		}
+	// Check if service is currently running.
+	running, err := binaryService.IsRunning()
+	if err != nil {
+		log.Errorf("could not check service status: %v", err)
 
-		// If the service is running, we need to restart it with the new version.
-		// Given its docker, we can ask the user if they want to restart it. Otherwise,
-		// we'll just let it run with the previous version until next restart.
-		if running {
-			if tui.Confirm("Service is running. Would you like to restart it with the new version?") {
-				if err := dockerService.Stop(); err != nil {
-					return fmt.Errorf("failed to stop service: %w", err)
-				}
+		return false, err
+	}
 
-				if err := dockerService.Start(); err != nil {
-					return fmt.Errorf("failed to start service: %w", err)
-				}
-			} else {
-				log.Info("Service will continue running with the previous version until next restart")
+	// If the service is running, we need to stop it before we can update the binary.
+	if running {
+		if tui.Confirm("Service is running. In order to update, it must be stopped. Would you like to stop it?") {
+			if err := binaryService.Stop(); err != nil {
+				return false, fmt.Errorf("failed to stop service: %w", err)
 			}
 		} else {
-			if tui.Confirm("Service is not running. Would you like to start it?") {
-				if err := dockerService.Start(); err != nil {
-					return fmt.Errorf("failed to start service: %w", err)
-				}
+			log.Error("Update process was cancelled")
+
+			return false, nil
+		}
+	}
+
+	if err := binaryService.Update(); err != nil {
+		log.Errorf("could not update service: %v", err)
+
+		return false, err
+	}
+
+	if err := configService.Save(); err != nil {
+		log.Errorf("could not save updated config: %v", err)
+
+		return false, err
+	}
+
+	// If it was running, start it again for them.
+	if running {
+		if err := binaryService.Start(); err != nil {
+			return true, fmt.Errorf("failed to start service: %w", err)
+		}
+	}
+
+	return true, nil
+}
+
+func updateDocker(log *logrus.Logger, configService *service.ConfigService) (bool, error) {
+	dockerService, err := service.NewDockerService(log, configService)
+	if err != nil {
+		log.Errorf("could not create docker service: %v", err)
+
+		return false, err
+	}
+
+	log.WithField("version", configService.Get().Version).Info("Updating Contributoor")
+
+	if e := dockerService.Update(); e != nil {
+		log.Errorf("could not update service: %v", e)
+
+		return false, e
+	}
+
+	// Check if service is currently running.
+	running, err := dockerService.IsRunning()
+	if err != nil {
+		log.Errorf("could not check service status: %v", err)
+
+		return true, err
+	}
+
+	// If the service is running, we need to restart it with the new version.
+	// Given its docker, we can ask the user if they want to restart it. Otherwise,
+	// we'll just let it run with the previous version until next restart.
+	if running {
+		if tui.Confirm("Service is running. Would you like to restart it with the new version?") {
+			if err := dockerService.Stop(); err != nil {
+				return true, fmt.Errorf("failed to stop service: %w", err)
 			}
-		}
 
-		log.Infof("%sContributoor updated successfully to version %s%s", tui.TerminalColorGreen, configService.Get().Version, tui.TerminalColorReset)
-	case service.RunMethodBinary:
-		binaryService := service.NewBinaryService(log, configService)
-
-		log.WithField("version", configService.Get().Version).Info("Updating Contributoor")
-
-		// Check if service is currently running.
-		running, err := binaryService.IsRunning()
-		if err != nil {
-			log.Errorf("could not check service status: %v", err)
-
-			return err
-		}
-
-		// If the service is running, we need to stop it before we can update the binary.
-		if running {
-			if tui.Confirm("Service is running. In order to update, it must be stopped. Would you like to stop it?") {
-				if err := binaryService.Stop(); err != nil {
-					return fmt.Errorf("failed to stop service: %w", err)
-				}
-			} else {
-				log.Error("Update process was cancelled")
-
-				return nil
+			if err := dockerService.Start(); err != nil {
+				return true, fmt.Errorf("failed to start service: %w", err)
 			}
+		} else {
+			log.Info("Service will continue running with the previous version until next restart")
 		}
-
-		if err := binaryService.Update(); err != nil {
-			log.Errorf("could not update service: %v", err)
-
-			return err
-		}
-
-		if err := configService.Save(); err != nil {
-			log.Errorf("could not save updated config: %v", err)
-
-			return err
-		}
-
-		// If it was running, start it again for them.
-		if running {
-			if err := binaryService.Start(); err != nil {
-				return fmt.Errorf("failed to start service: %w", err)
+	} else {
+		if tui.Confirm("Service is not running. Would you like to start it?") {
+			if err := dockerService.Start(); err != nil {
+				return true, fmt.Errorf("failed to start service: %w", err)
 			}
 		}
 	}
 
-	updateSuccessful = true
-
-	return nil
+	return true, nil
 }

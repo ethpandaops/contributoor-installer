@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
@@ -89,7 +90,7 @@ func (s *BinaryService) Start() error {
 	}
 
 	pidFile := filepath.Join(s.config.ContributoorDirectory, "contributoor.pid")
-	if err := os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0644); err != nil {
+	if err := os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0600); err != nil {
 		return fmt.Errorf("failed to write pid file: %w", err)
 	}
 
@@ -122,6 +123,12 @@ func (s *BinaryService) Stop() error {
 		return fmt.Errorf("failed to read pid file: %w", err)
 	}
 
+	pidStr := string(pidBytes)
+	if !regexp.MustCompile(`^\d+$`).MatchString(pidStr) {
+		return fmt.Errorf("invalid PID format")
+	}
+
+	//nolint:gosec // sanitized.
 	cmd := exec.Command("kill", string(pidBytes))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to stop process: %w", err)
@@ -157,9 +164,14 @@ func (s *BinaryService) IsRunning() (bool, error) {
 		return false, err
 	}
 
+	pidStr := string(pidBytes)
+	if !regexp.MustCompile(`^\d+$`).MatchString(pidStr) {
+		return false, fmt.Errorf("invalid PID format")
+	}
+
 	// kill -0 just checks if process exists. It doesn't actually send a
 	// signal that affects the process.
-	cmd := exec.Command("kill", "-0", string(pidBytes))
+	cmd := exec.Command("kill", "-0", pidStr)
 	if err := cmd.Run(); err != nil {
 		os.Remove(pidFile)
 
@@ -180,13 +192,14 @@ func (s *BinaryService) Update() error {
 	binaryPath := filepath.Join(expandedDir, "bin", "sentry")
 	binaryDir := filepath.Dir(binaryPath)
 
-	// Download and verify checksums
+	// Download and verify checksums.
 	checksumURL := fmt.Sprintf(
 		"https://github.com/ethpandaops/contributoor/releases/download/v%s/contributoor_%s_checksums.txt",
 		s.config.Version,
 		s.config.Version,
 	)
 
+	//nolint:gosec // controlled url.
 	resp, err := http.Get(checksumURL)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to download checksums: %w", err)
@@ -204,10 +217,15 @@ func (s *BinaryService) Update() error {
 		arch = "x86_64"
 	}
 
-	// Download binary
-	binaryURL := fmt.Sprintf("https://github.com/ethpandaops/contributoor/releases/download/v%s/contributoor_%s_%s_%s.tar.gz",
-		s.config.Version, s.config.Version, platform, arch)
+	binaryURL := fmt.Sprintf(
+		"https://github.com/ethpandaops/contributoor/releases/download/v%s/contributoor_%s_%s_%s.tar.gz",
+		s.config.Version,
+		s.config.Version,
+		platform,
+		arch,
+	)
 
+	//nolint:gosec // controlled url.
 	resp, err = http.Get(binaryURL)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to download binary: %w", err)
@@ -244,6 +262,7 @@ func (s *BinaryService) Update() error {
 		return fmt.Errorf("failed to create binary directory: %w", err)
 	}
 
+	//nolint:gosec // binaryPath is controlled by us.
 	cmd := exec.Command("tar", "--no-same-owner", "-xzf", tmpFile.Name(), "-C", binaryDir)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to extract binary: %w", err)

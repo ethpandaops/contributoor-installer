@@ -204,29 +204,35 @@ func validateAndUpdate(p *NetworkConfigPage, input *tview.InputField) {
 
 		p.display.app.QueueUpdateDraw(func() {
 			if err != nil {
-				errorModal := tui.CreateErrorModal(
-					p.display.app,
-					err.Error(),
-					func() {
-						p.display.app.SetRoot(p.display.frame, true)
-						p.display.app.SetFocus(p.form)
-					},
-				)
-
-				p.display.app.SetRoot(errorModal, true)
+				p.openErrorModal(err)
 
 				return
 			}
 
-			p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
 				if index != -1 {
 					cfg.NetworkName = networkOption
 				}
 
 				cfg.BeaconNodeAddress = text
-			})
+			}); err != nil {
+				p.openErrorModal(err)
+
+				return
+			}
 
 			p.display.setPage(p.display.homePage)
 		})
 	}()
+}
+
+func (p *NetworkConfigPage) openErrorModal(err error) {
+	p.display.app.SetRoot(tui.CreateErrorModal(
+		p.display.app,
+		err.Error(),
+		func() {
+			p.display.app.SetRoot(p.display.frame, true)
+			p.display.app.SetFocus(p.form)
+		},
+	), true)
 }
