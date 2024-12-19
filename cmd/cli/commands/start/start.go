@@ -54,7 +54,7 @@ func startContributoor(
 		cfg    = config.Get()
 	)
 
-	log.WithField("version", cfg.Version).Info("Starting Contributoor")
+	fmt.Printf("%sStarting Contributoor%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
 
 	// Start the sidecar via whatever method the user has configured (docker or binary).
 	switch cfg.RunMethod {
@@ -76,7 +76,9 @@ func startContributoor(
 
 	// If the sidecar is already running, we can just return.
 	if running {
-		return fmt.Errorf("%sContributoor is already running. Use 'contributoor stop' first if you want to restart it%s", tui.TerminalColorRed, tui.TerminalColorReset)
+		fmt.Printf("%sContributoor is already running. Use 'contributoor stop' first if you want to restart it%s\n", tui.TerminalColorYellow, tui.TerminalColorReset)
+
+		return nil
 	}
 
 	if err := runner.Start(); err != nil {

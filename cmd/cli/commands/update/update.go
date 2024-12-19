@@ -70,7 +70,8 @@ func updateContributoor(
 		currentVersion = cfg.Version
 	)
 
-	log.WithField("version", currentVersion).Info("Current version")
+	fmt.Printf("%sUpdating Contributoor Version%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
+	fmt.Printf("%-20s: %s\n", "Current Version", cfg.Version)
 
 	defer func() {
 		if !success {
@@ -82,19 +83,21 @@ func updateContributoor(
 
 	// Determine target version.
 	targetVersion, err := determineTargetVersion(c, github)
-	if err != nil {
+	if err != nil || targetVersion == "" {
 		// Flag as success, there's nothing to update on rollback if we fail to determine the target version.
 		success = true
 
 		return err
 	}
 
+	fmt.Printf("%-20s: %s\n", "Latest Version", targetVersion)
+
 	// Check if update is needed.
 	if targetVersion == currentVersion {
 		// Flag as success, there's nothing to update.
 		success = true
 
-		logUpdateStatus(log, c.IsSet("version"), targetVersion)
+		printUpdateStatus(c.IsSet("version"), targetVersion)
 
 		return nil
 	}
@@ -107,20 +110,11 @@ func updateContributoor(
 	// Refresh our config state, given it was updated above.
 	cfg = sidecarCfg.Get()
 
-	log.WithField("version", cfg.Version).Info("Updating Contributoor")
-
 	// Update the sidecar.
 	success, err = updateSidecar(log, cfg, docker, binary)
 	if err != nil {
 		return err
 	}
-
-	log.Infof(
-		"%sContributoor updated successfully to version %s%s",
-		tui.TerminalColorGreen,
-		cfg.Version,
-		tui.TerminalColorReset,
-	)
 
 	return nil
 }
@@ -147,12 +141,14 @@ func updateBinary(log *logrus.Logger, cfg *sidecar.Config, binary sidecar.Binary
 
 	// If the sidecar is running, we need to stop it before we can update the binary.
 	if running {
+		fmt.Printf("\n")
+
 		if tui.Confirm("Contributoor is running. In order to update, it must be stopped. Would you like to stop it?") {
 			if err := binary.Stop(); err != nil {
 				return false, fmt.Errorf("failed to stop sidecar: %w", err)
 			}
 		} else {
-			log.Error("update process was cancelled")
+			fmt.Printf("%sUpdate process was cancelled%s\n", tui.TerminalColorRed, tui.TerminalColorReset)
 
 			return false, nil
 		}
@@ -163,6 +159,8 @@ func updateBinary(log *logrus.Logger, cfg *sidecar.Config, binary sidecar.Binary
 
 		return false, err
 	}
+
+	fmt.Printf("%sContributoor updated successfully to version %s%s\n", tui.TerminalColorGreen, cfg.Version, tui.TerminalColorReset)
 
 	// If it was running, start it again for them.
 	if running {
@@ -181,6 +179,8 @@ func updateDocker(log *logrus.Logger, cfg *sidecar.Config, docker sidecar.Docker
 		return false, err
 	}
 
+	fmt.Printf("%sContributoor updated successfully to version %s%s\n", tui.TerminalColorGreen, cfg.Version, tui.TerminalColorReset)
+
 	// Check if service is currently running.
 	running, err := docker.IsRunning()
 	if err != nil {
@@ -188,6 +188,8 @@ func updateDocker(log *logrus.Logger, cfg *sidecar.Config, docker sidecar.Docker
 
 		return true, err
 	}
+
+	fmt.Printf("\n")
 
 	// If the service is running, we need to restart it with the new version.
 	if running {
@@ -200,7 +202,7 @@ func updateDocker(log *logrus.Logger, cfg *sidecar.Config, docker sidecar.Docker
 				return true, fmt.Errorf("failed to start sidecar: %w", err)
 			}
 		} else {
-			log.Info("service will continue running with the previous version until next restart")
+			fmt.Printf("%sContributoor will continue running with the previous version until next restart%s\n", tui.TerminalColorYellow, tui.TerminalColorReset)
 		}
 	} else {
 		if tui.Confirm("Contributoor is not running. Would you like to start it?") {
@@ -223,12 +225,14 @@ func determineTargetVersion(c *cli.Context, github service.GitHubService) (strin
 		}
 
 		if !exists {
-			return "", fmt.Errorf(
-				"%sversion %s not found. Use 'contributoor update' without --version to get the latest version%s",
+			fmt.Printf(
+				"%sVersion %s not found. Use 'contributoor update' without --version to get the latest version%s\n",
 				tui.TerminalColorRed,
 				version,
 				tui.TerminalColorReset,
 			)
+
+			return "", nil
 		}
 
 		return version, nil
@@ -270,17 +274,17 @@ func rollbackVersion(log *logrus.Logger, config sidecar.ConfigManager, version s
 	return nil
 }
 
-func logUpdateStatus(log *logrus.Logger, isVersionSet bool, version string) {
+func printUpdateStatus(isVersionSet bool, version string) {
 	if isVersionSet {
-		log.Infof(
-			"%scontributoor is already running version %s%s",
+		fmt.Printf(
+			"%sContributoor is already running version %s%s\n",
 			tui.TerminalColorGreen,
 			version,
 			tui.TerminalColorReset,
 		)
 	} else {
-		log.Infof(
-			"%scontributoor is up to date at version %s%s",
+		fmt.Printf(
+			"%sContributoor is up to date at version %s%s\n",
 			tui.TerminalColorGreen,
 			version,
 			tui.TerminalColorReset,

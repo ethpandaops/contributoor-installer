@@ -105,7 +105,7 @@ func (s *binarySidecar) Start() error {
 		}
 	}()
 
-	s.logger.Info("Service started successfully")
+	fmt.Printf("%sContributoor started successfully%s\n", tui.TerminalColorGreen, tui.TerminalColorReset)
 
 	return nil
 }
@@ -145,7 +145,7 @@ func (s *binarySidecar) Stop() error {
 		s.stderr = nil
 	}
 
-	s.logger.Info("Service stopped and cleaned up successfully")
+	fmt.Printf("%sContributoor stopped successfully%s\n", tui.TerminalColorGreen, tui.TerminalColorReset)
 
 	return nil
 }
@@ -279,11 +279,7 @@ func (s *binarySidecar) Update() error {
 		return fmt.Errorf("failed to set binary permissions: %w", err)
 	}
 
-	s.logger.WithField("version", cfg.Version).Infof(
-		"%sBinary updated successfully%s",
-		tui.TerminalColorGreen,
-		tui.TerminalColorReset,
-	)
+	fmt.Printf("%sBinary updated successfully%s\n", tui.TerminalColorGreen, tui.TerminalColorReset)
 
 	// Restart if it was running
 	if running {

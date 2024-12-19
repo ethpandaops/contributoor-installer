@@ -46,7 +46,6 @@ func TestStopContributoor(t *testing.T) {
 				}).Times(1)
 				d.EXPECT().IsRunning().Return(false, nil)
 			},
-			expectedError: "Contributoor is not running",
 		},
 		{
 			name:      "docker - stop fails",
@@ -80,7 +79,6 @@ func TestStopContributoor(t *testing.T) {
 				}).Times(1)
 				b.EXPECT().IsRunning().Return(false, nil)
 			},
-			expectedError: "Contributoor is not running",
 		},
 		{
 			name:      "invalid sidecar run method",

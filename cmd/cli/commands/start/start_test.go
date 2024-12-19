@@ -46,7 +46,6 @@ func TestStartContributoor(t *testing.T) {
 				}).Times(1)
 				d.EXPECT().IsRunning().Return(true, nil)
 			},
-			expectedError: "Contributoor is already running",
 		},
 		{
 			name:      "docker - start fails",
@@ -80,7 +79,6 @@ func TestStartContributoor(t *testing.T) {
 				}).Times(1)
 				b.EXPECT().IsRunning().Return(true, nil)
 			},
-			expectedError: "Contributoor is already running",
 		},
 		{
 			name:      "invalid sidecar run method",

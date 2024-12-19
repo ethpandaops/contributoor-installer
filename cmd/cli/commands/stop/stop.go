@@ -54,7 +54,7 @@ func stopContributoor(
 		cfg    = config.Get()
 	)
 
-	log.WithField("version", cfg.Version).Info("Stopping Contributoor")
+	fmt.Printf("%sStopping Contributoor%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
 
 	// Stop the sidecar via whatever method the user has configured (docker or binary).
 	switch cfg.RunMethod {
@@ -76,7 +76,9 @@ func stopContributoor(
 
 	// If the service is not running, we can just return.
 	if !running {
-		return fmt.Errorf("%sContributoor is not running. Use 'contributoor start' to start it%s", tui.TerminalColorRed, tui.TerminalColorReset)
+		fmt.Printf("%sContributoor is not running. Use 'contributoor start' to start it%s\n", tui.TerminalColorYellow, tui.TerminalColorReset)
+
+		return nil
 	}
 
 	if err := runner.Stop(); err != nil {

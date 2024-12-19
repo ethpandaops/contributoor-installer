@@ -57,7 +57,7 @@ func (s *dockerSidecar) Start() error {
 		return fmt.Errorf("failed to start containers: %w\nOutput: %s", err, string(output))
 	}
 
-	s.logger.Info("Service started successfully")
+	fmt.Printf("%sContributoor started successfully%s\n", tui.TerminalColorGreen, tui.TerminalColorReset)
 
 	return nil
 }
@@ -77,7 +77,7 @@ func (s *dockerSidecar) Stop() error {
 		return fmt.Errorf("failed to stop containers: %w\nOutput: %s", err, string(output))
 	}
 
-	s.logger.Info("Service stopped and cleaned up successfully")
+	fmt.Printf("%sContributoor stopped successfully%s\n", tui.TerminalColorGreen, tui.TerminalColorReset)
 
 	return nil
 }
@@ -114,8 +114,8 @@ func (s *dockerSidecar) Update() error {
 		return fmt.Errorf("failed to pull image %s: %w\nOutput: %s", image, err, string(output))
 	}
 
-	s.logger.WithField("version", cfg.Version).Infof(
-		"%sImage %s updated successfully%s",
+	fmt.Printf(
+		"%sImage %s updated successfully%s\n",
 		tui.TerminalColorGreen,
 		image,
 		tui.TerminalColorReset,

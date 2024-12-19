@@ -132,7 +132,6 @@ func TestUpdateContributoor(t *testing.T) {
 				}).Times(1)
 				g.EXPECT().VersionExists("v999.0.0").Return(false, nil)
 			},
-			expectedError: "version v999.0.0 not found",
 		},
 		{
 			name:          "binary - updates service successfully",
