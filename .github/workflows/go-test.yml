@@ -12,13 +12,8 @@ permissions:
 
 jobs:
   test:
-    name: test-${{ matrix.os }}-${{ matrix.test-group }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        test-group: [1, 2, 3, 4]
+    name: test
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -26,32 +21,14 @@ jobs:
         uses: ./.github/workflows/go-setup
 
       - name: Run Tests
-        run: |
-          # List all packages
-          PKGS=$(go list ./...)
-          
-          # Get total package count and calculate split
-          COUNT=$(echo "$PKGS" | wc -l)
-          SPLIT=$((COUNT / 4))
-          GROUP=${{ matrix.test-group }}
-          START=$(((GROUP - 1) * SPLIT))
-          
-          # Select packages for this group
-          if [ "$GROUP" == "4" ]; then
-            TEST_PKGS=$(echo "$PKGS" | tail -n +$START)
-          else
-            TEST_PKGS=$(echo "$PKGS" | tail -n +$START | head -n $SPLIT)
-          fi
-          
-          # Run tests for this group with JSON output
-          go test -v -race -json $TEST_PKGS > test.$GROUP.json
+        run: go test -v -race -json ./... > test.json
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.test-group }}
-          path: test.${{ matrix.test-group }}.json
+          name: test-results
+          path: test.json
 
   annotate:
     needs: test
@@ -61,27 +38,4 @@ jobs:
       - name: Download test results
         uses: actions/download-artifact@v4
         with:
-          pattern: test-results-*
-          merge-multiple: true
-
-      - name: Merge test results
-        run: |
-          # Start with an empty file
-          > test.json
-          
-          # Merge all test files, each line is already a complete JSON object
-          for f in test.*.json; do
-            if [ -f "$f" ]; then
-              cat "$f" >> test.json
-            fi
-          done
-          
-          # Verify we have content
-          if [ ! -s test.json ]; then
-            echo '{"Action":"skip","Package":"none","Test":"none"}' > test.json
-          fi
-
-      - name: Annotate tests
-        uses: guyarb/golang-test-annotations@v0.6.0
-        with:
-          test-results: test.json
+          name: test-results
