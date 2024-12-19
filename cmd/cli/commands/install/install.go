@@ -19,7 +19,14 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 		Usage:     "Install Contributoor",
 		UsageText: "contributoor install [options]",
 		Action: func(c *cli.Context) error {
-			return installContributoor(c, opts)
+			log := opts.Logger()
+
+			configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
+			if err != nil {
+				return fmt.Errorf("%serror loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
+			}
+
+			return installContributoor(c, log, configService)
 		},
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -36,28 +43,21 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 	})
 }
 
-// installContributoor is the action for the install command.
-func installContributoor(c *cli.Context, opts *options.CommandOpts) error {
-	log := opts.Logger()
-	log.SetLevel(logrus.DebugLevel)
-
-	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
-	if err != nil {
-		return fmt.Errorf("%serror loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
-	}
-
-	app := tview.NewApplication()
-	d := NewInstallDisplay(log, app, configService)
+func installContributoor(c *cli.Context, log *logrus.Logger, config service.ConfigManager) error {
+	var (
+		app     = tview.NewApplication()
+		display = NewInstallDisplay(log, app, config)
+	)
 
 	// Run the display.
-	if err := d.Run(); err != nil {
+	if err := display.Run(); err != nil {
 		log.Errorf("error running display: %v", err)
 
 		return fmt.Errorf("%sdisplay error: %w%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 	}
 
 	// Handle completion.
-	if err := d.OnComplete(); err != nil {
+	if err := display.OnComplete(); err != nil {
 		log.Errorf("error completing installation: %v", err)
 
 		return fmt.Errorf("%scompletion error: %w%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
