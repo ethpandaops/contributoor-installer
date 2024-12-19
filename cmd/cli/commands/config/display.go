@@ -23,6 +23,7 @@ type ConfigDisplay struct {
 	closeButton            *tview.Button
 	networkConfigPage      *NetworkConfigPage
 	outputServerConfigPage *OutputServerConfigPage
+	settingsPage           *ContributoorSettingsPage
 }
 
 // NewConfigDisplay creates a new Configtui.
@@ -39,9 +40,11 @@ func NewConfigDisplay(log *logrus.Logger, app *tview.Application, sidecarCfg sid
 	// Create all the config sub-pages.
 	display.networkConfigPage = NewNetworkConfigPage(display)
 	display.outputServerConfigPage = NewOutputServerConfigPage(display)
+	display.settingsPage = NewContributoorSettingsPage(display)
 	display.settingsPages = []tui.PageInterface{
 		display.networkConfigPage,
 		display.outputServerConfigPage,
+		display.settingsPage,
 	}
 
 	// Add all the sub-pages to the tui.

@@ -37,7 +37,7 @@ type ConfigManager interface {
 
 // Config is the configuration for the contributoor sidecar.
 type Config struct {
-	Logging               string              `yaml:"logging"`
+	LogLevel              string              `yaml:"logLevel"`
 	Version               string              `yaml:"version"`
 	ContributoorDirectory string              `yaml:"contributoorDirectory"`
 	RunMethod             string              `yaml:"runMethod"`
@@ -126,11 +126,11 @@ func NewConfigService(logger *logrus.Logger, configPath string) (ConfigManager, 
 
 func newDefaultConfig() *Config {
 	return &Config{
-		Logging:           logrus.InfoLevel.String(),
+		LogLevel:          logrus.InfoLevel.String(),
 		Version:           "latest",
 		RunMethod:         RunMethodDocker,
 		NetworkName:       "mainnet",
-		BeaconNodeAddress: "http://localhost:5052",
+		BeaconNodeAddress: "",
 	}
 }
 
