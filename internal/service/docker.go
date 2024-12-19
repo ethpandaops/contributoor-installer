@@ -46,7 +46,8 @@ func NewDockerService(logger *logrus.Logger, configService ConfigManager) (Docke
 
 // Start starts the docker container using docker-compose.
 func (s *dockerService) Start() error {
-	cmd := exec.Command("docker", "compose", "-f", s.composePath, "up", "-d", "--pull", "always") //nolint:gosec // validateComposePath() and filepath.Clean() in-use.
+	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
+	cmd := exec.Command("docker", "compose", "-f", s.composePath, "up", "-d", "--pull", "always")
 	cmd.Env = s.getComposeEnv()
 
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -80,7 +81,8 @@ func (s *dockerService) Stop() error {
 
 // IsRunning checks if the docker container is running.
 func (s *dockerService) IsRunning() (bool, error) {
-	cmd := exec.Command("docker", "compose", "-f", s.composePath, "ps", "--format", "{{.State}}") //nolint:gosec // validateComposePath() and filepath.Clean() in-use.
+	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
+	cmd := exec.Command("docker", "compose", "-f", s.composePath, "ps", "--format", "{{.State}}")
 	cmd.Env = s.getComposeEnv()
 
 	output, err := cmd.Output()
