@@ -24,7 +24,7 @@ type BinaryService interface {
 // BinaryService is a basic service for interacting with the contributoor binary.
 type binaryService struct {
 	logger *logrus.Logger
-	config *ContributoorConfig
+	config ConfigManager
 	stdout *os.File
 	stderr *os.File
 }
@@ -37,7 +37,7 @@ func NewBinaryService(logger *logrus.Logger, configService ConfigManager) Binary
 
 		return &binaryService{
 			logger: logger,
-			config: configService.Get(),
+			config: configService,
 		}
 	}
 
@@ -50,7 +50,7 @@ func NewBinaryService(logger *logrus.Logger, configService ConfigManager) Binary
 
 		return &binaryService{
 			logger: logger,
-			config: configService.Get(),
+			config: configService,
 		}
 	}
 
@@ -62,13 +62,13 @@ func NewBinaryService(logger *logrus.Logger, configService ConfigManager) Binary
 
 		return &binaryService{
 			logger: logger,
-			config: configService.Get(),
+			config: configService,
 		}
 	}
 
 	return &binaryService{
 		logger: logger,
-		config: configService.Get(),
+		config: configService,
 		stdout: stdout,
 		stderr: stderr,
 	}
@@ -76,12 +76,14 @@ func NewBinaryService(logger *logrus.Logger, configService ConfigManager) Binary
 
 // Start starts the binary service.
 func (s *binaryService) Start() error {
-	binaryPath := filepath.Join(s.config.ContributoorDirectory, "bin", "sentry")
+	cfg := s.config.Get()
+
+	binaryPath := filepath.Join(cfg.ContributoorDirectory, "bin", "sentry")
 	if _, err := os.Stat(binaryPath); err != nil {
 		return fmt.Errorf("binary not found at %s - please reinstall", binaryPath)
 	}
 
-	expandedDir, err := homedir.Expand(s.config.ContributoorDirectory)
+	expandedDir, err := homedir.Expand(cfg.ContributoorDirectory)
 	if err != nil {
 		return fmt.Errorf("failed to expand config path: %w", err)
 	}
@@ -95,7 +97,7 @@ func (s *binaryService) Start() error {
 		return fmt.Errorf("failed to start binary: %w", err)
 	}
 
-	pidFile := filepath.Join(s.config.ContributoorDirectory, "contributoor.pid")
+	pidFile := filepath.Join(cfg.ContributoorDirectory, "contributoor.pid")
 	if err := os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0600); err != nil {
 		return fmt.Errorf("failed to write pid file: %w", err)
 	}
@@ -122,7 +124,9 @@ func (s *binaryService) Start() error {
 
 // Stop stops the binary service.
 func (s *binaryService) Stop() error {
-	pidFile := filepath.Join(s.config.ContributoorDirectory, "contributoor.pid")
+	cfg := s.config.Get()
+
+	pidFile := filepath.Join(cfg.ContributoorDirectory, "contributoor.pid")
 
 	pidBytes, err := os.ReadFile(pidFile)
 	if err != nil {
@@ -160,7 +164,9 @@ func (s *binaryService) Stop() error {
 
 // IsRunning checks if the binary service is running.
 func (s *binaryService) IsRunning() (bool, error) {
-	pidFile := filepath.Join(s.config.ContributoorDirectory, "contributoor.pid")
+	cfg := s.config.Get()
+
+	pidFile := filepath.Join(cfg.ContributoorDirectory, "contributoor.pid")
 	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
 		return false, nil
 	}
@@ -190,7 +196,9 @@ func (s *binaryService) IsRunning() (bool, error) {
 
 // Update updates the binary service.
 func (s *binaryService) Update() error {
-	expandedDir, err := homedir.Expand(s.config.ContributoorDirectory)
+	cfg := s.config.Get()
+
+	expandedDir, err := homedir.Expand(cfg.ContributoorDirectory)
 	if err != nil {
 		return fmt.Errorf("failed to expand config path: %w", err)
 	}
@@ -201,8 +209,8 @@ func (s *binaryService) Update() error {
 	// Download and verify checksums.
 	checksumURL := fmt.Sprintf(
 		"https://github.com/ethpandaops/contributoor/releases/download/v%s/contributoor_%s_checksums.txt",
-		s.config.Version,
-		s.config.Version,
+		cfg.Version,
+		cfg.Version,
 	)
 
 	//nolint:gosec // controlled url.
@@ -225,8 +233,8 @@ func (s *binaryService) Update() error {
 
 	binaryURL := fmt.Sprintf(
 		"https://github.com/ethpandaops/contributoor/releases/download/v%s/contributoor_%s_%s_%s.tar.gz",
-		s.config.Version,
-		s.config.Version,
+		cfg.Version,
+		cfg.Version,
 		platform,
 		arch,
 	)
@@ -279,7 +287,7 @@ func (s *binaryService) Update() error {
 		return fmt.Errorf("failed to set binary permissions: %w", err)
 	}
 
-	s.logger.WithField("version", s.config.Version).Infof(
+	s.logger.WithField("version", cfg.Version).Infof(
 		"%sBinary updated successfully%s",
 		tui.TerminalColorGreen,
 		tui.TerminalColorReset,

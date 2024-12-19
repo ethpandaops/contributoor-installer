@@ -20,7 +20,6 @@ type DockerService interface {
 // DockerService is a basic service for interacting with the docker container.
 type dockerService struct {
 	logger        *logrus.Logger
-	config        *ContributoorConfig
 	composePath   string
 	configPath    string
 	configService ConfigManager
@@ -39,7 +38,6 @@ func NewDockerService(logger *logrus.Logger, configService ConfigManager) (Docke
 
 	return &dockerService{
 		logger:        logger,
-		config:        configService.Get(),
 		composePath:   filepath.Clean(composePath),
 		configPath:    configService.GetConfigPath(),
 		configService: configService,
@@ -102,13 +100,15 @@ func (s *dockerService) IsRunning() (bool, error) {
 
 // Update pulls the latest image and restarts the container.
 func (s *dockerService) Update() error {
+	cfg := s.configService.Get()
+
 	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
-	cmd := exec.Command("docker", "pull", fmt.Sprintf("ethpandaops/contributoor:%s", s.config.Version))
+	cmd := exec.Command("docker", "pull", fmt.Sprintf("ethpandaops/contributoor:%s", cfg.Version))
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to pull image: %w\nOutput: %s", err, string(output))
 	}
 
-	s.logger.WithField("version", s.config.Version).Infof(
+	s.logger.WithField("version", cfg.Version).Infof(
 		"%sImage updated successfully%s",
 		tui.TerminalColorGreen,
 		tui.TerminalColorReset,
@@ -118,9 +118,11 @@ func (s *dockerService) Update() error {
 }
 
 func (s *dockerService) getComposeEnv() []string {
+	cfg := s.configService.Get()
+
 	return append(os.Environ(),
 		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", s.configService.GetConfigDir()),
-		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", s.configService.Get().Version),
+		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", cfg.Version),
 	)
 }
 

@@ -77,10 +77,12 @@ func main() {
 		log.Errorf("failed to register stop command: %v", err)
 	}
 
-	update.RegisterCommands(app, options.NewCommandOpts(
+	if err := update.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("update"),
 		options.WithLogger(log),
-	))
+	)); err != nil {
+		log.Errorf("failed to register update command: %v", err)
+	}
 
 	config.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("config"),

@@ -3,16 +3,14 @@ package update
 import (
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
-
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
 
-// RegisterCommands registers the update command.
-func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
+func RegisterCommands(app *cli.App, opts *options.CommandOpts) error {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:      opts.Name(),
 		Aliases:   opts.Aliases(),
@@ -26,122 +24,84 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			return updateContributoor(c, opts)
+			log := opts.Logger()
+
+			configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
+			if err != nil {
+				return fmt.Errorf("error loading config: %w", err)
+			}
+
+			dockerService, err := service.NewDockerService(log, configService)
+			if err != nil {
+				return fmt.Errorf("error creating docker service: %w", err)
+			}
+
+			binaryService := service.NewBinaryService(log, configService)
+			githubService := service.NewGitHubService("ethpandaops", "contributoor")
+
+			return updateContributoor(c, log, configService, dockerService, binaryService, githubService)
 		},
 	})
+
+	return nil
 }
 
-// updateContributoor updates contributoor to the latest version (based on run method configured in config.yaml).
-func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
-	log := opts.Logger()
-
-	configService, err := service.NewConfigService(log, c.GlobalString("config-path"))
-	if err != nil {
-		return fmt.Errorf("%sError loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
-	}
-
+func updateContributoor(
+	c *cli.Context,
+	log *logrus.Logger,
+	config service.ConfigManager,
+	docker service.DockerService,
+	binary service.BinaryService,
+	github service.GitHubService,
+) error {
 	var (
 		success        bool
 		targetVersion  string
-		currentVersion = configService.Get().Version
-		github         = service.NewGitHubService("ethpandaops", "contributoor")
+		cfg            = config.Get()
+		currentVersion = cfg.Version
 	)
 
 	log.WithField("version", currentVersion).Info("Current version")
 
 	defer func() {
 		if !success {
-			if uerr := configService.Update(func(cfg *service.ContributoorConfig) {
-				cfg.Version = currentVersion
-			}); uerr != nil {
-				log.Errorf("Failed to roll back version in config: %v", uerr)
-
-				return
-			}
-
-			if rerr := configService.Save(); rerr != nil {
-				log.Errorf("Failed to save config after version rollback: %v", rerr)
+			if err := rollbackVersion(log, config, currentVersion); err != nil {
+				log.Error(err)
 			}
 		}
 	}()
 
-	// Determine target version. If we were passed a version, use that.
-	// If not, get the latest version from GitHub.
-	if c.IsSet("version") {
-		targetVersion = c.String("version")
+	// Determine target version.
+	targetVersion, err := determineTargetVersion(c, github)
+	if err != nil {
+		// Flag as success, there's nothing to update on rollback if we fail to determine the target version.
+		success = true
 
-		log.WithField("version", targetVersion).Info("Update version provided")
-
-		exists, verr := github.VersionExists(targetVersion)
-		if verr != nil {
-			return fmt.Errorf("failed to check version: %w", verr)
-		}
-
-		if !exists {
-			return fmt.Errorf(
-				"%sVersion %s not found. Use 'contributoor update' without --version to get the latest version%s",
-				tui.TerminalColorRed,
-				targetVersion,
-				tui.TerminalColorReset,
-			)
-		}
-	} else {
-		var verr error
-
-		targetVersion, verr = github.GetLatestVersion()
-		if verr != nil {
-			return fmt.Errorf("failed to get latest version: %w", verr)
-		}
-
-		log.WithField("version", targetVersion).Info("Latest version detected")
+		return err
 	}
 
-	// We don't need to update if the target version is the same as the current version.
-	if targetVersion == configService.Get().Version {
-		if c.IsSet("version") {
-			log.Infof(
-				"%sContributoor is already running version %s%s",
-				tui.TerminalColorGreen,
-				targetVersion,
-				tui.TerminalColorReset,
-			)
-		} else {
-			log.Infof(
-				"%sContributoor is up to date at version %s%s",
-				tui.TerminalColorGreen,
-				targetVersion,
-				tui.TerminalColorReset,
-			)
-		}
+	// Check if update is needed.
+	if targetVersion == currentVersion {
+		// Flag as success, there's nothing to update.
+		success = true
+
+		logUpdateStatus(log, c.IsSet("version"), targetVersion)
 
 		return nil
 	}
 
 	// Update config version.
-	if uerr := configService.Update(func(cfg *service.ContributoorConfig) {
-		cfg.Version = targetVersion
-	}); uerr != nil {
-		return fmt.Errorf("failed to update config version: %w", uerr)
+	if uerr := updateConfigVersion(config, targetVersion); uerr != nil {
+		return uerr
 	}
 
-	// Save the updated config.
-	if serr := configService.Save(); serr != nil {
-		log.Errorf("could not save updated config: %v", serr)
+	// Refresh our config state, given it was updated above.
+	cfg = config.Get()
 
-		return err
-	}
+	// Update the service.
+	log.WithField("version", cfg.Version).Info("Updating Contributoor")
 
-	var updateFn func(log *logrus.Logger, configService service.ConfigManager) (bool, error)
-
-	// Update the service via whatever method the user has configured (docker or binary).
-	switch configService.Get().RunMethod {
-	case service.RunMethodDocker:
-		updateFn = updateDocker
-	case service.RunMethodBinary:
-		updateFn = updateBinary
-	}
-
-	success, err = updateFn(log, configService)
+	success, err = updateService(log, cfg, docker, binary)
 	if err != nil {
 		return err
 	}
@@ -149,20 +109,27 @@ func updateContributoor(c *cli.Context, opts *options.CommandOpts) error {
 	log.Infof(
 		"%sContributoor updated successfully to version %s%s",
 		tui.TerminalColorGreen,
-		configService.Get().Version,
+		cfg.Version,
 		tui.TerminalColorReset,
 	)
 
 	return nil
 }
 
-func updateBinary(log *logrus.Logger, configService service.ConfigManager) (bool, error) {
-	binaryService := service.NewBinaryService(log, configService)
+func updateService(log *logrus.Logger, cfg *service.ContributoorConfig, docker service.DockerService, binary service.BinaryService) (bool, error) {
+	switch cfg.RunMethod {
+	case service.RunMethodDocker:
+		return updateDocker(log, cfg, docker)
+	case service.RunMethodBinary:
+		return updateBinary(log, cfg, binary)
+	default:
+		return false, fmt.Errorf("invalid run method: %s", cfg.RunMethod)
+	}
+}
 
-	log.WithField("version", configService.Get().Version).Info("Updating Contributoor")
-
+func updateBinary(log *logrus.Logger, cfg *service.ContributoorConfig, binary service.BinaryService) (bool, error) {
 	// Check if service is currently running.
-	running, err := binaryService.IsRunning()
+	running, err := binary.IsRunning()
 	if err != nil {
 		log.Errorf("could not check service status: %v", err)
 
@@ -172,31 +139,30 @@ func updateBinary(log *logrus.Logger, configService service.ConfigManager) (bool
 	// If the service is running, we need to stop it before we can update the binary.
 	if running {
 		if tui.Confirm("Service is running. In order to update, it must be stopped. Would you like to stop it?") {
-			if err := binaryService.Stop(); err != nil {
+			if err := binary.Stop(); err != nil {
 				return false, fmt.Errorf("failed to stop service: %w", err)
 			}
 		} else {
-			log.Error("Update process was cancelled")
+			log.Error("update process was cancelled")
 
 			return false, nil
 		}
 	}
 
-	if err := binaryService.Update(); err != nil {
+	if err := binary.Update(); err != nil {
 		log.Errorf("could not update service: %v", err)
 
 		return false, err
 	}
 
-	if err := configService.Save(); err != nil {
-		log.Errorf("could not save updated config: %v", err)
-
-		return false, err
-	}
+	// if err := config.Save(); err != nil {
+	// 	log.Errorf("could not save updated config: %v", err)
+	// 	return false, err
+	// }
 
 	// If it was running, start it again for them.
 	if running {
-		if err := binaryService.Start(); err != nil {
+		if err := binary.Start(); err != nil {
 			return true, fmt.Errorf("failed to start service: %w", err)
 		}
 	}
@@ -204,24 +170,15 @@ func updateBinary(log *logrus.Logger, configService service.ConfigManager) (bool
 	return true, nil
 }
 
-func updateDocker(log *logrus.Logger, configService service.ConfigManager) (bool, error) {
-	dockerService, err := service.NewDockerService(log, configService)
-	if err != nil {
-		log.Errorf("could not create docker service: %v", err)
+func updateDocker(log *logrus.Logger, cfg *service.ContributoorConfig, docker service.DockerService) (bool, error) {
+	if err := docker.Update(); err != nil {
+		log.Errorf("could not update service: %v", err)
 
 		return false, err
 	}
 
-	log.WithField("version", configService.Get().Version).Info("Updating Contributoor")
-
-	if e := dockerService.Update(); e != nil {
-		log.Errorf("could not update service: %v", e)
-
-		return false, e
-	}
-
 	// Check if service is currently running.
-	running, err := dockerService.IsRunning()
+	running, err := docker.IsRunning()
 	if err != nil {
 		log.Errorf("could not check service status: %v", err)
 
@@ -229,27 +186,100 @@ func updateDocker(log *logrus.Logger, configService service.ConfigManager) (bool
 	}
 
 	// If the service is running, we need to restart it with the new version.
-	// Given its docker, we can ask the user if they want to restart it. Otherwise,
-	// we'll just let it run with the previous version until next restart.
 	if running {
 		if tui.Confirm("Service is running. Would you like to restart it with the new version?") {
-			if err := dockerService.Stop(); err != nil {
+			if err := docker.Stop(); err != nil {
 				return true, fmt.Errorf("failed to stop service: %w", err)
 			}
 
-			if err := dockerService.Start(); err != nil {
+			if err := docker.Start(); err != nil {
 				return true, fmt.Errorf("failed to start service: %w", err)
 			}
 		} else {
-			log.Info("Service will continue running with the previous version until next restart")
+			log.Info("service will continue running with the previous version until next restart")
 		}
 	} else {
 		if tui.Confirm("Service is not running. Would you like to start it?") {
-			if err := dockerService.Start(); err != nil {
+			if err := docker.Start(); err != nil {
 				return true, fmt.Errorf("failed to start service: %w", err)
 			}
 		}
 	}
 
 	return true, nil
+}
+
+func determineTargetVersion(c *cli.Context, github service.GitHubService) (string, error) {
+	if c.IsSet("version") {
+		version := c.String("version")
+
+		exists, err := github.VersionExists(version)
+		if err != nil {
+			return "", fmt.Errorf("failed to check version: %w", err)
+		}
+
+		if !exists {
+			return "", fmt.Errorf(
+				"%sversion %s not found. Use 'contributoor update' without --version to get the latest version%s",
+				tui.TerminalColorRed,
+				version,
+				tui.TerminalColorReset,
+			)
+		}
+
+		return version, nil
+	}
+
+	version, err := github.GetLatestVersion()
+	if err != nil {
+		return "", fmt.Errorf("failed to get latest version: %w", err)
+	}
+
+	return version, nil
+}
+
+func updateConfigVersion(config service.ConfigManager, version string) error {
+	if err := config.Update(func(cfg *service.ContributoorConfig) {
+		cfg.Version = version
+	}); err != nil {
+		return fmt.Errorf("failed to update config version: %w", err)
+	}
+
+	if err := config.Save(); err != nil {
+		return fmt.Errorf("could not save updated config: %w", err)
+	}
+
+	return nil
+}
+
+func rollbackVersion(log *logrus.Logger, config service.ConfigManager, version string) error {
+	if err := config.Update(func(cfg *service.ContributoorConfig) {
+		cfg.Version = version
+	}); err != nil {
+		return fmt.Errorf("failed to roll back version in config: %w", err)
+	}
+
+	if err := config.Save(); err != nil {
+		return fmt.Errorf("failed to save config after version rollback: %w", err)
+	}
+
+	return nil
+}
+
+func logUpdateStatus(log *logrus.Logger, isVersionSet bool, version string) {
+	if isVersionSet {
+		log.Infof(
+			"%scontributoor is already running version %s%s",
+			tui.TerminalColorGreen,
+			version,
+			tui.TerminalColorReset,
+		)
+	} else {
+		log.Infof(
+			"%scontributoor is up to date at version %s%s",
+			tui.TerminalColorGreen,
+			version,
+			tui.TerminalColorReset,
+		)
+	}
 }

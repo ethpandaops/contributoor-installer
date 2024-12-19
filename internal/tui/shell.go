@@ -27,6 +27,13 @@ Authored by the ethPandaOps team
 
 %s`, Logo, cli.AppHelpTemplate)
 
+// Confirm is a function variable that prompts the user for confirmation.
+var Confirm = func(initialPrompt string) bool {
+	response := Prompt(fmt.Sprintf("%s [y/n]", initialPrompt), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+
+	return (strings.ToLower(response[:1]) == "y")
+}
+
 // Prompt will prompt the user for input and validate the input against the expected format.
 func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt string) string {
 	fmt.Println(initialPrompt)
@@ -40,11 +47,4 @@ func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt s
 	fmt.Println("")
 
 	return scanner.Text()
-}
-
-// Confirm prompts the user for confirmation.
-func Confirm(initialPrompt string) bool {
-	response := Prompt(fmt.Sprintf("%s [y/n]", initialPrompt), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
-
-	return (strings.ToLower(response[:1]) == "y")
 }

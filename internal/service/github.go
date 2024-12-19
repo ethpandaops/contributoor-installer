@@ -37,11 +37,15 @@ var (
 	}
 )
 
-// GitHubService is a basic service for interacting with the GitHub API.
-type GitHubService struct {
-	owner  string
-	repo   string
-	client *http.Client
+//go:generate mockgen -package mock -destination mock/github.mock.go github.com/ethpandaops/contributoor-installer/internal/service GitHubService
+
+// GitHubService defines the interface for GitHub operations.
+type GitHubService interface {
+	// GetLatestVersion returns the latest version tag (e.g., "0.0.1") from GitHub releases.
+	GetLatestVersion() (string, error)
+
+	// VersionExists checks if a specific version exists in the GitHub releases.
+	VersionExists(version string) (bool, error)
 }
 
 // GitHubRelease is a struct that represents a GitHub release.
@@ -49,9 +53,16 @@ type GitHubRelease struct {
 	TagName string `json:"tag_name"` //nolint:tagliatelle // Upstream response doesnt camelCase.
 }
 
+// githubService is a basic service for interacting with the GitHub API.
+type githubService struct {
+	owner  string
+	repo   string
+	client *http.Client
+}
+
 // NewGitHubService creates a new GitHubService.
-func NewGitHubService(owner, repo string) *GitHubService {
-	return &GitHubService{
+func NewGitHubService(owner, repo string) GitHubService {
+	return &githubService{
 		owner: owner,
 		repo:  repo,
 		client: &http.Client{
@@ -61,7 +72,7 @@ func NewGitHubService(owner, repo string) *GitHubService {
 }
 
 // GetLatestVersion returns the latest version tag (e.g., "0.0.1") from GitHub releases.
-func (s *GitHubService) GetLatestVersion() (string, error) {
+func (s *githubService) GetLatestVersion() (string, error) {
 	u, err := validateGitHubURL(s.owner, s.repo)
 	if err != nil {
 		return "", fmt.Errorf("invalid GitHub URL: %w", err)
@@ -145,7 +156,7 @@ func (s *GitHubService) GetLatestVersion() (string, error) {
 }
 
 // VersionExists checks if a specific version exists in the GitHub releases.
-func (s *GitHubService) VersionExists(version string) (bool, error) {
+func (s *githubService) VersionExists(version string) (bool, error) {
 	u, err := validateGitHubURL(s.owner, s.repo)
 	if err != nil {
 		return false, fmt.Errorf("invalid GitHub URL: %w", err)
