@@ -10,17 +10,26 @@ import (
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/config"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/install"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/start"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/status"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/stop"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/update"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
+	"github.com/ethpandaops/contributoor-installer/internal/installer"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
 func main() {
+	installerCfg := installer.NewConfig()
+
+	logLevel, err := logrus.ParseLevel(installerCfg.LogLevel)
+	if err != nil {
+		logLevel = logrus.InfoLevel
+	}
+
 	log := logrus.New()
-	log.SetLevel(logrus.DebugLevel)
+	log.SetLevel(logLevel)
 	log.SetFormatter(&logrus.TextFormatter{
 		ForceColors:   true,
 		DisableColors: false,
@@ -65,16 +74,25 @@ func main() {
 	start.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("start"),
 		options.WithLogger(log),
+		options.WithInstallerConfig(installerCfg),
 	))
 
 	stop.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("stop"),
 		options.WithLogger(log),
+		options.WithInstallerConfig(installerCfg),
+	))
+
+	status.RegisterCommands(app, options.NewCommandOpts(
+		options.WithName("status"),
+		options.WithLogger(log),
+		options.WithInstallerConfig(installerCfg),
 	))
 
 	update.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("update"),
 		options.WithLogger(log),
+		options.WithInstallerConfig(installerCfg),
 	))
 
 	config.RegisterCommands(app, options.NewCommandOpts(

@@ -1,6 +1,8 @@
 package install
 
 import (
+	"fmt"
+
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/rivo/tview"
@@ -77,7 +79,7 @@ func (d *InstallDisplay) Run() error {
 		"config_path": cfg.ContributoorDirectory,
 		"version":     cfg.Version,
 		"run_method":  cfg.RunMethod,
-	}).Info("Running installation wizard")
+	}).Debug("Running installation wizard")
 
 	return d.app.Run()
 }
@@ -127,12 +129,22 @@ func (d *InstallDisplay) setPage(page *tui.Page) {
 
 // OnComplete is called when the install wizard is complete.
 func (d *InstallDisplay) OnComplete() error {
-	d.log.Infof("%sInstallation complete%s", tui.TerminalColorGreen, tui.TerminalColorReset)
-	d.log.Info("You can now manage contributoor using the following commands:")
-	d.log.Info("    contributoor start")
-	d.log.Info("    contributoor stop")
-	d.log.Info("    contributoor update")
-	d.log.Info("    contributoor config")
+	cfg := d.sidecarCfg.Get()
+
+	fmt.Printf("%sContributoor Status%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
+	fmt.Printf("%-20s: %s\n", "Version", cfg.Version)
+	fmt.Printf("%-20s: %s\n", "Run Method", cfg.RunMethod)
+	fmt.Printf("%-20s: %s\n", "Network", cfg.NetworkName)
+	fmt.Printf("%-20s: %s\n", "Beacon Node", cfg.BeaconNodeAddress)
+	fmt.Printf("%-20s: %s\n", "Config Path", d.sidecarCfg.GetConfigPath())
+
+	if cfg.OutputServer != nil {
+		fmt.Printf("%-20s: %s\n", "Output Server", cfg.OutputServer.Address)
+	}
+
+	fmt.Printf("\n%sInstallation complete%s\n", tui.TerminalColorGreen, tui.TerminalColorReset)
+	fmt.Printf("You can now manage contributoor using the following command(s):\n")
+	fmt.Printf("    contributoor [start|stop|status|update|config]\n")
 
 	return nil
 }

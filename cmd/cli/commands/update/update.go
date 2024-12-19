@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
-	"github.com/ethpandaops/contributoor-installer/internal/installer"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
@@ -26,9 +25,10 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			log := opts.Logger()
-
-			installerCfg := installer.NewConfig()
+			var (
+				log          = opts.Logger()
+				installerCfg = opts.InstallerConfig()
+			)
 
 			sidecarCfg, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
 			if err != nil {
