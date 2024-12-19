@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ethpandaops/contributoor-installer/internal/installer"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/sirupsen/logrus"
 )
@@ -23,10 +24,11 @@ type dockerSidecar struct {
 	composePath   string
 	configPath    string
 	configService ConfigManager
+	installerCfg  *installer.Config
 }
 
 // NewDockerSidecar creates a new DockerSidecar.
-func NewDockerSidecar(logger *logrus.Logger, configService ConfigManager) (DockerSidecar, error) {
+func NewDockerSidecar(logger *logrus.Logger, configService ConfigManager, installerCfg *installer.Config) (DockerSidecar, error) {
 	composePath, err := findComposeFile()
 	if err != nil {
 		return nil, fmt.Errorf("failed to find docker-compose.yml: %w", err)
@@ -41,6 +43,7 @@ func NewDockerSidecar(logger *logrus.Logger, configService ConfigManager) (Docke
 		composePath:   filepath.Clean(composePath),
 		configPath:    configService.GetConfigPath(),
 		configService: configService,
+		installerCfg:  installerCfg,
 	}, nil
 }
 
@@ -105,14 +108,16 @@ func (s *dockerSidecar) Update() error {
 	cfg := s.configService.Get()
 
 	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
-	cmd := exec.Command("docker", "pull", fmt.Sprintf("ethpandaops/contributoor:%s", cfg.Version))
+	image := fmt.Sprintf("%s:%s", s.installerCfg.DockerImage, cfg.Version)
+	cmd := exec.Command("docker", "pull", image)
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to pull image: %w\nOutput: %s", err, string(output))
+		return fmt.Errorf("failed to pull image %s: %w\nOutput: %s", image, err, string(output))
 	}
 
 	s.logger.WithField("version", cfg.Version).Infof(
-		"%sImage updated successfully%s",
+		"%sImage %s updated successfully%s",
 		tui.TerminalColorGreen,
+		image,
 		tui.TerminalColorReset,
 	)
 

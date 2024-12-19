@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ethpandaops/contributoor-installer/internal/installer"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -55,16 +58,20 @@ type GitHubRelease struct {
 
 // githubService is a basic service for interacting with the GitHub API.
 type githubService struct {
+	log    *logrus.Logger
 	owner  string
 	repo   string
 	client *http.Client
+	config *installer.Config
 }
 
 // NewGitHubService creates a new GitHubService.
-func NewGitHubService(owner, repo string) GitHubService {
+func NewGitHubService(log *logrus.Logger, config *installer.Config) GitHubService {
 	return &githubService{
-		owner: owner,
-		repo:  repo,
+		log:    log,
+		owner:  config.GithubOrg,
+		repo:   config.GithubRepo,
+		config: config,
 		client: &http.Client{
 			Timeout: 10 * time.Second,
 		},

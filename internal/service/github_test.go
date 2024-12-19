@@ -7,6 +7,9 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/ethpandaops/contributoor-installer/internal/installer"
+	"github.com/sirupsen/logrus"
 )
 
 func TestGitHubService_GetLatestVersion(t *testing.T) {
@@ -69,7 +72,7 @@ func TestGitHubService_GetLatestVersion(t *testing.T) {
 			}
 			defer func() { validateGitHubURL = validate }()
 
-			svc := NewGitHubService("test", "repo")
+			svc := NewGitHubService(logrus.New(), installer.NewConfig())
 
 			got, err := svc.GetLatestVersion()
 			if (err != nil) != tt.wantErr {
@@ -140,7 +143,7 @@ func TestGitHubService_VersionExists(t *testing.T) {
 			}
 			defer func() { validateGitHubURL = validate }()
 
-			svc := NewGitHubService("test", "repo")
+			svc := NewGitHubService(logrus.New(), installer.NewConfig())
 
 			exists, err := svc.VersionExists(tt.version)
 

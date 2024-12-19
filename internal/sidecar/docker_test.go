@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/ethpandaops/contributoor-installer/internal/installer"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
 	"github.com/sirupsen/logrus"
@@ -57,10 +58,11 @@ func TestDockerService_Integration(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockConfig := mock.NewMockConfigManager(ctrl)
-	mockConfig.EXPECT().Get().Return(cfg).AnyTimes()
-	mockConfig.EXPECT().GetConfigDir().Return(tmpDir).AnyTimes()
-	mockConfig.EXPECT().GetConfigPath().Return(filepath.Join(tmpDir, "config.yaml")).AnyTimes()
+	mockInstallerConfig := installer.NewConfig()
+	mockSidecarConfig := mock.NewMockConfigManager(ctrl)
+	mockSidecarConfig.EXPECT().Get().Return(cfg).AnyTimes()
+	mockSidecarConfig.EXPECT().GetConfigDir().Return(tmpDir).AnyTimes()
+	mockSidecarConfig.EXPECT().GetConfigPath().Return(filepath.Join(tmpDir, "config.yaml")).AnyTimes()
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -95,7 +97,7 @@ func TestDockerService_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create docker service with mock config
-	ds, err := sidecar.NewDockerSidecar(logger, mockConfig)
+	ds, err := sidecar.NewDockerSidecar(logger, mockSidecarConfig, mockInstallerConfig)
 	require.NoError(t, err)
 
 	// Set docker host to test container.

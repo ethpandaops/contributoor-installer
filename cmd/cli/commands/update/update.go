@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
+	"github.com/ethpandaops/contributoor-installer/internal/installer"
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
@@ -27,18 +28,20 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) error {
 		Action: func(c *cli.Context) error {
 			log := opts.Logger()
 
+			installerCfg := installer.NewConfig()
+
 			sidecarConfig, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
 			if err != nil {
 				return fmt.Errorf("error loading config: %w", err)
 			}
 
-			dockerSidecar, err := sidecar.NewDockerSidecar(log, sidecarConfig)
+			dockerSidecar, err := sidecar.NewDockerSidecar(log, sidecarConfig, installerCfg)
 			if err != nil {
 				return fmt.Errorf("error creating docker sidecar service: %w", err)
 			}
 
 			binarySidecar := sidecar.NewBinarySidecar(log, sidecarConfig)
-			githubService := service.NewGitHubService("ethpandaops", "contributoor")
+			githubService := service.NewGitHubService(log, installerCfg)
 
 			return updateContributoor(c, log, sidecarConfig, dockerSidecar, binarySidecar, githubService)
 		},
