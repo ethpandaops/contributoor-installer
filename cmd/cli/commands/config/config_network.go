@@ -1,13 +1,9 @@
 package config
 
 import (
-	"fmt"
-	"net/http"
-	"strings"
-	"time"
-
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor-installer/internal/validate"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -160,70 +156,22 @@ func (p *NetworkConfigPage) initPage() {
 	p.content = mainFlex
 }
 
-func validateBeaconNode(address string) error {
-	// Check if URL is valid
-	if !strings.HasPrefix(address, "http://") && !strings.HasPrefix(address, "https://") {
-		return fmt.Errorf("beacon node address must start with http:// or https://")
-	}
-
-	// Try to connect to the beacon node
-	client := &http.Client{Timeout: 5 * time.Second}
-
-	resp, err := client.Get(fmt.Sprintf("%s/eth/v1/node/health", address))
-	if err != nil {
-		return fmt.Errorf("we're unable to connect to your beacon node: %w", err)
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("beacon node returned status %d", resp.StatusCode)
-	}
-
-	return nil
-}
-
 func validateAndUpdate(p *NetworkConfigPage, input *tview.InputField) {
-	var (
-		text                 = input.GetText()
-		dropdown, _          = p.form.GetFormItem(0).(*tview.DropDown)
-		index, networkOption = dropdown.GetCurrentOption()
-	)
+	if err := validate.ValidateBeaconNodeAddress(input.GetText()); err != nil {
+		p.openErrorModal(err)
 
-	// Show loading modal while validating, we reach out to the beacon node
-	// to validate the address, which can lock-up the UI while it does it.
-	// Better to show a loading modal than the user seeing a blank screen.
-	loadingModal := tui.CreateLoadingModal(
-		p.display.app,
-		"\n[yellow]Validating configuration\nPlease wait...[white]",
-	)
-	p.display.app.SetRoot(loadingModal, true)
+		return
+	}
 
-	go func() {
-		err := validateBeaconNode(text)
+	if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+		cfg.BeaconNodeAddress = input.GetText()
+	}); err != nil {
+		p.openErrorModal(err)
 
-		p.display.app.QueueUpdateDraw(func() {
-			if err != nil {
-				p.openErrorModal(err)
+		return
+	}
 
-				return
-			}
-
-			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
-				if index != -1 {
-					cfg.NetworkName = networkOption
-				}
-
-				cfg.BeaconNodeAddress = text
-			}); err != nil {
-				p.openErrorModal(err)
-
-				return
-			}
-
-			p.display.setPage(p.display.homePage)
-		})
-	}()
+	p.display.setPage(p.display.homePage)
 }
 
 func (p *NetworkConfigPage) openErrorModal(err error) {

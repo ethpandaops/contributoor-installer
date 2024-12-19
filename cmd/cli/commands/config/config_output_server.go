@@ -1,12 +1,11 @@
 package config
 
 import (
-	"encoding/base64"
-	"fmt"
 	"strings"
 
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor-installer/internal/validate"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -232,7 +231,7 @@ func (p *OutputServerConfigPage) initPage() {
 }
 
 func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
-	// Get the currently selected server.
+	// Get the currently selected server
 	dropdown, _ := p.form.GetFormItem(0).(*tview.DropDown)
 	_, serverLabel := dropdown.GetCurrentOption()
 
@@ -247,141 +246,64 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 		}
 	}
 
-	// If it's a custom server, we need to get the server address and validate it.
-	if serverAddress == "custom" {
-		// Get and validate custom address
-		customAddress := p.form.GetFormItem(1).(*tview.InputField).GetText()
-		if customAddress == "" {
-			errorModal := tui.CreateErrorModal(
-				p.display.app,
-				"Server address is required for custom server",
-				func() {
-					p.display.app.SetRoot(p.display.frame, true)
-					p.display.app.SetFocus(p.form)
-				},
-			)
+	// Get form values based on server type
+	var (
+		isCustom  = serverAddress == "custom"
+		username  string
+		password  string
+		formStart = 1
+	)
 
-			p.display.app.SetRoot(errorModal, true)
+	if isCustom {
+		// For custom servers, get address from input field.
+		address := p.form.GetFormItem(formStart).(*tview.InputField).GetText()
+		serverAddress = address
+		formStart++
 
-			return
-		}
-
-		// Validate URL format.
-		if !strings.HasPrefix(customAddress, "http://") && !strings.HasPrefix(customAddress, "https://") {
-			errorModal := tui.CreateErrorModal(
-				p.display.app,
-				"Server address must start with http:// or https://",
-				func() {
-					p.display.app.SetRoot(p.display.frame, true)
-					p.display.app.SetFocus(p.form)
-				},
-			)
-
-			p.display.app.SetRoot(errorModal, true)
-
-			return
-		}
-
-		// Set the server address.
-		serverAddress = customAddress
-
-		// Get credentials, these are optional for custom servers.
-		var (
-			username, _  = p.form.GetFormItem(2).(*tview.InputField)
-			password, _  = p.form.GetFormItem(3).(*tview.InputField)
-			usernameText = username.GetText()
-			passwordText = password.GetText()
-		)
-
-		// Only set credentials if both username and password are provided
-		if usernameText != "" && passwordText != "" {
-			credentials := base64.StdEncoding.EncodeToString(
-				[]byte(fmt.Sprintf("%s:%s", usernameText, passwordText)),
-			)
-
-			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
-				cfg.OutputServer.Address = serverAddress
-				cfg.OutputServer.Credentials = credentials
-			}); err != nil {
-				p.openErrorModal(err)
-
-				return
-			}
-		} else if usernameText == "" && passwordText == "" {
-			// Both empty - clear credentials
-			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
-				cfg.OutputServer.Address = serverAddress
-				cfg.OutputServer.Credentials = ""
-			}); err != nil {
-				p.openErrorModal(err)
-
-				return
-			}
-		} else {
-			// One is empty but not both
-			p.openErrorModal(fmt.Errorf("both username and password must be provided if using credentials"))
-
-			return
-		}
-	} else {
-		// Get and validate credentials, these are required for ethPandaOps servers.
-		var (
-			username, _  = p.form.GetFormItem(1).(*tview.InputField)
-			password, _  = p.form.GetFormItem(2).(*tview.InputField)
-			usernameText = username.GetText()
-			passwordText = password.GetText()
-		)
-
-		if usernameText == "" || passwordText == "" {
-			errorModal := tui.CreateErrorModal(
-				p.display.app,
-				"Username and password are required for ethPandaOps servers",
-				func() {
-					p.display.app.SetRoot(p.display.frame, true)
-					p.display.app.SetFocus(p.form)
-				},
-			)
-
-			p.display.app.SetRoot(errorModal, true)
-
-			return
-		}
-
-		// Update credentials.
-		credentials := base64.StdEncoding.EncodeToString(
-			[]byte(fmt.Sprintf("%s:%s", usernameText, passwordText)),
-		)
-
-		if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
-			cfg.OutputServer.Address = serverAddress
-			cfg.OutputServer.Credentials = credentials
-		}); err != nil {
+		// Only validate the address if it's a custom server, otherwise its a
+		// pre-defined pandaops server.
+		if err := validate.ValidateOutputServerAddress(serverAddress); err != nil {
 			p.openErrorModal(err)
 
 			return
 		}
 	}
 
+	// Get credentials from form.
+	if formItem := p.form.GetFormItem(formStart); formItem != nil {
+		username = formItem.(*tview.InputField).GetText()
+	}
+
+	if formItem := p.form.GetFormItem(formStart + 1); formItem != nil {
+		password = formItem.(*tview.InputField).GetText()
+	}
+
+	// Validate credentials. These are optional for custom servers.
+	if err := validate.ValidateOutputServerCredentials(
+		username,
+		password,
+		validate.IsEthPandaOpsServer(serverAddress),
+	); err != nil {
+		p.openErrorModal(err)
+
+		return
+	}
+
+	// Update config with validated values.
+	if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+		cfg.OutputServer.Address = serverAddress
+		if username != "" && password != "" {
+			cfg.OutputServer.Credentials = validate.EncodeCredentials(username, password)
+		} else {
+			cfg.OutputServer.Credentials = ""
+		}
+	}); err != nil {
+		p.openErrorModal(err)
+
+		return
+	}
+
 	p.display.setPage(p.display.homePage)
-}
-
-// getCredentialsFromConfig is a helper function to get the user/pass from the config.
-func getCredentialsFromConfig(cfg *service.ContributoorConfig) (username, password string) {
-	if cfg.OutputServer.Credentials == "" {
-		return "", ""
-	}
-
-	decoded, err := base64.StdEncoding.DecodeString(cfg.OutputServer.Credentials)
-	if err != nil {
-		return "", ""
-	}
-
-	parts := strings.Split(string(decoded), ":")
-	if len(parts) != 2 {
-		return "", ""
-	}
-
-	return parts[0], parts[1]
 }
 
 func (p *OutputServerConfigPage) openErrorModal(err error) {
@@ -392,4 +314,14 @@ func (p *OutputServerConfigPage) openErrorModal(err error) {
 			p.display.app.SetRoot(p.display.frame, true)
 		},
 	), true)
+}
+
+// Update getCredentialsFromConfig to use the validation package.
+func getCredentialsFromConfig(cfg *service.ContributoorConfig) (username, password string) {
+	username, password, err := validate.DecodeCredentials(cfg.OutputServer.Credentials)
+	if err != nil {
+		return "", ""
+	}
+
+	return username, password
 }

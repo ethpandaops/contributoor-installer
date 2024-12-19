@@ -29,12 +29,13 @@ const (
 
 // ContributoorConfig is the configuration for the contributoor service.
 type ContributoorConfig struct {
+	Logging               string              `yaml:"logging"`
 	Version               string              `yaml:"version"`
 	ContributoorDirectory string              `yaml:"contributoorDirectory"`
 	RunMethod             string              `yaml:"runMethod"`
 	NetworkName           string              `yaml:"networkName"`
 	BeaconNodeAddress     string              `yaml:"beaconNodeAddress"`
-	OutputServer          *OutputServerConfig `yaml:"outputServer"`
+	OutputServer          *OutputServerConfig `yaml:"outputServer,omitempty"`
 }
 
 // OutputServerConfig is the configuration for the output server.
@@ -74,7 +75,7 @@ func NewConfigService(logger *logrus.Logger, configPath string) (*ConfigService,
 
 	// Check if config exists
 	if _, serr := os.Stat(fullConfigPath); os.IsNotExist(serr) {
-		return nil, fmt.Errorf("config file not found at [%s]. Please run 'contributoor install' first", fullConfigPath)
+		return nil, fmt.Errorf("config file not found at [%s]. Please run 'install.sh' first", fullConfigPath)
 	}
 
 	// Load existing config
@@ -179,6 +180,7 @@ func WriteConfig(path string, cfg *ContributoorConfig) error {
 
 func newDefaultConfig() *ContributoorConfig {
 	return &ContributoorConfig{
+		Logging:           logrus.InfoLevel.String(),
 		Version:           "latest",
 		RunMethod:         RunMethodDocker,
 		NetworkName:       "mainnet",

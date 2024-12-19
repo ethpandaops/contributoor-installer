@@ -1,13 +1,9 @@
 package install
 
 import (
-	"fmt"
-	"net/http"
-	"strings"
-	"time"
-
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor-installer/internal/validate"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -85,7 +81,7 @@ func (p *BeaconNodePage) initPage() {
 
 	// Add 'Next' button to our form.
 	form.AddButton(tui.ButtonNext, func() {
-		validateAndUpdate(p)
+		validateAndUpdate(p, inputField)
 	})
 
 	if button := form.GetButton(0); button != nil {
@@ -130,75 +126,22 @@ func (p *BeaconNodePage) initPage() {
 	p.content = borderGrid
 }
 
-func validateAndUpdate(p *BeaconNodePage) {
-	// Get text from the input field directly
-	inputField, _ := p.form.GetFormItem(0).(*tview.InputField)
-	address := inputField.GetText()
+func validateAndUpdate(p *BeaconNodePage, input *tview.InputField) {
+	if err := validate.ValidateBeaconNodeAddress(input.GetText()); err != nil {
+		p.openErrorModal(err)
 
-	// Show loading modal while validating
-	loadingModal := tui.CreateLoadingModal(
-		p.display.app,
-		"\n[yellow]Validating beacon node connection...\nPlease wait...[white]",
-	)
-	p.display.app.SetRoot(loadingModal, true)
-
-	// Validate in goroutine to not block UI
-	go func() {
-		err := validateBeaconNode(address)
-
-		p.display.app.QueueUpdateDraw(func() {
-			if err != nil {
-				// Show error modal
-				errorModal := tui.CreateErrorModal(
-					p.display.app,
-					err.Error(),
-					func() {
-						p.display.app.SetRoot(p.display.frame, true)
-						p.display.app.SetFocus(p.form)
-					},
-				)
-
-				p.display.app.SetRoot(errorModal, true)
-
-				return
-			}
-
-			// Update config if validation passes
-			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
-				cfg.BeaconNodeAddress = address
-			}); err != nil {
-				p.openErrorModal(err)
-
-				return
-			}
-
-			// Move to next page
-			p.display.setPage(p.display.outputPage.GetPage())
-		})
-	}()
-}
-
-func validateBeaconNode(address string) error {
-	// Check if URL is valid
-	if !strings.HasPrefix(address, "http://") && !strings.HasPrefix(address, "https://") {
-		return fmt.Errorf("beacon node address must start with http:// or https://")
+		return
 	}
 
-	// Try to connect to the beacon node
-	client := &http.Client{Timeout: 5 * time.Second}
+	if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+		cfg.BeaconNodeAddress = input.GetText()
+	}); err != nil {
+		p.openErrorModal(err)
 
-	resp, err := client.Get(fmt.Sprintf("%s/eth/v1/node/health", address))
-	if err != nil {
-		return fmt.Errorf("we're unable to connect to your beacon node: %w", err)
+		return
 	}
 
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("beacon node returned status %d", resp.StatusCode)
-	}
-
-	return nil
+	p.display.setPage(p.display.outputPage.GetPage())
 }
 
 func (p *BeaconNodePage) openErrorModal(err error) {

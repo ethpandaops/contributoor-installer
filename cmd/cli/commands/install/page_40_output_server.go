@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor-installer/internal/validate"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -66,6 +67,16 @@ func (p *OutputServerPage) initPage() {
 	p.form = form
 
 	// Get current selection from config
+	if p.display.configService.Get().OutputServer == nil {
+		if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+			cfg.OutputServer = &service.OutputServerConfig{}
+		}); err != nil {
+			p.openErrorModal(err)
+
+			return
+		}
+	}
+
 	currentAddress := p.display.configService.Get().OutputServer.Address
 	defaultIndex := 0 // Default to first option
 
@@ -101,20 +112,36 @@ func (p *OutputServerPage) initPage() {
 			form.RemoveFormItem(form.GetFormItemIndex("Server Address"))
 		}
 
+		// Clear credentials when switching server types
+		currentAddress := p.display.configService.Get().OutputServer.Address
+		wasEthPandaOps := validate.IsEthPandaOpsServer(currentAddress)
+		isEthPandaOps := validate.IsEthPandaOpsServer(selectedValue)
+
+		if wasEthPandaOps != isEthPandaOps {
+			// Server type changed, clear credentials
+			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+				cfg.OutputServer.Credentials = ""
+			}); err != nil {
+				p.openErrorModal(err)
+
+				return
+			}
+		}
+
 		// Handle custom server field.
 		if selectedValue == "custom" {
 			// If we're switching to custom, preserve existing custom address.
 			existingAddress := p.display.configService.Get().OutputServer.Address
 			if strings.Contains(existingAddress, "platform.ethpandaops.io") {
 				existingAddress = ""
+			}
 
-				if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
-					cfg.OutputServer.Address = existingAddress
-				}); err != nil {
-					p.openErrorModal(err)
+			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+				cfg.OutputServer.Address = existingAddress
+			}); err != nil {
+				p.openErrorModal(err)
 
-					return
-				}
+				return
 			}
 
 			input := form.AddInputField("Server Address", existingAddress, 40, nil, func(address string) {
@@ -147,43 +174,34 @@ func (p *OutputServerPage) initPage() {
 
 	// Add Next button with padding.
 	form.AddButton(tui.ButtonNext, func() {
-		// Validate custom server address.
-		selectedValue, _ := form.GetFormItemByLabel("Output Server").(*tview.DropDown).GetCurrentOption()
-		if selectedValue == 2 { // Custom option.
+		dropdown, _ := form.GetFormItemByLabel("Output Server").(*tview.DropDown)
+		selectedIndex, _ := dropdown.GetCurrentOption()
+		selectedValue := tui.AvailableOutputServers[selectedIndex].Value
+		isCustom := selectedValue == "custom"
+
+		var address string
+
+		if isCustom {
 			if input := form.GetFormItemByLabel("Server Address"); input != nil {
-				address := input.(*tview.InputField).GetText()
-				if address == "" {
-					// Show error modal
-					errorModal := tui.CreateErrorModal(
-						p.display.app,
-						"Server address is required for custom server",
-						func() {
-							p.display.app.SetRoot(p.display.frame, true)
-							p.display.app.SetFocus(form)
-						},
-					)
-
-					p.display.app.SetRoot(errorModal, true)
-
-					return
-				}
-
-				// Validate URL format
-				if !strings.HasPrefix(address, "http://") && !strings.HasPrefix(address, "https://") {
-					errorModal := tui.CreateErrorModal(
-						p.display.app,
-						"Server address must start with http:// or https://",
-						func() {
-							p.display.app.SetRoot(p.display.frame, true)
-							p.display.app.SetFocus(form)
-						},
-					)
-
-					p.display.app.SetRoot(errorModal, true)
-
-					return
-				}
+				address = input.(*tview.InputField).GetText()
 			}
+
+			if err := validate.ValidateOutputServerAddress(address); err != nil {
+				p.openErrorModal(err)
+
+				return
+			}
+		} else {
+			address = selectedValue
+		}
+
+		// Update config with validated address
+		if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+			cfg.OutputServer.Address = address
+		}); err != nil {
+			p.openErrorModal(err)
+
+			return
 		}
 
 		p.display.setPage(p.display.outputServerCredentialsPage.GetPage())

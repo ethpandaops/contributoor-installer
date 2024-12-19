@@ -2,11 +2,11 @@ package install
 
 import (
 	"encoding/base64"
-	"fmt"
 	"strings"
 
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor-installer/internal/validate"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -83,42 +83,7 @@ func (p *OutputServerCredentialsPage) initPage() {
 
 	// Add a 'Next' button.
 	form.AddButton(tui.ButtonNext, func() {
-		// Only validate credentials for ethpandaops servers.
-		currentAddress := p.display.configService.Get().OutputServer.Address
-		if strings.Contains(currentAddress, "platform.ethpandaops.io") {
-			// Validate credentials
-			if p.username == "" || p.password == "" {
-				errorModal := tui.CreateErrorModal(
-					p.display.app,
-					"Username and password are required for ethpandaops servers",
-					func() {
-						p.display.app.SetRoot(p.display.frame, true)
-						p.display.app.SetFocus(form)
-					},
-				)
-
-				p.display.app.SetRoot(errorModal, true)
-
-				return
-			}
-		}
-
-		if p.username != "" && p.password != "" {
-			// Set credentials only when validated.
-			credentials := base64.StdEncoding.EncodeToString(
-				[]byte(fmt.Sprintf("%s:%s", p.username, p.password)),
-			)
-
-			if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
-				cfg.OutputServer.Credentials = credentials
-			}); err != nil {
-				p.openErrorModal(err)
-
-				return
-			}
-		}
-
-		p.display.setPage(p.display.finishedPage.GetPage())
+		validateAndSaveCredentials(p)
 	})
 
 	if button := form.GetButton(0); button != nil {
@@ -171,30 +136,23 @@ func validateAndSaveCredentials(p *OutputServerCredentialsPage) {
 	username := p.form.GetFormItem(0).(*tview.InputField).GetText()
 	password := p.form.GetFormItem(1).(*tview.InputField).GetText()
 
-	// Only require credentials for non-custom servers.
-	if p.display.configService.Get().OutputServer.Address != "custom" {
-		if username == "" || password == "" {
-			errorModal := tui.CreateErrorModal(
-				p.display.app,
-				"Username and password are required for ethPandaOps servers",
-				func() {
-					p.display.app.SetRoot(p.display.frame, true)
-					p.display.app.SetFocus(p.form)
-				},
-			)
+	currentAddress := p.display.configService.Get().OutputServer.Address
+	isEthPandaOps := validate.IsEthPandaOpsServer(currentAddress)
 
-			p.display.app.SetRoot(errorModal, true)
+	if err := validate.ValidateOutputServerCredentials(username, password, isEthPandaOps); err != nil {
+		p.openErrorModal(err)
 
-			return
-		}
+		return
 	}
 
-	// Update config with credentials.
+	// Update config with credentials
 	if err := p.display.configService.Update(func(cfg *service.ContributoorConfig) {
+		// For custom servers, allow empty credentials
+		// For ethPandaOps servers, we know credentials are valid (non-empty) due to validation.
 		if username != "" && password != "" {
-			credentials := fmt.Sprintf("%s:%s", username, password)
-			cfg.OutputServer.Credentials = base64.StdEncoding.EncodeToString([]byte(credentials))
-		} else {
+			cfg.OutputServer.Credentials = validate.EncodeCredentials(username, password)
+		} else if !isEthPandaOps {
+			// Only clear credentials if it's a custom server.
 			cfg.OutputServer.Credentials = ""
 		}
 	}); err != nil {
@@ -203,8 +161,7 @@ func validateAndSaveCredentials(p *OutputServerCredentialsPage) {
 		return
 	}
 
-	// Installation complete.
-	p.display.app.Stop()
+	p.display.setPage(p.display.finishedPage.GetPage())
 }
 
 func (p *OutputServerCredentialsPage) openErrorModal(err error) {
