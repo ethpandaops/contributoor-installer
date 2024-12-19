@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/ethpandaops/contributoor-installer/internal/service"
@@ -256,26 +257,47 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 
 	if isCustom {
 		// For custom servers, get address from input field.
-		address := p.form.GetFormItem(formStart).(*tview.InputField).GetText()
+		var address string
+
+		if item := p.form.GetFormItem(formStart); item != nil {
+			if inputField, ok := item.(*tview.InputField); ok {
+				address = inputField.GetText()
+			} else {
+				p.openErrorModal(fmt.Errorf("invalid address field type"))
+
+				return
+			}
+		}
+
+		if err := validate.ValidateOutputServerAddress(address); err != nil {
+			p.openErrorModal(err)
+
+			return
+		}
+
 		serverAddress = address
 		formStart++
+	}
 
-		// Only validate the address if it's a custom server, otherwise its a
-		// pre-defined pandaops server.
-		if err := validate.ValidateOutputServerAddress(serverAddress); err != nil {
-			p.openErrorModal(err)
+	// Get credentials from form.
+	if formItem := p.form.GetFormItem(formStart); formItem != nil {
+		if inputField, ok := formItem.(*tview.InputField); ok {
+			username = inputField.GetText()
+		} else {
+			p.openErrorModal(fmt.Errorf("invalid username field type"))
 
 			return
 		}
 	}
 
-	// Get credentials from form.
-	if formItem := p.form.GetFormItem(formStart); formItem != nil {
-		username = formItem.(*tview.InputField).GetText()
-	}
-
 	if formItem := p.form.GetFormItem(formStart + 1); formItem != nil {
-		password = formItem.(*tview.InputField).GetText()
+		if inputField, ok := formItem.(*tview.InputField); ok {
+			password = inputField.GetText()
+		} else {
+			p.openErrorModal(fmt.Errorf("invalid password field type"))
+
+			return
+		}
 	}
 
 	// Validate credentials. These are optional for custom servers.

@@ -1,6 +1,7 @@
 package install
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/ethpandaops/contributoor-installer/internal/service"
@@ -183,7 +184,13 @@ func (p *OutputServerPage) initPage() {
 
 		if isCustom {
 			if input := form.GetFormItemByLabel("Server Address"); input != nil {
-				address = input.(*tview.InputField).GetText()
+				if inputField, ok := input.(*tview.InputField); ok {
+					address = inputField.GetText()
+				} else {
+					p.openErrorModal(fmt.Errorf("invalid input field type"))
+
+					return
+				}
 			}
 
 			if err := validate.ValidateOutputServerAddress(address); err != nil {

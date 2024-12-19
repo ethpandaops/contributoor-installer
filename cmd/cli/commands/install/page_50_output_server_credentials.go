@@ -2,6 +2,7 @@ package install
 
 import (
 	"encoding/base64"
+	"fmt"
 	"strings"
 
 	"github.com/ethpandaops/contributoor-installer/internal/service"
@@ -133,8 +134,27 @@ func (p *OutputServerCredentialsPage) initPage() {
 }
 
 func validateAndSaveCredentials(p *OutputServerCredentialsPage) {
-	username := p.form.GetFormItem(0).(*tview.InputField).GetText()
-	password := p.form.GetFormItem(1).(*tview.InputField).GetText()
+	var username, password string
+
+	if item := p.form.GetFormItem(0); item != nil {
+		if inputField, ok := item.(*tview.InputField); ok {
+			username = inputField.GetText()
+		} else {
+			p.openErrorModal(fmt.Errorf("invalid username field type"))
+
+			return
+		}
+	}
+
+	if item := p.form.GetFormItem(1); item != nil {
+		if inputField, ok := item.(*tview.InputField); ok {
+			password = inputField.GetText()
+		} else {
+			p.openErrorModal(fmt.Errorf("invalid password field type"))
+
+			return
+		}
+	}
 
 	currentAddress := p.display.configService.Get().OutputServer.Address
 	isEthPandaOps := validate.IsEthPandaOpsServer(currentAddress)

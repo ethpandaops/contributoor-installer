@@ -77,7 +77,8 @@ func (p *NetworkConfigPage) initPage() {
 	// Add a save button and ensure we validate the input.
 	saveButton := tview.NewButton(tui.ButtonSaveSettings)
 	saveButton.SetSelectedFunc(func() {
-		validateAndUpdate(p, form.GetFormItem(1).(*tview.InputField))
+		beaconNodeAddress, _ := form.GetFormItem(1).(*tview.InputField)
+		validateAndUpdate(p, beaconNodeAddress)
 	})
 	saveButton.SetBackgroundColorActivated(tui.ColorButtonActivated)
 	saveButton.SetLabelColorActivated(tui.ColorButtonText)
