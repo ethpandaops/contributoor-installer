@@ -53,20 +53,6 @@ func (mr *MockConfigManagerMockRecorder) Get() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockConfigManager)(nil).Get))
 }
 
-// GetConfigDir mocks base method.
-func (m *MockConfigManager) GetConfigDir() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetConfigDir")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetConfigDir indicates an expected call of GetConfigDir.
-func (mr *MockConfigManagerMockRecorder) GetConfigDir() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigDir", reflect.TypeOf((*MockConfigManager)(nil).GetConfigDir))
-}
-
 // GetConfigPath mocks base method.
 func (m *MockConfigManager) GetConfigPath() string {
 	m.ctrl.T.Helper()

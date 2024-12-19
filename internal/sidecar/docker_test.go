@@ -61,7 +61,6 @@ func TestDockerService_Integration(t *testing.T) {
 	mockInstallerConfig := installer.NewConfig()
 	mockSidecarConfig := mock.NewMockConfigManager(ctrl)
 	mockSidecarConfig.EXPECT().Get().Return(cfg).AnyTimes()
-	mockSidecarConfig.EXPECT().GetConfigDir().Return(tmpDir).AnyTimes()
 	mockSidecarConfig.EXPECT().GetConfigPath().Return(filepath.Join(tmpDir, "config.yaml")).AnyTimes()
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{

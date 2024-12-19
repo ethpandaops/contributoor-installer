@@ -22,20 +22,17 @@ import (
 // - Preserving user customizations during updates.
 // - Ensuring safe atomic writes of config files.
 type ConfigManager interface {
+	// Save persists the current configuration to disk.
+	Save() error
+
 	// Update modifies the configuration using the provided update function.
 	Update(updates func(*Config)) error
 
 	// Get returns the current configuration.
 	Get() *Config
 
-	// GetConfigDir returns the directory containing the config file.
-	GetConfigDir() string
-
 	// GetConfigPath returns the path of the file config.
 	GetConfigPath() string
-
-	// Save persists the current configuration to disk.
-	Save() error
 }
 
 // Config is the configuration for the contributoor sidecar.
@@ -59,7 +56,6 @@ type OutputServerConfig struct {
 type configService struct {
 	logger     *logrus.Logger
 	configPath string
-	configDir  string
 	config     *Config
 }
 
@@ -116,7 +112,7 @@ func NewConfigService(logger *logrus.Logger, configPath string) (ConfigManager, 
 		}
 
 		// Save migrated config
-		if err := WriteConfig(fullConfigPath, newConfig); err != nil {
+		if err := writeConfig(fullConfigPath, newConfig); err != nil {
 			return nil, fmt.Errorf("failed to save migrated config: %w", err)
 		}
 	}
@@ -124,9 +120,18 @@ func NewConfigService(logger *logrus.Logger, configPath string) (ConfigManager, 
 	return &configService{
 		logger:     logger,
 		configPath: fullConfigPath,
-		configDir:  filepath.Dir(fullConfigPath),
 		config:     newConfig,
 	}, nil
+}
+
+func newDefaultConfig() *Config {
+	return &Config{
+		Logging:           logrus.InfoLevel.String(),
+		Version:           "latest",
+		RunMethod:         RunMethodDocker,
+		NetworkName:       "mainnet",
+		BeaconNodeAddress: "http://localhost:5052",
+	}
 }
 
 // Update updates the file config with the given updates.
@@ -141,8 +146,8 @@ func (s *configService) Update(updates func(*Config)) error {
 	}
 
 	// Write to temporary file first
-	tmpPath := s.configPath + ".tmp"
-	if err := WriteConfig(tmpPath, &updatedConfig); err != nil {
+	tmpPath := fmt.Sprintf("%s.tmp", s.configPath)
+	if err := writeConfig(tmpPath, &updatedConfig); err != nil {
 		os.Remove(tmpPath)
 
 		return err
@@ -166,18 +171,18 @@ func (s *configService) Get() *Config {
 	return s.config
 }
 
-// GetConfigDir returns the directory of the file config.
-func (s *configService) GetConfigDir() string {
-	return s.configDir
-}
-
 // GetConfigPath returns the path of the file config.
 func (s *configService) GetConfigPath() string {
 	return s.configPath
 }
 
-// WriteConfig writes the file config to the given path.
-func WriteConfig(path string, cfg *Config) error {
+// Save persists the current configuration to disk.
+func (s *configService) Save() error {
+	return writeConfig(s.configPath, s.config)
+}
+
+// writeConfig writes the file config to the given path.
+func writeConfig(path string, cfg *Config) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
@@ -194,16 +199,7 @@ func WriteConfig(path string, cfg *Config) error {
 	return nil
 }
 
-func newDefaultConfig() *Config {
-	return &Config{
-		Logging:           logrus.InfoLevel.String(),
-		Version:           "latest",
-		RunMethod:         RunMethodDocker,
-		NetworkName:       "mainnet",
-		BeaconNodeAddress: "http://localhost:5052",
-	}
-}
-
+// validate validates the config.
 func (s *configService) validate(cfg *Config) error {
 	if cfg.Version == "" {
 		return fmt.Errorf("version is required")
@@ -260,8 +256,4 @@ func migrateConfig(target, source *Config) error {
 		}
 	*/
 	return nil
-}
-
-func (s *configService) Save() error {
-	return WriteConfig(s.configPath, s.config)
 }

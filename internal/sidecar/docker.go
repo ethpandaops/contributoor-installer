@@ -128,7 +128,7 @@ func (s *dockerSidecar) getComposeEnv() []string {
 	cfg := s.configService.Get()
 
 	return append(os.Environ(),
-		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", s.configService.GetConfigDir()),
+		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", filepath.Dir(s.configPath)),
 		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", cfg.Version),
 	)
 }
