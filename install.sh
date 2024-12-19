@@ -43,7 +43,7 @@ EOF
 }
 
 spinner() {
-    local pid=$1
+    local pid=$1 
     local delay=0.1
     local spinstr='|/-\'
     while ps -p $pid > /dev/null; do
@@ -355,8 +355,10 @@ main() {
     esac
 
     # Clear screen and show logo
-    clear
-    print_logo
+    if [ "${TEST_MODE:-}" != "true" ]; then
+        clear
+        print_logo
+    fi
 
     # Platform detection
     progress 1 "Detecting platform"

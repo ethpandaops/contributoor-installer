@@ -110,4 +110,397 @@ EOF
         echo "Config contents:"
         cat "$config_file"
     }
-} 
+}
+
+@test "get_latest_version returns valid version" {
+    # Mock curl to return a valid GitHub API response
+    function curl() {
+        echo '{"tag_name": "v1.2.3"}'
+        return 0
+    }
+    export -f curl
+
+    run get_latest_version
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
+@test "validate_version accepts valid version" {
+    # Mock curl to return a releases response that includes version 1.0.0
+    function curl() {
+        echo '{"tag_name": "v1.0.0"}'
+        return 0
+    }
+    export -f curl
+
+    run validate_version "1.0.0"
+    [ "$status" -eq 0 ]
+}
+
+@test "validate_version fails on invalid version" {
+    # Mock curl to return a releases response that doesn't include version 99.99.99
+    function curl() {
+        echo '{
+            "tag_name": "v1.0.1",
+            "name": "Release 1.0.1"
+        }'
+        return 0
+    }
+    export -f curl
+    
+    run validate_version "99.99.99"
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q "not found"
+}
+
+@test "validate_version fails when bad response from GitHub is returned" {
+    function curl() {
+        return 1
+    }
+    export -f curl
+
+    run validate_version "1.0.0"
+    
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -F -q "**ERROR**"
+    echo "$output" | grep -q "Last 5 available versions:"
+    echo "$output" | grep -q "Provided version 1.0.0 not found"
+}
+
+@test "validate_version shows last 5 versions when version not found" {
+    # Mock curl to return multiple versions
+    function curl() {
+        cat << EOF
+{
+  "data": [
+    {"tag_name": "v2.0.0"},
+    {"tag_name": "v1.9.0"},
+    {"tag_name": "v1.8.0"},
+    {"tag_name": "v1.7.0"},
+    {"tag_name": "v1.6.0"},
+    {"tag_name": "v1.5.0"}
+  ]
+}
+EOF
+        return 0
+    }
+    export -f curl
+
+    run validate_version "1.0.0"
+    
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q "2.0.0,1.9.0,1.8.0,1.7.0,1.6.0"
+    echo "$output" | grep -q "Provided version 1.0.0 not found"
+}
+
+@test "get_latest_version fails when bad response from GitHub is returned" {
+    function curl() {
+        return 1
+    }
+    export -f curl
+
+    run get_latest_version
+
+    echo "Status: $status"
+    echo "Output: '$output'"
+
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -F -q "**ERROR**"
+    echo "$output" | grep -q "Failed to determine latest version"
+}
+
+@test "add_to_path adds directory to PATH" {
+    # Setup test shell environment
+    local test_rc="$TEST_DIR/.bashrc"
+    export SHELL="/bin/bash"
+    export HOME="$TEST_DIR"
+    touch "$test_rc"
+    
+    run add_to_path
+    
+    grep -q "export PATH=\"\$PATH:$CONTRIBUTOOR_BIN\"" "$test_rc"
+    [ "$?" -eq 0 ]
+}
+
+@test "add_to_path skips if directory already in PATH" {
+    # Setup test shell environment
+    local test_rc="$TEST_DIR/.bashrc"
+    export SHELL="/bin/bash"
+    export HOME="$TEST_DIR"
+    touch "$test_rc"
+    
+    # Add path entry first
+    echo "export PATH=\"\$PATH:$CONTRIBUTOOR_BIN\"" >> "$test_rc"
+    
+    # Get initial line count
+    local initial_lines=$(wc -l < "$test_rc")
+    
+    run add_to_path
+    
+    # Verify line count hasn't changed
+    local final_lines=$(wc -l < "$test_rc")
+    [ "$initial_lines" -eq "$final_lines" ]
+    
+    # Verify path only appears once
+    [ "$(grep -c "export PATH=\"\$PATH:$CONTRIBUTOOR_BIN\"" "$test_rc")" -eq 1 ]
+}
+
+@test "setup_installer downloads and verifies checksums" {
+    mkdir -p "$CONTRIBUTOOR_BIN"
+    
+    # Set required variables
+    ARCH="x86_64"
+    PLATFORM="linux"
+    INSTALLER_BINARY_NAME="contributoor-installer_${PLATFORM}_${ARCH}"
+    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/latest/download/${INSTALLER_BINARY_NAME}.tar.gz"
+    
+    # Mock the curl commands
+    function curl() {
+        local output_file=""
+        local url=""
+        
+        # Parse arguments
+        while (( "$#" )); do
+            case "$1" in
+                -o)
+                    output_file="$2"
+                    shift 2
+                    ;;
+                -*)
+                    shift
+                    ;;
+                *)
+                    url="$1"
+                    shift
+                    ;;
+            esac
+        done
+        
+        case "$url" in
+            *"/checksums.txt")
+                echo "0123456789abcdef $INSTALLER_BINARY_NAME.tar.gz" > "$output_file"
+                ;;
+            *)
+                echo "mock binary" > "$output_file"
+                ;;
+        esac
+        return 0
+    }
+    
+    # Mock sha256sum to return expected hash
+    function sha256sum() {
+        echo "0123456789abcdef  $1"
+    }
+    
+    # Mock tar extraction
+    function tar() {
+        touch "$CONTRIBUTOOR_BIN/contributoor"
+        touch "$CONTRIBUTOOR_BIN/docker-compose.yml"
+        return 0
+    }
+    
+    export -f curl sha256sum tar
+    
+    run setup_installer
+    
+    [ "$status" -eq 0 ]
+    [ -f "$CONTRIBUTOOR_BIN/contributoor" ]
+    [ -f "$CONTRIBUTOOR_BIN/docker-compose.yml" ]
+}
+
+@test "setup_installer fails on checksum mismatch" {
+    mkdir -p "$CONTRIBUTOOR_BIN"
+    
+    # Set required variables
+    ARCH="x86_64"
+    PLATFORM="linux"
+    INSTALLER_BINARY_NAME="contributoor-installer_${PLATFORM}_${ARCH}"
+    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/latest/download/${INSTALLER_BINARY_NAME}.tar.gz"
+    
+    # Mock curl to return different checksums
+    function curl() {
+        local output_file=""
+        local url=""
+        
+        # Parse arguments
+        while (( "$#" )); do
+            case "$1" in
+                -o)
+                    output_file="$2"
+                    shift 2
+                    ;;
+                -*)
+                    shift
+                    ;;
+                *)
+                    url="$1"
+                    shift
+                    ;;
+            esac
+        done
+        
+        case "$url" in
+            *"/checksums.txt")
+                echo "different_hash $INSTALLER_BINARY_NAME.tar.gz" > "$output_file"
+                ;;
+            *)
+                echo "mock binary" > "$output_file"
+                ;;
+        esac
+        return 0
+    }
+    
+    function sha256sum() {
+        echo "0123456789abcdef  $1"
+    }
+    
+    export -f curl sha256sum
+    
+    run setup_installer
+    
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q "Checksum mismatch"
+}
+
+@test "setup_docker_contributoor pulls image" {
+    # Mock docker commands
+    function docker() {
+        case "$1" in
+            "system")
+                return 0
+                ;;
+            "pull")
+                return 0
+                ;;
+        esac
+    }
+    
+    export -f docker
+    
+    run setup_docker_contributoor
+    [ "$status" -eq 0 ]
+}
+
+@test "setup_binary_contributoor downloads and verifies binary checksum" {
+    mkdir -p "$CONTRIBUTOOR_BIN"
+    
+    # Set required variables
+    ARCH="x86_64"
+    PLATFORM="linux"
+    VERSION="1.0.0"
+    CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${VERSION}/contributoor_${VERSION}_${PLATFORM}_${ARCH}.tar.gz"
+    
+    # Mock the curl commands
+    function curl() {
+        local output_file=""
+        local url=""
+        
+        # Parse arguments
+        while (( "$#" )); do
+            case "$1" in
+                -o)
+                    output_file="$2"
+                    shift 2
+                    ;;
+                -*)
+                    shift
+                    ;;
+                *)
+                    url="$1"
+                    shift
+                    ;;
+            esac
+        done
+        
+        case "$url" in
+            *"checksums.txt")
+                # Match the exact format expected by the script
+                cat > "$output_file" << EOF
+0123456789abcdef  contributoor_1.0.0_linux_x86_64.tar.gz
+EOF
+                ;;
+            *)
+                echo "mock binary" > "$output_file"
+                ;;
+        esac
+        return 0
+    }
+    
+    # Mock sha256sum
+    function sha256sum() {
+        echo "0123456789abcdef  $1"
+    }
+    
+    # Mock tar
+    function tar() {
+        touch "$CONTRIBUTOOR_BIN/sentry"
+        return 0
+    }
+    
+    export -f curl sha256sum tar
+    
+    run setup_binary_contributoor
+    
+    [ "$status" -eq 0 ]
+    [ -f "$CONTRIBUTOOR_BIN/sentry" ]
+}
+
+@test "setup_binary_contributoor fails on missing binary" {
+    mkdir -p "$CONTRIBUTOOR_BIN"
+    
+    # Set required variables
+    ARCH="x86_64"
+    PLATFORM="linux"
+    VERSION="1.0.0"
+    CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${VERSION}/contributoor_${VERSION}_${PLATFORM}_${ARCH}.tar.gz"
+    
+    function curl() {
+        local output_file=""
+        local url=""
+        
+        # Parse arguments
+        while (( "$#" )); do
+            case "$1" in
+                -o)
+                    output_file="$2"
+                    shift 2
+                    ;;
+                -*)
+                    shift
+                    ;;
+                *)
+                    url="$1"
+                    shift
+                    ;;
+            esac
+        done
+        
+        case "$url" in
+            *"checksums.txt")
+                cat > "$output_file" << EOF
+0123456789abcdef  contributoor_${VERSION}_${PLATFORM}_${ARCH}.tar.gz
+EOF
+                ;;
+            *)
+                echo "mock binary" > "$output_file"
+                ;;
+        esac
+        return 0
+    }
+    
+    function sha256sum() {
+        echo "0123456789abcdef  $1"
+    }
+    
+    # Mock tar to not create the binary
+    function tar() {
+        return 0
+    }
+    
+    export -f curl sha256sum tar
+    
+    run setup_binary_contributoor
+    
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q "Failed to extract contributoor binary"
+}
