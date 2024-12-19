@@ -63,10 +63,12 @@ func main() {
 		options.WithAliases([]string{"i"}),
 	))
 
-	start.RegisterCommands(app, options.NewCommandOpts(
+	if err := start.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("start"),
 		options.WithLogger(log),
-	))
+	)); err != nil {
+		log.Errorf("failed to register start command: %v", err)
+	}
 
 	if err := stop.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("stop"),
