@@ -71,6 +71,7 @@ func (p *ContributoorSettingsPage) initPage() {
 	// Available run modes
 	runModes := []string{
 		sidecar.RunMethodDocker,
+		sidecar.RunMethodSystemd,
 		sidecar.RunMethodBinary,
 	}
 
@@ -106,6 +107,8 @@ func (p *ContributoorSettingsPage) initPage() {
 	form.AddDropDown("Run Mode", runModes, currentRunModeIndex, func(option string, index int) {
 		if option == sidecar.RunMethodDocker {
 			p.description.SetText("Run using Docker containers (recommended)")
+		} else if option == sidecar.RunMethodSystemd {
+			p.description.SetText("Run using systemd")
 		} else {
 			p.description.SetText("Run directly as a binary on your system")
 		}

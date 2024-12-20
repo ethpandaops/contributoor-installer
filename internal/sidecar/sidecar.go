@@ -2,8 +2,9 @@ package sidecar
 
 // RunMethods defines the possible ways to run the contributoor service.
 const (
-	RunMethodDocker = "docker"
-	RunMethodBinary = "binary"
+	RunMethodDocker  = "docker"
+	RunMethodSystemd = "systemd"
+	RunMethodBinary  = "binary"
 )
 
 // SidecarRunner handles operations for the various run methods.

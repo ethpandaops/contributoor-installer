@@ -40,6 +40,11 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 				return fmt.Errorf("error creating docker sidecar service: %w", err)
 			}
 
+			systemdSidecar, err := sidecar.NewSystemdSidecar(log, sidecarCfg, installerCfg)
+			if err != nil {
+				return fmt.Errorf("error creating systemd sidecar service: %w", err)
+			}
+
 			binarySidecar, err := sidecar.NewBinarySidecar(log, sidecarCfg, installerCfg)
 			if err != nil {
 				return fmt.Errorf("error creating binary sidecar service: %w", err)
@@ -50,7 +55,7 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 				return fmt.Errorf("error creating github service: %w", err)
 			}
 
-			return updateContributoor(c, log, sidecarCfg, dockerSidecar, binarySidecar, githubService)
+			return updateContributoor(c, log, sidecarCfg, dockerSidecar, systemdSidecar, binarySidecar, githubService)
 		},
 	})
 }
@@ -60,6 +65,7 @@ func updateContributoor(
 	log *logrus.Logger,
 	sidecarCfg sidecar.ConfigManager,
 	docker sidecar.DockerSidecar,
+	systemd sidecar.SystemdSidecar,
 	binary sidecar.BinarySidecar,
 	github service.GitHubService,
 ) error {
@@ -111,7 +117,7 @@ func updateContributoor(
 	cfg = sidecarCfg.Get()
 
 	// Update the sidecar.
-	success, err = updateSidecar(log, cfg, docker, binary)
+	success, err = updateSidecar(log, cfg, docker, systemd, binary)
 	if err != nil {
 		return err
 	}
@@ -119,15 +125,51 @@ func updateContributoor(
 	return nil
 }
 
-func updateSidecar(log *logrus.Logger, cfg *sidecar.Config, docker sidecar.DockerSidecar, binary sidecar.BinarySidecar) (bool, error) {
+func updateSidecar(log *logrus.Logger, cfg *sidecar.Config, docker sidecar.DockerSidecar, systemd sidecar.SystemdSidecar, binary sidecar.BinarySidecar) (bool, error) {
 	switch cfg.RunMethod {
 	case sidecar.RunMethodDocker:
 		return updateDocker(log, cfg, docker)
+	case sidecar.RunMethodSystemd:
+		return updateSystemd(log, cfg, systemd)
 	case sidecar.RunMethodBinary:
 		return updateBinary(log, cfg, binary)
 	default:
 		return false, fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
 	}
+}
+
+func updateSystemd(log *logrus.Logger, cfg *sidecar.Config, systemd sidecar.SystemdSidecar) (bool, error) {
+	// Check if sidecar is currently running.
+	running, err := systemd.IsRunning()
+	if err != nil {
+		log.Errorf("could not check sidecar status: %v", err)
+
+		return false, err
+	}
+
+	// If the sidecar is running, we need to stop it before we can update the binary.
+	if running {
+		if err := systemd.Stop(); err != nil {
+			return false, fmt.Errorf("failed to stop sidecar: %w", err)
+		}
+	}
+
+	if err := systemd.Update(); err != nil {
+		log.Errorf("could not update sidecar: %v", err)
+
+		return false, err
+	}
+
+	fmt.Printf("%sContributoor updated successfully to version %s%s\n", tui.TerminalColorGreen, cfg.Version, tui.TerminalColorReset)
+
+	// If it was running, start it again for them.
+	if running {
+		if err := systemd.Start(); err != nil {
+			return true, fmt.Errorf("failed to start sidecar: %w", err)
+		}
+	}
+
+	return true, nil
 }
 
 func updateBinary(log *logrus.Logger, cfg *sidecar.Config, binary sidecar.BinarySidecar) (bool, error) {

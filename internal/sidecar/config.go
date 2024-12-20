@@ -131,6 +131,7 @@ func newDefaultConfig() *Config {
 		RunMethod:         RunMethodDocker,
 		NetworkName:       "mainnet",
 		BeaconNodeAddress: "",
+		OutputServer:      &OutputServerConfig{},
 	}
 }
 
@@ -215,10 +216,6 @@ func (s *configService) validate(cfg *Config) error {
 
 	if cfg.NetworkName == "" {
 		return fmt.Errorf("networkName is required")
-	}
-
-	if cfg.BeaconNodeAddress == "" {
-		return fmt.Errorf("beaconNodeAddress is required")
 	}
 
 	return nil

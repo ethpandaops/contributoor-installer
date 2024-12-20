@@ -33,6 +33,11 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 				return fmt.Errorf("error creating docker sidecar service: %w", err)
 			}
 
+			systemdSidecar, err := sidecar.NewSystemdSidecar(log, sidecarCfg, installerCfg)
+			if err != nil {
+				return fmt.Errorf("error creating systemd sidecar service: %w", err)
+			}
+
 			binarySidecar, err := sidecar.NewBinarySidecar(log, sidecarCfg, installerCfg)
 			if err != nil {
 				return fmt.Errorf("error creating binary sidecar service: %w", err)
@@ -43,7 +48,7 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 				return fmt.Errorf("error creating github service: %w", err)
 			}
 
-			return showStatus(c, log, sidecarCfg, dockerSidecar, binarySidecar, githubService)
+			return showStatus(c, log, sidecarCfg, dockerSidecar, systemdSidecar, binarySidecar, githubService)
 		},
 	})
 }
@@ -53,6 +58,7 @@ func showStatus(
 	log *logrus.Logger,
 	config sidecar.ConfigManager,
 	docker sidecar.DockerSidecar,
+	systemd sidecar.SystemdSidecar,
 	binary sidecar.BinarySidecar,
 	github service.GitHubService,
 ) error {
@@ -65,6 +71,8 @@ func showStatus(
 	switch cfg.RunMethod {
 	case sidecar.RunMethodDocker:
 		runner = docker
+	case sidecar.RunMethodSystemd:
+		runner = systemd
 	case sidecar.RunMethodBinary:
 		runner = binary
 	default:

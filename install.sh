@@ -77,6 +77,11 @@ success() {
     printf "\n${COLOR_GREEN}✓ %s${COLOR_RESET}" "$MESSAGE"
 }
 
+warn() {
+    MESSAGE=$1
+    printf "\n${COLOR_YELLOW}⚠ %s${COLOR_RESET}" "$MESSAGE"
+}
+
 usage() {
     echo "Usage: $0 [-p path] [-v version]"
     echo "  -p: Path to install contributoor (default: $HOME/.contributoor)"
@@ -267,6 +272,77 @@ setup_binary_contributoor() {
     fi
 }
 
+setup_systemd_contributoor() {
+    # Warn about potentialsudo requirement.
+    warn "Setting up systemd service requires sudo access. You may be prompted for your password."
+
+    # Stop and disable existing service if it exists.
+    if sudo systemctl list-unit-files | grep -q "contributoor.service"; then
+        sudo systemctl stop contributoor.service
+        sudo systemctl disable contributoor.service >/dev/null 2>&1
+        
+        # Remove existing service file
+        sudo rm -f "/etc/systemd/system/contributoor.service"
+        
+        # Remove any leftover runtime files
+        sudo rm -rf "/etc/systemd/system/contributoor.service.d"
+        sudo rm -f "/etc/systemd/system/contributoor.service.wants"
+        sudo rm -f "/etc/systemd/system/multi-user.target.wants/contributoor.service"
+        
+        # Reload systemd to recognize the removal
+        sudo systemctl daemon-reload
+
+        success "Stopped and disabled existing systemd service"
+    fi
+
+    # Create systemd directory
+    sudo mkdir -p "/etc/systemd/system"
+
+    # Create the service file
+    sudo tee "/etc/systemd/system/contributoor.service" >/dev/null << EOF
+[Unit]
+Description=Contributoor Service
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=$USER
+Group=$USER
+ExecStart=$CONTRIBUTOOR_BIN/sentry --config-path $CONTRIBUTOOR_PATH/config.yaml
+WorkingDirectory=$CONTRIBUTOOR_PATH
+Restart=always
+RestartSec=5
+
+# Environment setup
+Environment=HOME=$HOME
+Environment=USER=$USER
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    # Set permissions
+    sudo chmod 644 "/etc/systemd/system/contributoor.service"
+
+    # Reload systemd
+    sudo systemctl daemon-reload
+
+    # Enable but don't start the service
+    sudo systemctl enable contributoor.service >/dev/null 2>&1
+
+    success "Created systemd service: /etc/systemd/system/contributoor.service"
+    success "Service configured for manual start via 'sudo systemctl start contributoor.service'"
+}
+
 # Check if docker is installed and running
 check_docker() {
     # Check if docker command exists
@@ -282,6 +358,24 @@ check_docker() {
     # Check if docker compose is available (either as plugin or standalone)
     if ! (docker compose version >/dev/null 2>&1 || docker-compose version >/dev/null 2>&1); then
         fail "Docker Compose is not installed. Please install Docker Compose: https://docs.docker.com/compose/install/"
+    fi
+}
+
+# Check if systemd is available and running
+check_systemd() {
+    # Check if systemd is the init system
+    if ! pidof systemd >/dev/null 2>&1; then
+        fail "Systemd is not available on this system. Please choose a different installation mode."
+    fi
+
+    # Check if systemctl is available
+    if ! command -v systemctl >/dev/null 2>&1; then
+        fail "Systemctl command not found. Please choose a different installation mode."
+    fi
+
+    # Check if user has permissions to create services
+    if ! systemctl --user status >/dev/null 2>&1; then
+        fail "User systemd service management not available. Please check your systemd user configuration."
     fi
 }
 
@@ -425,14 +519,15 @@ main() {
             progress 3 "Installation path"
             success "Using path: $CONTRIBUTOOR_PATH"
             progress 4 "Select installation mode"
-            printf "\n  %s Docker (${COLOR_CYAN}recommended${COLOR_RESET})\n" "$([ "$selected" = 1 ] && echo ">" || echo " ")"
-            printf "  %s Binary\n" "$([ "$selected" = 2 ] && echo ">" || echo " ")"
+            printf "\n  %s docker (${COLOR_CYAN}recommended${COLOR_RESET})\n" "$([ "$selected" = 1 ] && echo ">" || echo " ")"
+            printf "  %s systemd\n" "$([ "$selected" = 2 ] && echo ">" || echo " ")"
+            printf "  %s binary (development)\n" "$([ "$selected" = 3 ] && echo ">" || echo " ")"
             printf "\nUse arrow keys (↑/↓) or j/k to select, Enter to confirm\n"
             
             read -r -n1 key
             case "$key" in
                 A|k) [ "$selected" -gt 1 ] && selected=$((selected - 1)) ;;
-                B|j) [ "$selected" -lt 2 ] && selected=$((selected + 1)) ;;
+                B|j) [ "$selected" -lt 3 ] && selected=$((selected + 1)) ;;
                 "")
                     tput cnorm
                     printf "Selected: "
@@ -440,10 +535,15 @@ main() {
                         INSTALL_MODE="docker"
                         # Check docker is available before proceeding
                         check_docker
-                        printf "${COLOR_GREEN}Docker${COLOR_RESET}"
+                        printf "${COLOR_GREEN}docker${COLOR_RESET}"
+                    elif [ "$selected" = 2 ]; then
+                        INSTALL_MODE="systemd"
+                        # Check systemd is available
+                        check_systemd
+                        printf "${COLOR_GREEN}systemd${COLOR_RESET}"
                     else
                         INSTALL_MODE="binary"
-                        printf "${COLOR_GREEN}Binary${COLOR_RESET}"
+                        printf "${COLOR_GREEN}binary${COLOR_RESET}"
                     fi
                     break
                     ;;
@@ -472,7 +572,13 @@ main() {
     # Makes life easier later on having everything ready.
     progress 6 "Preparing installation"
     setup_installer
-    [ "$INSTALL_MODE" = "binary" ] && setup_binary_contributoor
+    # Both binary and systemd modes need the binary
+    if [ "$INSTALL_MODE" = "binary" ] || [ "$INSTALL_MODE" = "systemd" ]; then
+        setup_binary_contributoor
+    fi
+    
+    # Setup systemd service if needed
+    [ "$INSTALL_MODE" = "systemd" ] && setup_systemd_contributoor
 
     # Docker cleanup if needed
     if [ "$INSTALL_MODE" = "docker" ] && command -v docker >/dev/null 2>&1; then

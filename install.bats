@@ -574,3 +574,73 @@ EOF
     [ "$status" -eq 0 ]
     [ -z "$output" ]
 }
+
+@test "setup_systemd_contributoor creates service file correctly" {
+    # Mock sudo to capture commands.
+    function sudo() {
+        case "$1" in
+            "tee")
+                # Capture service file content
+                cat > "$TEST_DIR/contributoor.service"
+                ;;
+            *) return 0 ;;
+        esac
+    }
+    export -f sudo
+ 
+    # Run the setup.
+    run setup_systemd_contributoor
+ 
+    # Check status.
+    [ "$status" -eq 0 ]
+ 
+    # Verify service file was created and has correct content.
+    [ -f "$TEST_DIR/contributoor.service" ]
+    grep -q "Description=Contributoor Service" "$TEST_DIR/contributoor.service"
+    grep -q "User=$USER" "$TEST_DIR/contributoor.service"
+    grep -q "ExecStart=$CONTRIBUTOOR_BIN/sentry" "$TEST_DIR/contributoor.service"
+}
+
+@test "setup_systemd_contributoor removes any existing systemd service before installing" {
+    # Mock sudo and systemctl.
+    function sudo() {
+        case "$1" in
+            "systemctl")
+                case "$2" in
+                    "list-unit-files") echo "contributoor.service enabled" ;;
+                    *) return 0 ;;
+                esac
+                ;;
+            *) return 0 ;;
+        esac
+    }
+    export -f sudo
+ 
+    run setup_systemd_contributoor
+ 
+    # Check status.
+    [ "$status" -eq 0 ]
+ 
+    # Verify it detected and handled existing service.
+    echo "$output" | grep -q "Stopped and disabled existing systemd service"
+}
+
+@test "check_systemd validates systemd availability" {
+    # Mock commands to simulate working systemd.
+    function pidof() { echo "1"; }
+    function systemctl() { return 0; }
+    export -f pidof systemctl
+ 
+    run check_systemd
+    [ "$status" -eq 0 ]
+}
+
+@test "check_systemd fails when systemd not available" {
+    # Mock pidof to simulate no systemd.
+    function pidof() { return 1; }
+    export -f pidof
+ 
+    run check_systemd
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q "Systemd is not available on this system. Please choose a different installation mode."
+}

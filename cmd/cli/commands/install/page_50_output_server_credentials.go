@@ -63,7 +63,8 @@ func (p *OutputServerCredentialsPage) initPage() {
 	p.form = form
 
 	// Get existing credentials if any
-	if currentCreds := p.display.sidecarCfg.Get().OutputServer.Credentials; currentCreds != "" {
+	if cfg := p.display.sidecarCfg.Get(); cfg.OutputServer != nil && cfg.OutputServer.Credentials != "" {
+		currentCreds := cfg.OutputServer.Credentials
 		if decoded, err := base64.StdEncoding.DecodeString(currentCreds); err == nil {
 			parts := strings.Split(string(decoded), ":")
 			if len(parts) == 2 {
