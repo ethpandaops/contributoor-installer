@@ -210,7 +210,10 @@ func (s *configService) validate(cfg *Config) error {
 		return fmt.Errorf("contributoorDirectory is required")
 	}
 
-	if cfg.RunMethod != RunMethodDocker && cfg.RunMethod != RunMethodBinary {
+	switch cfg.RunMethod {
+	case RunMethodDocker, RunMethodSystemd, RunMethodBinary:
+		break
+	default:
 		return fmt.Errorf("invalid runMethod: %s", cfg.RunMethod)
 	}
 

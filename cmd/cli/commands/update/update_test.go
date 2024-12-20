@@ -37,14 +37,14 @@ func TestUpdateContributoor(t *testing.T) {
 		runMethod     string
 		version       string
 		confirmPrompt bool
-		setupMocks    func(*mock.MockConfigManager, *mock.MockDockerSidecar, *mock.MockBinarySidecar, *smock.MockGitHubService)
+		setupMocks    func(*mock.MockConfigManager, *mock.MockDockerSidecar, *mock.MockSystemdSidecar, *mock.MockBinarySidecar, *smock.MockGitHubService)
 		expectedError string
 	}{
 		{
 			name:          "docker - updates service successfully",
 			runMethod:     sidecar.RunMethodDocker,
 			confirmPrompt: true,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&sidecar.Config{
 					RunMethod: sidecar.RunMethodDocker,
 					Version:   "v1.0.0",
@@ -67,7 +67,7 @@ func TestUpdateContributoor(t *testing.T) {
 		{
 			name:      "docker - already at latest version",
 			runMethod: sidecar.RunMethodDocker,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&sidecar.Config{
 					RunMethod: sidecar.RunMethodDocker,
 					Version:   "v1.0.0",
@@ -78,7 +78,7 @@ func TestUpdateContributoor(t *testing.T) {
 		{
 			name:      "docker - update fails",
 			runMethod: sidecar.RunMethodDocker,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&sidecar.Config{
 					RunMethod: sidecar.RunMethodDocker,
 					Version:   "v1.0.0",
@@ -101,7 +101,7 @@ func TestUpdateContributoor(t *testing.T) {
 			version:       "v1.1.0",
 			confirmPrompt: true,
 			runMethod:     sidecar.RunMethodDocker,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&sidecar.Config{
 					RunMethod: sidecar.RunMethodDocker,
 					Version:   "v1.0.0",
@@ -125,7 +125,7 @@ func TestUpdateContributoor(t *testing.T) {
 			name:      "specific version - does not exist",
 			version:   "v999.0.0",
 			runMethod: sidecar.RunMethodDocker,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&sidecar.Config{
 					RunMethod: sidecar.RunMethodDocker,
 					Version:   "v1.0.0",
@@ -137,7 +137,7 @@ func TestUpdateContributoor(t *testing.T) {
 			name:          "binary - updates service successfully",
 			runMethod:     sidecar.RunMethodBinary,
 			confirmPrompt: true,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&sidecar.Config{
 					RunMethod: sidecar.RunMethodBinary,
 					Version:   "v1.0.0",
@@ -160,7 +160,7 @@ func TestUpdateContributoor(t *testing.T) {
 		{
 			name:      "binary - already at latest version",
 			runMethod: sidecar.RunMethodBinary,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&sidecar.Config{
 					RunMethod: sidecar.RunMethodBinary,
 					Version:   "v1.0.0",
@@ -172,7 +172,7 @@ func TestUpdateContributoor(t *testing.T) {
 			name:          "binary - update fails",
 			runMethod:     sidecar.RunMethodBinary,
 			confirmPrompt: true,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&sidecar.Config{
 					RunMethod: sidecar.RunMethodBinary,
 					Version:   "v1.0.0",
@@ -201,10 +201,11 @@ func TestUpdateContributoor(t *testing.T) {
 
 			mockConfig := mock.NewMockConfigManager(ctrl)
 			mockDocker := mock.NewMockDockerSidecar(ctrl)
+			mockSystemd := mock.NewMockSystemdSidecar(ctrl)
 			mockBinary := mock.NewMockBinarySidecar(ctrl)
 			mockGithub := smock.NewMockGitHubService(ctrl)
 
-			tt.setupMocks(mockConfig, mockDocker, mockBinary, mockGithub)
+			tt.setupMocks(mockConfig, mockDocker, mockSystemd, mockBinary, mockGithub)
 
 			app := cli.NewApp()
 			app.Flags = []cli.Flag{
@@ -220,7 +221,7 @@ func TestUpdateContributoor(t *testing.T) {
 			}
 			context := cli.NewContext(app, set, nil)
 
-			err := updateContributoor(context, logrus.New(), mockConfig, mockDocker, mockBinary, mockGithub)
+			err := updateContributoor(context, logrus.New(), mockConfig, mockDocker, mockSystemd, mockBinary, mockGithub)
 
 			if tt.expectedError != "" {
 				assert.ErrorContains(t, err, tt.expectedError)

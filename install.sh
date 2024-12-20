@@ -273,10 +273,98 @@ setup_binary_contributoor() {
 }
 
 setup_systemd_contributoor() {
-    # Warn about potentialsudo requirement.
-    warn "Setting up systemd service requires sudo access. You may be prompted for your password."
+    # Detect platform and use appropriate service manager
+    case "$(detect_platform)" in
+        "darwin")
+            setup_macos_launchd
+            ;;
+        *)
+            setup_linux_systemd
+            ;;
+    esac
+}
 
-    # Stop and disable existing service if it exists.
+# Setup macOS launchd service
+setup_macos_launchd() {
+    # Warn about sudo requirement
+    warn "Setting up launchd service requires sudo access. "
+
+    # Verify sudo access before proceeding
+    if ! sudo -p "Please enter your password: " true; then
+        fail "sudo access is required to setup launchd service. Installation aborted."
+    fi
+
+    # Stop and unload existing service if it exists
+    if sudo launchctl list | grep -q "io.ethpandaops.contributoor"; then
+        sudo launchctl stop io.ethpandaops.contributoor
+        sudo launchctl unload -w "/Library/LaunchDaemons/io.ethpandaops.contributoor.plist"
+        
+        # Remove existing service file
+        sudo rm -f "/Library/LaunchDaemons/io.ethpandaops.contributoor.plist"
+        
+        success "Stopped and unloaded existing launchd service"
+    fi
+
+    # Create launchd plist directory
+    sudo mkdir -p "/Library/LaunchDaemons"
+
+    # Create the service file
+    sudo tee "/Library/LaunchDaemons/io.ethpandaops.contributoor.plist" >/dev/null << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>io.ethpandaops.contributoor</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$CONTRIBUTOOR_BIN/sentry</string>
+        <string>--config</string>
+        <string>$CONTRIBUTOOR_PATH/config.yaml</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>WorkingDirectory</key>
+    <string>$CONTRIBUTOOR_PATH</string>
+    <key>StandardOutPath</key>
+    <string>$CONTRIBUTOOR_PATH/logs/service.log</string>
+    <key>StandardErrorPath</key>
+    <string>$CONTRIBUTOOR_PATH/logs/error.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+    <key>UserName</key>
+    <string>$USER</string>
+</dict>
+</plist>
+EOF
+
+    # Set permissions
+    sudo chown root:wheel "/Library/LaunchDaemons/io.ethpandaops.contributoor.plist"
+    sudo chmod 644 "/Library/LaunchDaemons/io.ethpandaops.contributoor.plist"
+
+    # Load service (but don't start it)
+    sudo launchctl load -w "/Library/LaunchDaemons/io.ethpandaops.contributoor.plist"
+
+    success "Created launchd service: /Library/LaunchDaemons/io.ethpandaops.contributoor.plist"
+    success "Service configured for manual start"
+}
+
+# Setup Linux systemd service
+setup_linux_systemd() {
+    # Warn about sudo requirement
+    warn "Setting up systemd service requires sudo access. "
+
+    # Verify sudo access before proceeding
+    if ! sudo -p "Please enter your password: " true; then
+        fail "sudo access is required to setup systemd service. Installation aborted."
+    fi
+
+    # Stop and disable existing service if it exists
     if sudo systemctl list-unit-files | grep -q "contributoor.service"; then
         sudo systemctl stop contributoor.service
         sudo systemctl disable contributoor.service >/dev/null 2>&1
@@ -310,7 +398,7 @@ StartLimitIntervalSec=0
 Type=simple
 User=$USER
 Group=$USER
-ExecStart=$CONTRIBUTOOR_BIN/sentry --config-path $CONTRIBUTOOR_PATH/config.yaml
+ExecStart=$CONTRIBUTOOR_BIN/sentry --config $CONTRIBUTOOR_PATH/config.yaml
 WorkingDirectory=$CONTRIBUTOOR_PATH
 Restart=always
 RestartSec=5
@@ -340,7 +428,7 @@ EOF
     sudo systemctl enable contributoor.service >/dev/null 2>&1
 
     success "Created systemd service: /etc/systemd/system/contributoor.service"
-    success "Service configured for manual start via 'sudo systemctl start contributoor.service'"
+    success "Service configured for manual start"
 }
 
 # Check if docker is installed and running
@@ -361,22 +449,38 @@ check_docker() {
     fi
 }
 
-# Check if systemd is available and running
-check_systemd() {
-    # Check if systemd is the init system
-    if ! pidof systemd >/dev/null 2>&1; then
-        fail "Systemd is not available on this system. Please choose a different installation mode."
-    fi
+# Check if systemd/launchd is available and running
+check_systemd_or_launchd() {
+    case "$(detect_platform)" in
+        "darwin")
+            # Check if launchd is available
+            if ! command -v launchctl >/dev/null 2>&1; then
+                fail "Launchd not found. This is unexpected on macOS."
+            fi
 
-    # Check if systemctl is available
-    if ! command -v systemctl >/dev/null 2>&1; then
-        fail "Systemctl command not found. Please choose a different installation mode."
-    fi
+            # Check if sudo is available
+            if ! command -v sudo >/dev/null 2>&1; then
+                fail "sudo access required for launchd service management."
+            fi
+            ;;
+        *)
+            # Linux systemd checks
+            # Check if systemd is the init system
+            if ! pidof systemd >/dev/null 2>&1; then
+                fail "Systemd is not available on this system. Please choose a different installation mode."
+            fi
 
-    # Check if user has permissions to create services
-    if ! systemctl --user status >/dev/null 2>&1; then
-        fail "User systemd service management not available. Please check your systemd user configuration."
-    fi
+            # Check if systemctl is available
+            if ! command -v systemctl >/dev/null 2>&1; then
+                fail "Systemctl command not found. Please choose a different installation mode."
+            fi
+
+            # Check if user has permissions to create services
+            if ! systemctl --user status >/dev/null 2>&1; then
+                fail "User systemd service management not available. Please check your systemd user configuration."
+            fi
+            ;;
+    esac
 }
 
 ###############################################################################
@@ -520,7 +624,14 @@ main() {
             success "Using path: $CONTRIBUTOOR_PATH"
             progress 4 "Select installation mode"
             printf "\n  %s docker (${COLOR_CYAN}recommended${COLOR_RESET})\n" "$([ "$selected" = 1 ] && echo ">" || echo " ")"
-            printf "  %s systemd\n" "$([ "$selected" = 2 ] && echo ">" || echo " ")"
+            case "$(detect_platform)" in
+                "darwin")
+                    printf "  %s launchd\n" "$([ "$selected" = 2 ] && echo ">" || echo " ")"
+                    ;;
+                *)
+                    printf "  %s systemd\n" "$([ "$selected" = 2 ] && echo ">" || echo " ")"
+                    ;;
+            esac
             printf "  %s binary (development)\n" "$([ "$selected" = 3 ] && echo ">" || echo " ")"
             printf "\nUse arrow keys (↑/↓) or j/k to select, Enter to confirm\n"
             
@@ -539,7 +650,7 @@ main() {
                     elif [ "$selected" = 2 ]; then
                         INSTALL_MODE="systemd"
                         # Check systemd is available
-                        check_systemd
+                        check_systemd_or_launchd
                         printf "${COLOR_GREEN}systemd${COLOR_RESET}"
                     else
                         INSTALL_MODE="binary"

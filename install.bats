@@ -575,8 +575,14 @@ EOF
     [ -z "$output" ]
 }
 
-@test "setup_systemd_contributoor creates service file correctly" {
-    # Mock sudo to capture commands.
+@test "[linux] setup_systemd_contributoor creates service file correctly" {
+    # Set platform for test
+    function detect_platform() {
+        echo "linux"
+    }
+    export -f detect_platform
+
+    # Mock sudo to capture commands
     function sudo() {
         case "$1" in
             "tee")
@@ -587,22 +593,27 @@ EOF
         esac
     }
     export -f sudo
- 
-    # Run the setup.
+
     run setup_systemd_contributoor
- 
-    # Check status.
+
+    # Check status
     [ "$status" -eq 0 ]
- 
-    # Verify service file was created and has correct content.
+
+    # Verify service file was created and has correct content
     [ -f "$TEST_DIR/contributoor.service" ]
     grep -q "Description=Contributoor Service" "$TEST_DIR/contributoor.service"
     grep -q "User=$USER" "$TEST_DIR/contributoor.service"
     grep -q "ExecStart=$CONTRIBUTOOR_BIN/sentry" "$TEST_DIR/contributoor.service"
 }
 
-@test "setup_systemd_contributoor removes any existing systemd service before installing" {
-    # Mock sudo and systemctl.
+@test "[linux] setup_systemd_contributoor removes any existing systemd service before installing" {
+    # Set platform for test
+    function detect_platform() {
+        echo "linux"
+    }
+    export -f detect_platform
+
+    # Mock sudo and systemctl
     function sudo() {
         case "$1" in
             "systemctl")
@@ -615,32 +626,126 @@ EOF
         esac
     }
     export -f sudo
- 
+
     run setup_systemd_contributoor
- 
-    # Check status.
+
+    # Check status
     [ "$status" -eq 0 ]
- 
-    # Verify it detected and handled existing service.
+
+    # Verify it detected and handled existing service
     echo "$output" | grep -q "Stopped and disabled existing systemd service"
 }
 
-@test "check_systemd validates systemd availability" {
-    # Mock commands to simulate working systemd.
+@test "[linux] check_systemd validates systemd availability" {
+    # Set platform for test
+    function detect_platform() {
+        echo "linux"
+    }
+    export -f detect_platform
+
+    # Mock commands to simulate working systemd
     function pidof() { echo "1"; }
     function systemctl() { return 0; }
     export -f pidof systemctl
  
-    run check_systemd
+    run check_systemd_or_launchd
     [ "$status" -eq 0 ]
 }
 
-@test "check_systemd fails when systemd not available" {
-    # Mock pidof to simulate no systemd.
+@test "[linux] check_systemd fails when systemd not available" {
+    # Set platform for test
+    function detect_platform() {
+        echo "linux"
+    }
+    export -f detect_platform
+
+    # Mock pidof to simulate no systemd
     function pidof() { return 1; }
     export -f pidof
  
-    run check_systemd
+    run check_systemd_or_launchd
     [ "$status" -eq 1 ]
     echo "$output" | grep -q "Systemd is not available on this system. Please choose a different installation mode."
+}
+
+@test "[darwin] check_systemd_or_launchd validates launchd availability" {
+    # Set platform for test
+    function detect_platform() {
+        echo "darwin"
+    }
+    export -f detect_platform
+
+    # Mock launchctl to simulate working launchd
+    function command() {
+        case "$2" in
+            "launchctl") return 0 ;;
+            "sudo") return 0 ;;
+            *) command "$@" ;;
+        esac
+    }
+    export -f command
+
+    run check_systemd_or_launchd
+    [ "$status" -eq 0 ]
+}
+
+@test "[darwin] setup_systemd_contributoor removes any existing launchd service before installing" {
+    # Set platform for test
+    function detect_platform() {
+        echo "darwin"
+    }
+    export -f detect_platform
+
+    # Mock sudo and launchctl
+    function sudo() {
+        case "$1" in
+            "launchctl")
+                case "$2" in
+                    "list") echo "12345 0 io.ethpandaops.contributoor" ;;
+                    *) return 0 ;;
+                esac
+                ;;
+            *) return 0 ;;
+        esac
+    }
+    export -f sudo
+
+    run setup_systemd_contributoor
+
+    # Check status
+    [ "$status" -eq 0 ]
+
+    # Verify it detected and handled existing service
+    echo "$output" | grep -q "Stopped and unloaded existing launchd service"
+}
+
+@test "[darwin] setup_systemd_contributoor creates launchd service file correctly" {
+    # Set platform for test
+    function detect_platform() {
+        echo "darwin"
+    }
+    export -f detect_platform
+
+    # Mock sudo to capture commands
+    function sudo() {
+        case "$1" in
+            "tee")
+                # Capture service file content
+                cat > "$TEST_DIR/io.ethpandaops.contributoor.plist"
+                ;;
+            *) return 0 ;;
+        esac
+    }
+    export -f sudo
+
+    run setup_systemd_contributoor
+
+    # Check status
+    [ "$status" -eq 0 ]
+
+    # Verify service file was created and has correct content
+    [ -f "$TEST_DIR/io.ethpandaops.contributoor.plist" ]
+    grep -q "<string>io.ethpandaops.contributoor</string>" "$TEST_DIR/io.ethpandaops.contributoor.plist"
+    grep -q "<string>$CONTRIBUTOOR_BIN/sentry</string>" "$TEST_DIR/io.ethpandaops.contributoor.plist"
+    grep -q "<string>$USER</string>" "$TEST_DIR/io.ethpandaops.contributoor.plist"
 }

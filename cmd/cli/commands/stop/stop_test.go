@@ -97,13 +97,14 @@ func TestStopContributoor(t *testing.T) {
 			mockConfig := mock.NewMockConfigManager(ctrl)
 			mockDocker := mock.NewMockDockerSidecar(ctrl)
 			mockBinary := mock.NewMockBinarySidecar(ctrl)
+			mockSystemd := mock.NewMockSystemdSidecar(ctrl)
 
 			tt.setupMocks(mockConfig, mockDocker, mockBinary)
 
 			app := cli.NewApp()
 			ctx := cli.NewContext(app, nil, nil)
 
-			err := stopContributoor(ctx, logrus.New(), mockConfig, mockDocker, mockBinary)
+			err := stopContributoor(ctx, logrus.New(), mockConfig, mockDocker, mockSystemd, mockBinary)
 
 			if tt.expectedError != "" {
 				assert.ErrorContains(t, err, tt.expectedError)

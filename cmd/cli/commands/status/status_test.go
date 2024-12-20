@@ -38,6 +38,9 @@ func TestShowStatus(t *testing.T) {
 		// Create mock binary sidecar (shouldn't be used)
 		mockBinary := mock.NewMockBinarySidecar(ctrl)
 
+		// Create mock systemd sidecar (shouldn't be used)
+		mockSystemd := mock.NewMockSystemdSidecar(ctrl)
+
 		// Create mock GitHub service
 		mockGithub := servicemock.NewMockGitHubService(ctrl)
 		mockGithub.EXPECT().GetLatestVersion().Return("1.0.1", nil)
@@ -47,6 +50,7 @@ func TestShowStatus(t *testing.T) {
 			logrus.New(),
 			mockConfig,
 			mockDocker,
+			mockSystemd,
 			mockBinary,
 			mockGithub,
 		)
@@ -75,6 +79,9 @@ func TestShowStatus(t *testing.T) {
 		mockBinary := mock.NewMockBinarySidecar(ctrl)
 		mockBinary.EXPECT().IsRunning().Return(false, nil)
 
+		// Create mock systemd sidecar (shouldn't be used)
+		mockSystemd := mock.NewMockSystemdSidecar(ctrl)
+
 		// Create mock GitHub service with same version (shouldn't show update)
 		mockGithub := servicemock.NewMockGitHubService(ctrl)
 		mockGithub.EXPECT().GetLatestVersion().Return("1.0.0", nil)
@@ -84,6 +91,7 @@ func TestShowStatus(t *testing.T) {
 			logrus.New(),
 			mockConfig,
 			mockDocker,
+			mockSystemd,
 			mockBinary,
 			mockGithub,
 		)
@@ -105,6 +113,7 @@ func TestShowStatus(t *testing.T) {
 
 		mockDocker := mock.NewMockDockerSidecar(ctrl)
 		mockDocker.EXPECT().IsRunning().Return(true, nil)
+		mockSystemd := mock.NewMockSystemdSidecar(ctrl)
 
 		// Create mock GitHub service that returns an error
 		mockGithub := servicemock.NewMockGitHubService(ctrl)
@@ -115,6 +124,7 @@ func TestShowStatus(t *testing.T) {
 			logrus.New(),
 			mockConfig,
 			mockDocker,
+			mockSystemd,
 			mock.NewMockBinarySidecar(ctrl),
 			mockGithub,
 		)
@@ -136,6 +146,7 @@ func TestShowStatus(t *testing.T) {
 			cli.NewContext(nil, nil, nil),
 			logrus.New(),
 			mockConfig,
+			nil,
 			nil,
 			nil,
 			nil,

@@ -7,6 +7,11 @@ const (
 	RunMethodBinary  = "binary"
 )
 
+const (
+	ArchDarwin = "darwin"
+	ArchLinux  = "linux"
+)
+
 // SidecarRunner handles operations for the various run methods.
 type SidecarRunner interface {
 	// Start starts the service.
