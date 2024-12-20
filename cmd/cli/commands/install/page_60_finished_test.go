@@ -3,9 +3,9 @@ package install
 import (
 	"testing"
 
-	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -17,8 +17,8 @@ import (
 func TestFinishedPage(t *testing.T) {
 	setupMockDisplay := func(ctrl *gomock.Controller) *InstallDisplay {
 		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&sidecar.Config{
-			OutputServer: &sidecar.OutputServerConfig{},
+		mockConfig.EXPECT().Get().Return(&config.Config{
+			OutputServer: &config.OutputServer{},
 		}).AnyTimes()
 
 		display := &InstallDisplay{

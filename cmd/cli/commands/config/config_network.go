@@ -1,9 +1,9 @@
 package config
 
 import (
-	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/ethpandaops/contributoor-installer/internal/validate"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -64,8 +64,8 @@ func (p *NetworkConfigPage) initPage() {
 	networkDescriptions := make(map[string]string)
 
 	for i, network := range tui.AvailableNetworks {
-		networks[i] = network.Value
-		networkDescriptions[network.Value] = network.Description
+		networks[i] = network.Value.String()
+		networkDescriptions[network.Value.String()] = network.Description
 	}
 
 	// Add our form fields.
@@ -74,7 +74,7 @@ func (p *NetworkConfigPage) initPage() {
 	currentNetworkIndex := 0
 
 	for i, network := range networks {
-		if network == currentNetwork {
+		if network == currentNetwork.String() {
 			currentNetworkIndex = i
 
 			break
@@ -169,15 +169,21 @@ func (p *NetworkConfigPage) initPage() {
 }
 
 func validateAndUpdateNetwork(p *NetworkConfigPage) {
-	if err := validate.ValidateBeaconNodeAddress(p.display.sidecarCfg.Get().BeaconNodeAddress); err != nil {
+	networkDropdown, _ := p.form.GetFormItem(0).(*tview.DropDown)
+	beaconInput, _ := p.form.GetFormItem(1).(*tview.InputField)
+
+	_, networkName := networkDropdown.GetCurrentOption()
+	beaconAddress := beaconInput.GetText()
+
+	if err := validate.ValidateBeaconNodeAddress(beaconAddress); err != nil {
 		p.openErrorModal(err)
 
 		return
 	}
 
-	if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
-		cfg.NetworkName = p.display.sidecarCfg.Get().NetworkName
-		cfg.BeaconNodeAddress = p.display.sidecarCfg.Get().BeaconNodeAddress
+	if err := p.display.sidecarCfg.Update(func(cfg *config.Config) {
+		cfg.NetworkName = config.NetworkName(config.NetworkName_value[networkName])
+		cfg.BeaconNodeAddress = beaconAddress
 	}); err != nil {
 		p.openErrorModal(err)
 

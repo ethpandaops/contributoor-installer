@@ -264,7 +264,7 @@ setup_binary_contributoor() {
     rm -f "$temp_archive"
 
     # After setting permissions, create service files based on platform
-    if [ "$INSTALL_MODE" = "binary" ]; then
+    if [ "$INSTALL_MODE" = "RUN_METHOD_BINARY" ]; then
         # Create logs directory for binary output
         mkdir -p "$CONTRIBUTOOR_PATH/logs" || fail "Could not create the contributoor logs directory"
         chmod -R 755 "$CONTRIBUTOOR_PATH/logs"
@@ -643,17 +643,17 @@ main() {
                     tput cnorm
                     printf "Selected: "
                     if [ "$selected" = 1 ]; then
-                        INSTALL_MODE="docker"
+                        INSTALL_MODE="RUN_METHOD_DOCKER"
                         # Check docker is available before proceeding
                         check_docker
                         printf "${COLOR_GREEN}docker${COLOR_RESET}"
                     elif [ "$selected" = 2 ]; then
-                        INSTALL_MODE="systemd"
+                        INSTALL_MODE="RUN_METHOD_SYSTEMD"
                         # Check systemd is available
                         check_systemd_or_launchd
                         printf "${COLOR_GREEN}systemd${COLOR_RESET}"
                     else
-                        INSTALL_MODE="binary"
+                        INSTALL_MODE="RUN_METHOD_BINARY"
                         printf "${COLOR_GREEN}binary${COLOR_RESET}"
                     fi
                     break
@@ -684,15 +684,15 @@ main() {
     progress 6 "Preparing installation"
     setup_installer
     # Both binary and systemd modes need the binary
-    if [ "$INSTALL_MODE" = "binary" ] || [ "$INSTALL_MODE" = "systemd" ]; then
+    if [ "$INSTALL_MODE" = "RUN_METHOD_BINARY" ] || [ "$INSTALL_MODE" = "RUN_METHOD_SYSTEMD" ]; then
         setup_binary_contributoor
     fi
     
     # Setup systemd service if needed
-    [ "$INSTALL_MODE" = "systemd" ] && setup_systemd_contributoor
+    [ "$INSTALL_MODE" = "RUN_METHOD_SYSTEMD" ] && setup_systemd_contributoor
 
     # Docker cleanup if needed
-    if [ "$INSTALL_MODE" = "docker" ] && command -v docker >/dev/null 2>&1; then
+    if [ "$INSTALL_MODE" = "RUN_METHOD_DOCKER" ] && command -v docker >/dev/null 2>&1; then
         setup_docker_contributoor
     fi
 

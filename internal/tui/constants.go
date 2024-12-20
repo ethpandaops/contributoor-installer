@@ -1,6 +1,9 @@
 package tui
 
-import "github.com/gdamore/tcell/v2"
+import (
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
+	"github.com/gdamore/tcell/v2"
+)
 
 // Logo is used as a bit of branding in the installer UI.
 const Logo string = `
@@ -14,7 +17,7 @@ const Logo string = `
 // NetworkOption is used to represent a network option, eg: Ethereum Mainnet, Sepolia Testnet, etc.
 type NetworkOption struct {
 	Label       string
-	Value       string
+	Value       config.NetworkName
 	Description string
 }
 
@@ -22,17 +25,17 @@ type NetworkOption struct {
 var AvailableNetworks = []NetworkOption{
 	{
 		Label:       "Ethereum Mainnet",
-		Value:       "mainnet",
+		Value:       config.NetworkName_NETWORK_NAME_MAINNET,
 		Description: "This is the real Ethereum main network.",
 	},
 	{
 		Label:       "Holesky Testnet",
-		Value:       "holesky",
+		Value:       config.NetworkName_NETWORK_NAME_HOLESKY,
 		Description: "The Holesky test network.",
 	},
 	{
 		Label:       "Sepolia Testnet",
-		Value:       "sepolia",
+		Value:       config.NetworkName_NETWORK_NAME_SEPOLIA,
 		Description: "The Sepolia test network.",
 	},
 }

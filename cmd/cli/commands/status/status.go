@@ -7,6 +7,7 @@ import (
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -56,7 +57,7 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 func showStatus(
 	c *cli.Context,
 	log *logrus.Logger,
-	config sidecar.ConfigManager,
+	sidecarCfg sidecar.ConfigManager,
 	docker sidecar.DockerSidecar,
 	systemd sidecar.SystemdSidecar,
 	binary sidecar.BinarySidecar,
@@ -64,16 +65,16 @@ func showStatus(
 ) error {
 	var (
 		runner sidecar.SidecarRunner
-		cfg    = config.Get()
+		cfg    = sidecarCfg.Get()
 	)
 
 	// Determine which runner to use.
 	switch cfg.RunMethod {
-	case sidecar.RunMethodDocker:
+	case config.RunMethod_RUN_METHOD_DOCKER:
 		runner = docker
-	case sidecar.RunMethodSystemd:
+	case config.RunMethod_RUN_METHOD_SYSTEMD:
 		runner = systemd
-	case sidecar.RunMethodBinary:
+	case config.RunMethod_RUN_METHOD_BINARY:
 		runner = binary
 	default:
 		return fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
@@ -104,7 +105,7 @@ func showStatus(
 	fmt.Printf("%-20s: %s\n", "Run Method", cfg.RunMethod)
 	fmt.Printf("%-20s: %s\n", "Network", cfg.NetworkName)
 	fmt.Printf("%-20s: %s\n", "Beacon Node", cfg.BeaconNodeAddress)
-	fmt.Printf("%-20s: %s\n", "Config Path", config.GetConfigPath())
+	fmt.Printf("%-20s: %s\n", "Config Path", sidecarCfg.GetConfigPath())
 
 	if cfg.OutputServer != nil {
 		fmt.Printf("%-20s: %s\n", "Output Server", cfg.OutputServer.Address)

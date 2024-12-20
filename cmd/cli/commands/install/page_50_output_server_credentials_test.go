@@ -3,9 +3,9 @@ package install
 import (
 	"testing"
 
-	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -15,9 +15,9 @@ import (
 // This is about the best we can do re testing TUI components.
 // They're heavily dependent on the terminal state.
 func TestOutputServerCredentialsPage(t *testing.T) {
-	setupMockDisplay := func(ctrl *gomock.Controller, cfg *sidecar.Config) *InstallDisplay {
+	setupMockDisplay := func(ctrl *gomock.Controller, cfg *config.Config) *InstallDisplay {
 		if cfg.OutputServer == nil {
-			cfg.OutputServer = &sidecar.OutputServerConfig{}
+			cfg.OutputServer = &config.OutputServer{}
 		}
 
 		mockConfig := mock.NewMockConfigManager(ctrl)
@@ -39,7 +39,7 @@ func TestOutputServerCredentialsPage(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		mockDisplay := setupMockDisplay(ctrl, &sidecar.Config{})
+		mockDisplay := setupMockDisplay(ctrl, &config.Config{})
 
 		// Create the page.
 		page := NewOutputServerCredentialsPage(mockDisplay)
@@ -64,7 +64,7 @@ func TestOutputServerCredentialsPage(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		mockDisplay := setupMockDisplay(ctrl, &sidecar.Config{})
+		mockDisplay := setupMockDisplay(ctrl, &config.Config{})
 
 		// Create the page.
 		page := NewOutputServerCredentialsPage(mockDisplay)
@@ -79,8 +79,8 @@ func TestOutputServerCredentialsPage(t *testing.T) {
 		defer ctrl.Finish()
 
 		// Create config with existing credentials.
-		cfg := &sidecar.Config{
-			OutputServer: &sidecar.OutputServerConfig{
+		cfg := &config.Config{
+			OutputServer: &config.OutputServer{
 				Credentials: "dGVzdHVzZXI6dGVzdHBhc3M=", // base64 encoded "testuser:testpass"
 			},
 		}
@@ -101,8 +101,8 @@ func TestOutputServerCredentialsPage(t *testing.T) {
 		defer ctrl.Finish()
 
 		// Create config with invalid credentials.
-		cfg := &sidecar.Config{
-			OutputServer: &sidecar.OutputServerConfig{
+		cfg := &config.Config{
+			OutputServer: &config.OutputServer{
 				Credentials: "invalid-base64",
 			},
 		}

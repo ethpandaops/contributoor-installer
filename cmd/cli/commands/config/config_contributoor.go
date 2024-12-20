@@ -2,19 +2,20 @@ package config
 
 import (
 	"runtime"
+	"strings"
 
-	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 )
 
 // Available run modes.
-var runModes = []string{
-	sidecar.RunMethodDocker,
-	sidecar.RunMethodSystemd,
-	sidecar.RunMethodBinary,
+var runModes = []config.RunMethod{
+	config.RunMethod_RUN_METHOD_DOCKER,
+	config.RunMethod_RUN_METHOD_SYSTEMD,
+	config.RunMethod_RUN_METHOD_BINARY,
 }
 
 // ContributoorSettingsPage is a page that allows the user to configure core contributoor settings.
@@ -105,10 +106,10 @@ func (p *ContributoorSettingsPage) initPage() {
 	runModeLabels := make([]string, len(runModes))
 
 	for i, mode := range runModes {
-		if mode == sidecar.RunMethodSystemd {
+		if mode == config.RunMethod_RUN_METHOD_SYSTEMD {
 			runModeLabels[i] = getServiceManagerLabel()
 		} else {
-			runModeLabels[i] = mode
+			runModeLabels[i] = strings.ToLower(mode.DisplayName())
 		}
 	}
 
@@ -118,9 +119,9 @@ func (p *ContributoorSettingsPage) initPage() {
 	})
 
 	form.AddDropDown("Run Mode", runModeLabels, currentRunModeIndex, func(option string, index int) {
-		if option == sidecar.RunMethodDocker {
+		if option == config.RunMethod_RUN_METHOD_DOCKER.String() {
 			p.description.SetText("Run using Docker containers (recommended)")
-		} else if runModes[index] == sidecar.RunMethodSystemd {
+		} else if runModes[index] == config.RunMethod_RUN_METHOD_SYSTEMD {
 			p.description.SetText(getServiceManagerDescription())
 		} else {
 			p.description.SetText("Run directly as a binary on your system")
@@ -214,7 +215,7 @@ func validateAndUpdateContributoor(p *ContributoorSettingsPage) {
 	runModeIndex, _ := runMode.GetCurrentOption()
 	runModeText := runModes[runModeIndex]
 
-	if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
+	if err := p.display.sidecarCfg.Update(func(cfg *config.Config) {
 		cfg.LogLevel = logLevelText
 		cfg.RunMethod = runModeText
 	}); err != nil {

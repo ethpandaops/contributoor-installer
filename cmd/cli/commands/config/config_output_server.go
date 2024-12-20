@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/ethpandaops/contributoor-installer/internal/validate"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -312,7 +312,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 	}
 
 	// Update config with validated values.
-	if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
+	if err := p.display.sidecarCfg.Update(func(cfg *config.Config) {
 		cfg.OutputServer.Address = serverAddress
 		if username != "" && password != "" {
 			cfg.OutputServer.Credentials = validate.EncodeCredentials(username, password)
@@ -340,7 +340,7 @@ func (p *OutputServerConfigPage) openErrorModal(err error) {
 }
 
 // Update getCredentialsFromConfig to use the validation package.
-func getCredentialsFromConfig(cfg *sidecar.Config) (username, password string) {
+func getCredentialsFromConfig(cfg *config.Config) (username, password string) {
 	username, password, err := validate.DecodeCredentials(cfg.OutputServer.Credentials)
 	if err != nil {
 		return "", ""

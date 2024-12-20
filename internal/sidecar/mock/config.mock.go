@@ -12,7 +12,7 @@ package mock
 import (
 	reflect "reflect"
 
-	sidecar "github.com/ethpandaops/contributoor-installer/internal/sidecar"
+	config "github.com/ethpandaops/contributoor/pkg/config/v1"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -40,10 +40,10 @@ func (m *MockConfigManager) EXPECT() *MockConfigManagerMockRecorder {
 }
 
 // Get mocks base method.
-func (m *MockConfigManager) Get() *sidecar.Config {
+func (m *MockConfigManager) Get() *config.Config {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get")
-	ret0, _ := ret[0].(*sidecar.Config)
+	ret0, _ := ret[0].(*config.Config)
 	return ret0
 }
 
@@ -82,7 +82,7 @@ func (mr *MockConfigManagerMockRecorder) Save() *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockConfigManager) Update(arg0 func(*sidecar.Config)) error {
+func (m *MockConfigManager) Update(arg0 func(*config.Config)) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", arg0)
 	ret0, _ := ret[0].(error)

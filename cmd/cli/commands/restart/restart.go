@@ -6,6 +6,7 @@ import (
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -50,25 +51,25 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 func restartContributoor(
 	c *cli.Context,
 	log *logrus.Logger,
-	config sidecar.ConfigManager,
+	sidecarCfg sidecar.ConfigManager,
 	docker sidecar.DockerSidecar,
 	systemd sidecar.SystemdSidecar,
 	binary sidecar.BinarySidecar,
 ) error {
 	var (
 		runner sidecar.SidecarRunner
-		cfg    = config.Get()
+		cfg    = sidecarCfg.Get()
 	)
 
 	fmt.Printf("%sRestarting Contributoor%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
 
 	// Determine which runner to use
 	switch cfg.RunMethod {
-	case sidecar.RunMethodDocker:
+	case config.RunMethod_RUN_METHOD_DOCKER:
 		runner = docker
-	case sidecar.RunMethodSystemd:
+	case config.RunMethod_RUN_METHOD_SYSTEMD:
 		runner = systemd
-	case sidecar.RunMethodBinary:
+	case config.RunMethod_RUN_METHOD_BINARY:
 		runner = binary
 	default:
 		return fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)

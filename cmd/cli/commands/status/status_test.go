@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	servicemock "github.com/ethpandaops/contributoor-installer/internal/service/mock"
-	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli"
@@ -20,12 +20,12 @@ func TestShowStatus(t *testing.T) {
 
 		// Create mock config with docker setup
 		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&sidecar.Config{
+		mockConfig.EXPECT().Get().Return(&config.Config{
 			Version:           "1.0.0",
-			RunMethod:         sidecar.RunMethodDocker,
-			NetworkName:       "mainnet",
+			RunMethod:         config.RunMethod_RUN_METHOD_DOCKER,
+			NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
 			BeaconNodeAddress: "http://localhost:5052",
-			OutputServer: &sidecar.OutputServerConfig{
+			OutputServer: &config.OutputServer{
 				Address: "https://output.server",
 			},
 		}).AnyTimes()
@@ -64,10 +64,10 @@ func TestShowStatus(t *testing.T) {
 
 		// Create mock config with binary setup
 		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&sidecar.Config{
+		mockConfig.EXPECT().Get().Return(&config.Config{
 			Version:           "1.0.0",
-			RunMethod:         sidecar.RunMethodBinary,
-			NetworkName:       "mainnet",
+			RunMethod:         config.RunMethod_RUN_METHOD_BINARY,
+			NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
 			BeaconNodeAddress: "http://localhost:5052",
 		}).AnyTimes()
 		mockConfig.EXPECT().GetConfigPath().Return("/path/to/config.yaml")
@@ -104,10 +104,10 @@ func TestShowStatus(t *testing.T) {
 		defer ctrl.Finish()
 
 		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&sidecar.Config{
+		mockConfig.EXPECT().Get().Return(&config.Config{
 			Version:     "1.0.0",
-			RunMethod:   sidecar.RunMethodDocker,
-			NetworkName: "mainnet",
+			RunMethod:   config.RunMethod_RUN_METHOD_DOCKER,
+			NetworkName: config.NetworkName_NETWORK_NAME_MAINNET,
 		}).AnyTimes()
 		mockConfig.EXPECT().GetConfigPath().Return("/path/to/config.yaml")
 
@@ -138,8 +138,8 @@ func TestShowStatus(t *testing.T) {
 
 		// Create mock config with invalid run method
 		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&sidecar.Config{
-			RunMethod: "invalid",
+		mockConfig.EXPECT().Get().Return(&config.Config{
+			RunMethod: config.RunMethod_RUN_METHOD_UNSPECIFIED,
 		})
 
 		err := showStatus(

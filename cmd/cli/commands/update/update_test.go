@@ -7,9 +7,9 @@ import (
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
 	smock "github.com/ethpandaops/contributoor-installer/internal/service/mock"
-	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,7 +34,7 @@ func TestUpdateContributoor(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		runMethod     string
+		runMethod     config.RunMethod
 		version       string
 		confirmPrompt bool
 		setupMocks    func(*mock.MockConfigManager, *mock.MockDockerSidecar, *mock.MockSystemdSidecar, *mock.MockBinarySidecar, *smock.MockGitHubService)
@@ -42,11 +42,11 @@ func TestUpdateContributoor(t *testing.T) {
 	}{
 		{
 			name:          "docker - updates service successfully",
-			runMethod:     sidecar.RunMethodDocker,
+			runMethod:     config.RunMethod_RUN_METHOD_DOCKER,
 			confirmPrompt: true,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&sidecar.Config{
-					RunMethod: sidecar.RunMethodDocker,
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 					Version:   "v1.0.0",
 				}).Times(2)
 				g.EXPECT().GetLatestVersion().Return("v1.1.0", nil)
@@ -66,10 +66,10 @@ func TestUpdateContributoor(t *testing.T) {
 		},
 		{
 			name:      "docker - already at latest version",
-			runMethod: sidecar.RunMethodDocker,
+			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&sidecar.Config{
-					RunMethod: sidecar.RunMethodDocker,
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 					Version:   "v1.0.0",
 				}).Times(1)
 				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
@@ -77,10 +77,10 @@ func TestUpdateContributoor(t *testing.T) {
 		},
 		{
 			name:      "docker - update fails",
-			runMethod: sidecar.RunMethodDocker,
+			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&sidecar.Config{
-					RunMethod: sidecar.RunMethodDocker,
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 					Version:   "v1.0.0",
 				}).Times(2)
 				g.EXPECT().GetLatestVersion().Return("v1.1.0", nil)
@@ -100,10 +100,10 @@ func TestUpdateContributoor(t *testing.T) {
 			name:          "specific version - exists",
 			version:       "v1.1.0",
 			confirmPrompt: true,
-			runMethod:     sidecar.RunMethodDocker,
+			runMethod:     config.RunMethod_RUN_METHOD_DOCKER,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&sidecar.Config{
-					RunMethod: sidecar.RunMethodDocker,
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 					Version:   "v1.0.0",
 				}).Times(2)
 				g.EXPECT().VersionExists("v1.1.0").Return(true, nil)
@@ -124,10 +124,10 @@ func TestUpdateContributoor(t *testing.T) {
 		{
 			name:      "specific version - does not exist",
 			version:   "v999.0.0",
-			runMethod: sidecar.RunMethodDocker,
+			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&sidecar.Config{
-					RunMethod: sidecar.RunMethodDocker,
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 					Version:   "v1.0.0",
 				}).Times(1)
 				g.EXPECT().VersionExists("v999.0.0").Return(false, nil)
@@ -135,11 +135,11 @@ func TestUpdateContributoor(t *testing.T) {
 		},
 		{
 			name:          "binary - updates service successfully",
-			runMethod:     sidecar.RunMethodBinary,
+			runMethod:     config.RunMethod_RUN_METHOD_BINARY,
 			confirmPrompt: true,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&sidecar.Config{
-					RunMethod: sidecar.RunMethodBinary,
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
 					Version:   "v1.0.0",
 				}).Times(2)
 				g.EXPECT().GetLatestVersion().Return("v1.1.0", nil)
@@ -159,10 +159,10 @@ func TestUpdateContributoor(t *testing.T) {
 		},
 		{
 			name:      "binary - already at latest version",
-			runMethod: sidecar.RunMethodBinary,
+			runMethod: config.RunMethod_RUN_METHOD_BINARY,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&sidecar.Config{
-					RunMethod: sidecar.RunMethodBinary,
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
 					Version:   "v1.0.0",
 				}).Times(1)
 				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
@@ -170,11 +170,11 @@ func TestUpdateContributoor(t *testing.T) {
 		},
 		{
 			name:          "binary - update fails",
-			runMethod:     sidecar.RunMethodBinary,
+			runMethod:     config.RunMethod_RUN_METHOD_BINARY,
 			confirmPrompt: true,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&sidecar.Config{
-					RunMethod: sidecar.RunMethodBinary,
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
 					Version:   "v1.0.0",
 				}).Times(2)
 				g.EXPECT().GetLatestVersion().Return("v1.1.0", nil)

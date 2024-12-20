@@ -7,6 +7,7 @@ import (
 	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -81,7 +82,7 @@ func updateContributoor(
 
 	defer func() {
 		if !success {
-			if err := rollbackVersion(log, sidecarCfg, currentVersion); err != nil {
+			if err := rollbackVersion(sidecarCfg, currentVersion); err != nil {
 				log.Error(err)
 			}
 		}
@@ -125,20 +126,20 @@ func updateContributoor(
 	return nil
 }
 
-func updateSidecar(log *logrus.Logger, cfg *sidecar.Config, docker sidecar.DockerSidecar, systemd sidecar.SystemdSidecar, binary sidecar.BinarySidecar) (bool, error) {
+func updateSidecar(log *logrus.Logger, cfg *config.Config, docker sidecar.DockerSidecar, systemd sidecar.SystemdSidecar, binary sidecar.BinarySidecar) (bool, error) {
 	switch cfg.RunMethod {
-	case sidecar.RunMethodDocker:
+	case config.RunMethod_RUN_METHOD_DOCKER:
 		return updateDocker(log, cfg, docker)
-	case sidecar.RunMethodSystemd:
+	case config.RunMethod_RUN_METHOD_SYSTEMD:
 		return updateSystemd(log, cfg, systemd)
-	case sidecar.RunMethodBinary:
+	case config.RunMethod_RUN_METHOD_BINARY:
 		return updateBinary(log, cfg, binary)
 	default:
 		return false, fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
 	}
 }
 
-func updateSystemd(log *logrus.Logger, cfg *sidecar.Config, systemd sidecar.SystemdSidecar) (bool, error) {
+func updateSystemd(log *logrus.Logger, cfg *config.Config, systemd sidecar.SystemdSidecar) (bool, error) {
 	// Check if sidecar is currently running.
 	running, err := systemd.IsRunning()
 	if err != nil {
@@ -172,7 +173,7 @@ func updateSystemd(log *logrus.Logger, cfg *sidecar.Config, systemd sidecar.Syst
 	return true, nil
 }
 
-func updateBinary(log *logrus.Logger, cfg *sidecar.Config, binary sidecar.BinarySidecar) (bool, error) {
+func updateBinary(log *logrus.Logger, cfg *config.Config, binary sidecar.BinarySidecar) (bool, error) {
 	// Check if sidecar is currently running.
 	running, err := binary.IsRunning()
 	if err != nil {
@@ -214,7 +215,7 @@ func updateBinary(log *logrus.Logger, cfg *sidecar.Config, binary sidecar.Binary
 	return true, nil
 }
 
-func updateDocker(log *logrus.Logger, cfg *sidecar.Config, docker sidecar.DockerSidecar) (bool, error) {
+func updateDocker(log *logrus.Logger, cfg *config.Config, docker sidecar.DockerSidecar) (bool, error) {
 	if err := docker.Update(); err != nil {
 		log.Errorf("could not update service: %v", err)
 
@@ -288,28 +289,28 @@ func determineTargetVersion(c *cli.Context, github service.GitHubService) (strin
 	return version, nil
 }
 
-func updateConfigVersion(config sidecar.ConfigManager, version string) error {
-	if err := config.Update(func(cfg *sidecar.Config) {
+func updateConfigVersion(sidecarCfg sidecar.ConfigManager, version string) error {
+	if err := sidecarCfg.Update(func(cfg *config.Config) {
 		cfg.Version = version
 	}); err != nil {
 		return fmt.Errorf("failed to update sidecar config version: %w", err)
 	}
 
-	if err := config.Save(); err != nil {
+	if err := sidecarCfg.Save(); err != nil {
 		return fmt.Errorf("could not save updated sidecar config: %w", err)
 	}
 
 	return nil
 }
 
-func rollbackVersion(log *logrus.Logger, config sidecar.ConfigManager, version string) error {
-	if err := config.Update(func(cfg *sidecar.Config) {
+func rollbackVersion(sidecarCfg sidecar.ConfigManager, version string) error {
+	if err := sidecarCfg.Update(func(cfg *config.Config) {
 		cfg.Version = version
 	}); err != nil {
 		return fmt.Errorf("failed to roll back version in sidecar config: %w", err)
 	}
 
-	if err := config.Save(); err != nil {
+	if err := sidecarCfg.Save(); err != nil {
 		return fmt.Errorf("failed to save sidecar config after version rollback: %w", err)
 	}
 

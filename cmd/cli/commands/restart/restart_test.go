@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli"
@@ -19,8 +19,8 @@ func TestRestartContributoor(t *testing.T) {
 
 		// Create mock config with docker setup
 		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&sidecar.Config{
-			RunMethod: sidecar.RunMethodDocker,
+		mockConfig.EXPECT().Get().Return(&config.Config{
+			RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 		}).AnyTimes()
 
 		// Create mock docker sidecar that's running
@@ -47,8 +47,8 @@ func TestRestartContributoor(t *testing.T) {
 
 		// Create mock config with systemd setup
 		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&sidecar.Config{
-			RunMethod: sidecar.RunMethodSystemd,
+		mockConfig.EXPECT().Get().Return(&config.Config{
+			RunMethod: config.RunMethod_RUN_METHOD_SYSTEMD,
 		}).AnyTimes()
 
 		// Create mock systemd sidecar that's not running
@@ -73,8 +73,8 @@ func TestRestartContributoor(t *testing.T) {
 		defer ctrl.Finish()
 
 		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&sidecar.Config{
-			RunMethod: sidecar.RunMethodBinary,
+		mockConfig.EXPECT().Get().Return(&config.Config{
+			RunMethod: config.RunMethod_RUN_METHOD_BINARY,
 		}).AnyTimes()
 
 		// Create mock binary sidecar that fails to stop
@@ -100,8 +100,8 @@ func TestRestartContributoor(t *testing.T) {
 		defer ctrl.Finish()
 
 		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&sidecar.Config{
-			RunMethod: sidecar.RunMethodBinary,
+		mockConfig.EXPECT().Get().Return(&config.Config{
+			RunMethod: config.RunMethod_RUN_METHOD_BINARY,
 		}).AnyTimes()
 
 		// Create mock binary sidecar that fails to start
@@ -127,8 +127,8 @@ func TestRestartContributoor(t *testing.T) {
 		defer ctrl.Finish()
 
 		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&sidecar.Config{
-			RunMethod: "invalid",
+		mockConfig.EXPECT().Get().Return(&config.Config{
+			RunMethod: config.RunMethod_RUN_METHOD_UNSPECIFIED,
 		}).AnyTimes()
 
 		err := restartContributoor(

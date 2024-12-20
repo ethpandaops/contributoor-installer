@@ -1,13 +1,16 @@
 package sidecar
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 )
 
@@ -26,37 +29,20 @@ type ConfigManager interface {
 	Save() error
 
 	// Update modifies the configuration using the provided update function.
-	Update(updates func(*Config)) error
+	Update(updates func(*config.Config)) error
 
 	// Get returns the current configuration.
-	Get() *Config
+	Get() *config.Config
 
 	// GetConfigPath returns the path of the file config.
 	GetConfigPath() string
-}
-
-// Config is the configuration for the contributoor sidecar.
-type Config struct {
-	LogLevel              string              `yaml:"logLevel"`
-	Version               string              `yaml:"version"`
-	ContributoorDirectory string              `yaml:"contributoorDirectory"`
-	RunMethod             string              `yaml:"runMethod"`
-	NetworkName           string              `yaml:"networkName"`
-	BeaconNodeAddress     string              `yaml:"beaconNodeAddress"`
-	OutputServer          *OutputServerConfig `yaml:"outputServer,omitempty"`
-}
-
-// OutputServerConfig is the configuration for the output server.
-type OutputServerConfig struct {
-	Address     string `yaml:"address"`
-	Credentials string `yaml:"credentials,omitempty"`
 }
 
 // configService is a basic service for interacting with file configuration.
 type configService struct {
 	logger     *logrus.Logger
 	configPath string
-	config     *Config
+	config     *config.Config
 }
 
 // NewConfigService creates a new ConfigManager.
@@ -91,8 +77,20 @@ func NewConfigService(logger *logrus.Logger, configPath string) (ConfigManager, 
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
 
-	oldConfig := &Config{}
-	if err := yaml.Unmarshal(data, oldConfig); err != nil {
+	// First unmarshal YAML into a map
+	var yamlMap map[string]interface{}
+	if yerr := yaml.Unmarshal(data, &yamlMap); yerr != nil {
+		return nil, yerr
+	}
+
+	// Convert to JSON
+	jsonBytes, err := json.Marshal(yamlMap)
+	if err != nil {
+		return nil, err
+	}
+
+	oldConfig := &config.Config{}
+	if err := protojson.Unmarshal(jsonBytes, oldConfig); err != nil {
 		return nil, err
 	}
 
@@ -124,31 +122,35 @@ func NewConfigService(logger *logrus.Logger, configPath string) (ConfigManager, 
 	}, nil
 }
 
-func newDefaultConfig() *Config {
-	return &Config{
+func newDefaultConfig() *config.Config {
+	return &config.Config{
 		LogLevel:          logrus.InfoLevel.String(),
 		Version:           "latest",
-		RunMethod:         RunMethodDocker,
-		NetworkName:       "mainnet",
+		RunMethod:         config.RunMethod_RUN_METHOD_DOCKER,
+		NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
 		BeaconNodeAddress: "",
-		OutputServer:      &OutputServerConfig{},
+		OutputServer:      &config.OutputServer{},
 	}
 }
 
 // Update updates the file config with the given updates.
-func (s *configService) Update(updates func(*Config)) error {
-	// Apply updates to a copy
-	updatedConfig := *s.config
-	updates(&updatedConfig)
+func (s *configService) Update(updates func(*config.Config)) error {
+	// Clone the config.
+	updatedConfig, ok := proto.Clone(s.config).(*config.Config)
+	if !ok {
+		return fmt.Errorf("failed to clone config")
+	}
+
+	updates(updatedConfig)
 
 	// Validate the updated config
-	if err := s.validate(&updatedConfig); err != nil {
+	if err := s.validate(updatedConfig); err != nil {
 		return fmt.Errorf("invalid config: %w", err)
 	}
 
 	// Write to temporary file first
 	tmpPath := fmt.Sprintf("%s.tmp", s.configPath)
-	if err := writeConfig(tmpPath, &updatedConfig); err != nil {
+	if err := writeConfig(tmpPath, updatedConfig); err != nil {
 		os.Remove(tmpPath)
 
 		return err
@@ -162,13 +164,13 @@ func (s *configService) Update(updates func(*Config)) error {
 	}
 
 	// Update internal state
-	s.config = &updatedConfig
+	s.config = updatedConfig
 
 	return nil
 }
 
 // Get returns the current file config.
-func (s *configService) Get() *Config {
+func (s *configService) Get() *config.Config {
 	return s.config
 }
 
@@ -183,12 +185,27 @@ func (s *configService) Save() error {
 }
 
 // writeConfig writes the file config to the given path.
-func writeConfig(path string, cfg *Config) error {
+func writeConfig(path string, cfg *config.Config) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
-	data, err := yaml.Marshal(cfg)
+	// We wanna keep hold of the camelCase output in yaml.
+	jsonData, err := protojson.MarshalOptions{
+		UseProtoNames:   false, // This ensures we use camelCase.
+		EmitUnpopulated: false,
+	}.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("error marshaling config to json: %w", err)
+	}
+
+	// Now marshal to map for YAML.
+	var jsonMap map[string]interface{}
+	if jerr := json.Unmarshal(jsonData, &jsonMap); jerr != nil {
+		return fmt.Errorf("error unmarshaling json: %w", jerr)
+	}
+
+	data, err := yaml.Marshal(jsonMap)
 	if err != nil {
 		return fmt.Errorf("error marshaling config: %w", err)
 	}
@@ -201,7 +218,7 @@ func writeConfig(path string, cfg *Config) error {
 }
 
 // validate validates the config.
-func (s *configService) validate(cfg *Config) error {
+func (s *configService) validate(cfg *config.Config) error {
 	if cfg.Version == "" {
 		return fmt.Errorf("version is required")
 	}
@@ -210,14 +227,11 @@ func (s *configService) validate(cfg *Config) error {
 		return fmt.Errorf("contributoorDirectory is required")
 	}
 
-	switch cfg.RunMethod {
-	case RunMethodDocker, RunMethodSystemd, RunMethodBinary:
-		break
-	default:
+	if cfg.RunMethod == config.RunMethod_RUN_METHOD_UNSPECIFIED {
 		return fmt.Errorf("invalid runMethod: %s", cfg.RunMethod)
 	}
 
-	if cfg.NetworkName == "" {
+	if cfg.NetworkName == config.NetworkName_NETWORK_NAME_UNSPECIFIED {
 		return fmt.Errorf("networkName is required")
 	}
 
@@ -225,25 +239,16 @@ func (s *configService) validate(cfg *Config) error {
 }
 
 // mergeConfig merges old config values into new config.
-func mergeConfig(target, source *Config) error {
-	// Use reflection to copy non-zero values from old to new
-	newVal := reflect.ValueOf(target).Elem()
-	oldVal := reflect.ValueOf(source).Elem()
-
-	for i := 0; i < newVal.NumField(); i++ {
-		newField := newVal.Field(i)
-		oldField := oldVal.FieldByName(newVal.Type().Field(i).Name)
-
-		if oldField.IsValid() && !oldField.IsZero() {
-			newField.Set(oldField)
-		}
+func mergeConfig(target, source *config.Config) error {
+	if source != nil {
+		proto.Merge(target, source)
 	}
 
 	return nil
 }
 
 // migrateConfig handles version-specific migrations.
-func migrateConfig(target, source *Config) error {
+func migrateConfig(target, source *config.Config) error {
 	/*
 		switch source.Version {
 			case "0.0.1":

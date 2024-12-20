@@ -12,6 +12,7 @@ import (
 	"github.com/ethpandaops/contributoor-installer/internal/installer"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -47,10 +48,10 @@ func TestDockerService_Integration(t *testing.T) {
 		port   = 2375
 		tmpDir = t.TempDir()
 		logger = logrus.New()
-		cfg    = &sidecar.Config{
+		cfg    = &config.Config{
 			Version:               "latest",
 			ContributoorDirectory: tmpDir,
-			RunMethod:             sidecar.RunMethodDocker,
+			RunMethod:             config.RunMethod_RUN_METHOD_DOCKER,
 		}
 	)
 
