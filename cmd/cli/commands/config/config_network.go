@@ -89,8 +89,7 @@ func (p *NetworkConfigPage) initPage() {
 	// Add a save button and ensure we validate the input.
 	saveButton := tview.NewButton(tui.ButtonSaveSettings)
 	saveButton.SetSelectedFunc(func() {
-		beaconNodeAddress, _ := form.GetFormItem(1).(*tview.InputField)
-		validateAndUpdate(p, beaconNodeAddress)
+		validateAndUpdateNetwork(p)
 	})
 	saveButton.SetBackgroundColorActivated(tui.ColorButtonActivated)
 	saveButton.SetLabelColorActivated(tui.ColorButtonText)
@@ -169,21 +168,23 @@ func (p *NetworkConfigPage) initPage() {
 	p.content = mainFlex
 }
 
-func validateAndUpdate(p *NetworkConfigPage, input *tview.InputField) {
-	if err := validate.ValidateBeaconNodeAddress(input.GetText()); err != nil {
+func validateAndUpdateNetwork(p *NetworkConfigPage) {
+	if err := validate.ValidateBeaconNodeAddress(p.display.sidecarCfg.Get().BeaconNodeAddress); err != nil {
 		p.openErrorModal(err)
 
 		return
 	}
 
 	if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
-		cfg.BeaconNodeAddress = input.GetText()
+		cfg.NetworkName = p.display.sidecarCfg.Get().NetworkName
+		cfg.BeaconNodeAddress = p.display.sidecarCfg.Get().BeaconNodeAddress
 	}); err != nil {
 		p.openErrorModal(err)
 
 		return
 	}
 
+	p.display.markConfigChanged()
 	p.display.setPage(p.display.homePage)
 }
 

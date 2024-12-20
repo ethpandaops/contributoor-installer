@@ -325,6 +325,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 		return
 	}
 
+	p.display.markConfigChanged()
 	p.display.setPage(p.display.homePage)
 }
 

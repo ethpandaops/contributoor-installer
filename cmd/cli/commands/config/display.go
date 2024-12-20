@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/gdamore/tcell/v2"
@@ -24,6 +26,7 @@ type ConfigDisplay struct {
 	networkConfigPage      *NetworkConfigPage
 	outputServerConfigPage *OutputServerConfigPage
 	settingsPage           *ContributoorSettingsPage
+	hasChanges             bool
 }
 
 // NewConfigDisplay creates a new Configtui.
@@ -96,21 +99,7 @@ func (d *ConfigDisplay) setupGrid() {
 
 // setPage sets the current page and updates the frame.
 func (d *ConfigDisplay) setPage(page *tui.Page) {
-	d.frame.Clear()
-
-	frame := tui.CreatePageFrame(tui.PageFrameOptions{
-		Content:  d.pages,
-		Title:    page.Title,
-		HelpType: tui.HelpSettings,
-		OnEsc: func() {
-			if d.pages.HasPage("config-home") {
-				d.setPage(d.homePage)
-			}
-		},
-	})
-
-	d.frame = frame
-	d.app.SetRoot(frame, true)
+	d.app.SetRoot(d.frame, true)
 	d.pages.SwitchToPage(page.ID)
 }
 
@@ -200,6 +189,12 @@ func (d *ConfigDisplay) initPage() {
 	// Define the action for the close button.
 	closeButton.SetSelectedFunc(func() {
 		d.app.Stop()
+
+		if d.hasChanges {
+			fmt.Printf("%sConfiguration updated successfully%s\n", tui.TerminalColorGreen, tui.TerminalColorReset)
+			fmt.Printf("For these changes to take effect, you must restart the service:\n")
+			fmt.Printf("    contributoor restart\n")
+		}
 	})
 
 	// Layout everything in a flex container.
@@ -222,4 +217,9 @@ func (d *ConfigDisplay) initPage() {
 	flex.SetBackgroundColor(tui.ColorBackground)
 
 	d.content = flex
+}
+
+// markConfigChanged tracks that config has been modified.
+func (d *ConfigDisplay) markConfigChanged() {
+	d.hasChanges = true
 }

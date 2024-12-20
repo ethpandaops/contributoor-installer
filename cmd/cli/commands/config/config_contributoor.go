@@ -1,12 +1,21 @@
 package config
 
 import (
+	"runtime"
+
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 )
+
+// Available run modes.
+var runModes = []string{
+	sidecar.RunMethodDocker,
+	sidecar.RunMethodSystemd,
+	sidecar.RunMethodBinary,
+}
 
 // ContributoorSettingsPage is a page that allows the user to configure core contributoor settings.
 type ContributoorSettingsPage struct {
@@ -68,13 +77,6 @@ func (p *ContributoorSettingsPage) initPage() {
 		logrus.ErrorLevel.String(),
 	}
 
-	// Available run modes
-	runModes := []string{
-		sidecar.RunMethodDocker,
-		sidecar.RunMethodSystemd,
-		sidecar.RunMethodBinary,
-	}
-
 	// Find current log level index
 	currentLogLevel := p.display.sidecarCfg.Get().LogLevel
 	currentLogLevelIndex := 2 // Default to info
@@ -99,16 +101,27 @@ func (p *ContributoorSettingsPage) initPage() {
 		}
 	}
 
+	// Create display labels that show launchd on macOS
+	runModeLabels := make([]string, len(runModes))
+
+	for i, mode := range runModes {
+		if mode == sidecar.RunMethodSystemd {
+			runModeLabels[i] = getServiceManagerLabel()
+		} else {
+			runModeLabels[i] = mode
+		}
+	}
+
 	// Add our form fields.
 	form.AddDropDown("Log Level", logLevels, currentLogLevelIndex, func(option string, index int) {
 		p.description.SetText("Set the logging verbosity level. Debug and Trace provide more detailed output.")
 	})
 
-	form.AddDropDown("Run Mode", runModes, currentRunModeIndex, func(option string, index int) {
+	form.AddDropDown("Run Mode", runModeLabels, currentRunModeIndex, func(option string, index int) {
 		if option == sidecar.RunMethodDocker {
 			p.description.SetText("Run using Docker containers (recommended)")
-		} else if option == sidecar.RunMethodSystemd {
-			p.description.SetText("Run using systemd")
+		} else if runModes[index] == sidecar.RunMethodSystemd {
+			p.description.SetText(getServiceManagerDescription())
 		} else {
 			p.description.SetText("Run directly as a binary on your system")
 		}
@@ -198,7 +211,8 @@ func validateAndUpdateContributoor(p *ContributoorSettingsPage) {
 	runMode, _ := p.form.GetFormItem(1).(*tview.DropDown)
 
 	_, logLevelText := logLevel.GetCurrentOption()
-	_, runModeText := runMode.GetCurrentOption()
+	runModeIndex, _ := runMode.GetCurrentOption()
+	runModeText := runModes[runModeIndex]
 
 	if err := p.display.sidecarCfg.Update(func(cfg *sidecar.Config) {
 		cfg.LogLevel = logLevelText
@@ -209,6 +223,7 @@ func validateAndUpdateContributoor(p *ContributoorSettingsPage) {
 		return
 	}
 
+	p.display.markConfigChanged()
 	p.display.setPage(p.display.homePage)
 }
 
@@ -221,4 +236,22 @@ func (p *ContributoorSettingsPage) openErrorModal(err error) {
 			p.display.app.SetFocus(p.form)
 		},
 	), true)
+}
+
+// getServiceManagerLabel returns the appropriate label based on platform.
+func getServiceManagerLabel() string {
+	if runtime.GOOS == "darwin" {
+		return "launchd"
+	}
+
+	return "systemd"
+}
+
+// getServiceManagerDescription returns the appropriate description based on platform.
+func getServiceManagerDescription() string {
+	if runtime.GOOS == "darwin" {
+		return "Run using macOS launchd service manager"
+	}
+
+	return "Run using Linux systemd service manager"
 }
