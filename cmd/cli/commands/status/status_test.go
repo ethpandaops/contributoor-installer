@@ -140,16 +140,21 @@ func TestShowStatus(t *testing.T) {
 		mockConfig := mock.NewMockConfigManager(ctrl)
 		mockConfig.EXPECT().Get().Return(&config.Config{
 			RunMethod: config.RunMethod_RUN_METHOD_UNSPECIFIED,
-		})
+		}).AnyTimes()
+		mockConfig.EXPECT().GetConfigPath().Return("/path/to/config.yaml").AnyTimes()
+
+		// Create mock GitHub service
+		mockGithub := servicemock.NewMockGitHubService(ctrl)
+		mockGithub.EXPECT().GetLatestVersion().Return("1.0.0", nil)
 
 		err := showStatus(
 			cli.NewContext(nil, nil, nil),
 			logrus.New(),
 			mockConfig,
-			nil,
-			nil,
-			nil,
-			nil,
+			mock.NewMockDockerSidecar(ctrl),
+			mock.NewMockSystemdSidecar(ctrl),
+			mock.NewMockBinarySidecar(ctrl),
+			mockGithub,
 		)
 
 		assert.Error(t, err)

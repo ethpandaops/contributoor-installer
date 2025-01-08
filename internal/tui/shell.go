@@ -48,3 +48,15 @@ func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt s
 
 	return scanner.Text()
 }
+
+// UpgradeWarning prints a warning to the user that they are running an old version of contributoor.
+func UpgradeWarning(latestVersion string) {
+	fmt.Printf(
+		"%sYou are running an old version of contributoor; we suggest you to update it to the latest version, '%s%s%s'. You can manually upgrade by running 'contributoor update'.%s\n\n",
+		TerminalColorYellow,
+		TerminalColorLightBlue,
+		latestVersion,
+		TerminalColorYellow,
+		TerminalColorReset,
+	)
+}

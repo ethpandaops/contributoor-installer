@@ -6,7 +6,8 @@ import (
 	"testing"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
-	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
+	servicemock "github.com/ethpandaops/contributoor-installer/internal/service/mock"
+	sidecarmock "github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
 	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -22,17 +23,18 @@ func TestStartContributoor(t *testing.T) {
 	tests := []struct {
 		name          string
 		runMethod     config.RunMethod
-		setupMocks    func(*mock.MockConfigManager, *mock.MockDockerSidecar, *mock.MockBinarySidecar)
+		setupMocks    func(*sidecarmock.MockConfigManager, *sidecarmock.MockDockerSidecar, *sidecarmock.MockBinarySidecar, *servicemock.MockGitHubService)
 		expectedError string
 	}{
 		{
 			name:      "docker - starts service successfully",
 			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar) {
+			setupMocks: func(cfg *sidecarmock.MockConfigManager, d *sidecarmock.MockDockerSidecar, b *sidecarmock.MockBinarySidecar, gh *servicemock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 					Version:   "latest",
 				}).Times(1)
+				gh.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
 				d.EXPECT().IsRunning().Return(false, nil)
 				d.EXPECT().Start().Return(nil)
 			},
@@ -40,20 +42,24 @@ func TestStartContributoor(t *testing.T) {
 		{
 			name:      "docker - service already running",
 			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar) {
+			setupMocks: func(cfg *sidecarmock.MockConfigManager, d *sidecarmock.MockDockerSidecar, b *sidecarmock.MockBinarySidecar, gh *servicemock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
+					Version:   "latest",
 				}).Times(1)
+				gh.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
 				d.EXPECT().IsRunning().Return(true, nil)
 			},
 		},
 		{
 			name:      "docker - start fails",
 			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar) {
+			setupMocks: func(cfg *sidecarmock.MockConfigManager, d *sidecarmock.MockDockerSidecar, b *sidecarmock.MockBinarySidecar, gh *servicemock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
+					Version:   "latest",
 				}).Times(1)
+				gh.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
 				d.EXPECT().IsRunning().Return(false, nil)
 				d.EXPECT().Start().Return(errors.New("start failed"))
 			},
@@ -62,10 +68,12 @@ func TestStartContributoor(t *testing.T) {
 		{
 			name:      "binary - starts service successfully",
 			runMethod: config.RunMethod_RUN_METHOD_BINARY,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar) {
+			setupMocks: func(cfg *sidecarmock.MockConfigManager, d *sidecarmock.MockDockerSidecar, b *sidecarmock.MockBinarySidecar, gh *servicemock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
+					Version:   "latest",
 				}).Times(1)
+				gh.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
 				b.EXPECT().IsRunning().Return(false, nil)
 				b.EXPECT().Start().Return(nil)
 			},
@@ -73,20 +81,24 @@ func TestStartContributoor(t *testing.T) {
 		{
 			name:      "binary - service already running",
 			runMethod: config.RunMethod_RUN_METHOD_BINARY,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar) {
+			setupMocks: func(cfg *sidecarmock.MockConfigManager, d *sidecarmock.MockDockerSidecar, b *sidecarmock.MockBinarySidecar, gh *servicemock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
+					Version:   "latest",
 				}).Times(1)
+				gh.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
 				b.EXPECT().IsRunning().Return(true, nil)
 			},
 		},
 		{
 			name:      "invalid sidecar run method",
 			runMethod: config.RunMethod_RUN_METHOD_UNSPECIFIED,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar) {
+			setupMocks: func(cfg *sidecarmock.MockConfigManager, d *sidecarmock.MockDockerSidecar, b *sidecarmock.MockBinarySidecar, gh *servicemock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_UNSPECIFIED,
+					Version:   "latest",
 				}).Times(1)
+				gh.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
 			},
 			expectedError: "invalid sidecar run method",
 		},
@@ -94,21 +106,21 @@ func TestStartContributoor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockConfig := mock.NewMockConfigManager(ctrl)
-			mockDocker := mock.NewMockDockerSidecar(ctrl)
-			mockBinary := mock.NewMockBinarySidecar(ctrl)
-			mockSystemd := mock.NewMockSystemdSidecar(ctrl)
+			mockConfig := sidecarmock.NewMockConfigManager(ctrl)
+			mockDocker := sidecarmock.NewMockDockerSidecar(ctrl)
+			mockBinary := sidecarmock.NewMockBinarySidecar(ctrl)
+			mockSystemd := sidecarmock.NewMockSystemdSidecar(ctrl)
+			mockGitHub := servicemock.NewMockGitHubService(ctrl)
 
-			tt.setupMocks(mockConfig, mockDocker, mockBinary)
+			tt.setupMocks(mockConfig, mockDocker, mockBinary, mockGitHub)
 
 			app := cli.NewApp()
 			ctx := cli.NewContext(app, nil, nil)
 
-			err := startContributoor(ctx, logrus.New(), mockConfig, mockDocker, mockSystemd, mockBinary)
+			err := startContributoor(ctx, logrus.New(), mockConfig, mockDocker, mockSystemd, mockBinary, mockGitHub)
 
 			if tt.expectedError != "" {
 				assert.ErrorContains(t, err, tt.expectedError)
-
 				return
 			}
 

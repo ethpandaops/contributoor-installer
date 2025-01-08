@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
+	"github.com/ethpandaops/contributoor-installer/internal/service"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/ethpandaops/contributoor/pkg/config/v1"
@@ -43,7 +44,12 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 				return fmt.Errorf("error creating binary sidecar service: %w", err)
 			}
 
-			return restartContributoor(c, log, sidecarCfg, dockerSidecar, systemdSidecar, binarySidecar)
+			githubService, err := service.NewGitHubService(log, installerCfg)
+			if err != nil {
+				return fmt.Errorf("error creating github service: %w", err)
+			}
+
+			return restartContributoor(c, log, sidecarCfg, dockerSidecar, systemdSidecar, binarySidecar, githubService)
 		},
 	})
 }
@@ -55,11 +61,17 @@ func restartContributoor(
 	docker sidecar.DockerSidecar,
 	systemd sidecar.SystemdSidecar,
 	binary sidecar.BinarySidecar,
+	github service.GitHubService,
 ) error {
 	var (
 		runner sidecar.SidecarRunner
 		cfg    = sidecarCfg.Get()
 	)
+
+	latestVersion, err := github.GetLatestVersion()
+	if err == nil && cfg.Version != latestVersion {
+		tui.UpgradeWarning(latestVersion)
+	}
 
 	fmt.Printf("%sRestarting Contributoor%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
 

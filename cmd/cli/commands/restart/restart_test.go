@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	servicemock "github.com/ethpandaops/contributoor-installer/internal/service/mock"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
 	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
@@ -29,6 +30,10 @@ func TestRestartContributoor(t *testing.T) {
 		mockDocker.EXPECT().Stop().Return(nil)
 		mockDocker.EXPECT().Start().Return(nil)
 
+		// Create mock GitHub service
+		mockGitHub := servicemock.NewMockGitHubService(ctrl)
+		mockGitHub.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+
 		err := restartContributoor(
 			cli.NewContext(nil, nil, nil),
 			logrus.New(),
@@ -36,6 +41,7 @@ func TestRestartContributoor(t *testing.T) {
 			mockDocker,
 			mock.NewMockSystemdSidecar(ctrl),
 			mock.NewMockBinarySidecar(ctrl),
+			mockGitHub,
 		)
 
 		assert.NoError(t, err)
@@ -56,6 +62,10 @@ func TestRestartContributoor(t *testing.T) {
 		mockSystemd.EXPECT().IsRunning().Return(false, nil)
 		mockSystemd.EXPECT().Start().Return(nil)
 
+		// Create mock GitHub service
+		mockGitHub := servicemock.NewMockGitHubService(ctrl)
+		mockGitHub.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+
 		err := restartContributoor(
 			cli.NewContext(nil, nil, nil),
 			logrus.New(),
@@ -63,6 +73,7 @@ func TestRestartContributoor(t *testing.T) {
 			mock.NewMockDockerSidecar(ctrl),
 			mockSystemd,
 			mock.NewMockBinarySidecar(ctrl),
+			mockGitHub,
 		)
 
 		assert.NoError(t, err)
@@ -82,6 +93,10 @@ func TestRestartContributoor(t *testing.T) {
 		mockBinary.EXPECT().IsRunning().Return(true, nil)
 		mockBinary.EXPECT().Stop().Return(errors.New("test error"))
 
+		// Create mock GitHub service
+		mockGitHub := servicemock.NewMockGitHubService(ctrl)
+		mockGitHub.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+
 		err := restartContributoor(
 			cli.NewContext(nil, nil, nil),
 			logrus.New(),
@@ -89,6 +104,7 @@ func TestRestartContributoor(t *testing.T) {
 			mock.NewMockDockerSidecar(ctrl),
 			mock.NewMockSystemdSidecar(ctrl),
 			mockBinary,
+			mockGitHub,
 		)
 
 		assert.Error(t, err)
@@ -109,6 +125,10 @@ func TestRestartContributoor(t *testing.T) {
 		mockBinary.EXPECT().IsRunning().Return(false, nil)
 		mockBinary.EXPECT().Start().Return(errors.New("test error"))
 
+		// Create mock GitHub service
+		mockGitHub := servicemock.NewMockGitHubService(ctrl)
+		mockGitHub.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+
 		err := restartContributoor(
 			cli.NewContext(nil, nil, nil),
 			logrus.New(),
@@ -116,6 +136,7 @@ func TestRestartContributoor(t *testing.T) {
 			mock.NewMockDockerSidecar(ctrl),
 			mock.NewMockSystemdSidecar(ctrl),
 			mockBinary,
+			mockGitHub,
 		)
 
 		assert.Error(t, err)
@@ -131,6 +152,10 @@ func TestRestartContributoor(t *testing.T) {
 			RunMethod: config.RunMethod_RUN_METHOD_UNSPECIFIED,
 		}).AnyTimes()
 
+		// Create mock GitHub service
+		mockGitHub := servicemock.NewMockGitHubService(ctrl)
+		mockGitHub.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+
 		err := restartContributoor(
 			cli.NewContext(nil, nil, nil),
 			logrus.New(),
@@ -138,9 +163,42 @@ func TestRestartContributoor(t *testing.T) {
 			mock.NewMockDockerSidecar(ctrl),
 			mock.NewMockSystemdSidecar(ctrl),
 			mock.NewMockBinarySidecar(ctrl),
+			mockGitHub,
 		)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid sidecar run method")
+	})
+
+	t.Run("handles github error gracefully", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockConfig := mock.NewMockConfigManager(ctrl)
+		mockConfig.EXPECT().Get().Return(&config.Config{
+			RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
+		}).AnyTimes()
+
+		mockDocker := mock.NewMockDockerSidecar(ctrl)
+		mockDocker.EXPECT().IsRunning().Return(true, nil)
+		mockDocker.EXPECT().Stop().Return(nil)
+		mockDocker.EXPECT().Start().Return(nil)
+
+		// Create mock GitHub service that returns an error
+		mockGitHub := servicemock.NewMockGitHubService(ctrl)
+		mockGitHub.EXPECT().GetLatestVersion().Return("", errors.New("github error"))
+
+		err := restartContributoor(
+			cli.NewContext(nil, nil, nil),
+			logrus.New(),
+			mockConfig,
+			mockDocker,
+			mock.NewMockSystemdSidecar(ctrl),
+			mock.NewMockBinarySidecar(ctrl),
+			mockGitHub,
+		)
+
+		// The restart should still succeed even if GitHub check fails
+		assert.NoError(t, err)
 	})
 }
