@@ -20,14 +20,8 @@ jobs:
       - name: Set up Go
         uses: ./.github/workflows/go-setup
 
-      - name: Debug Info
-        run: |
-          go version
-          go env
-          pwd
-          ls -la
       - name: Run Tests
-        run: go test -v ./... 2>&1 
+        run: go test -v -race -json ./... > test.json
 
       - name: Upload test results
         if: always()
