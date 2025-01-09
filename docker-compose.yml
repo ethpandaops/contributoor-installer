@@ -3,9 +3,23 @@ version: "3.8"
 services:
   sentry:
     image: ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}
-    command: ["sentry", "--config", "/config/config.yaml"]
+    entrypoint: ["/usr/local/bin/sentry"]
+    command: ["--config=/config/config.yaml"]
+    networks:
+      - contributoor
+    ports:
+      - "${CONTRIBUTOOR_METRICS_ADDRESS}:${CONTRIBUTOOR_METRICS_PORT}:${CONTRIBUTOOR_METRICS_PORT}"
+      - "${CONTRIBUTOOR_PPROF_ADDRESS}:${CONTRIBUTOOR_PPROF_PORT}:${CONTRIBUTOOR_PPROF_PORT}"
+    extra_hosts:
+      - "127.0.0.1:host-gateway"
+      - "localhost:host-gateway"
     volumes:
-      - ${CONTRIBUTOOR_CONFIG_PATH}/config.yaml:/config/config.yaml:ro
-    environment:
-      - CONTRIBUTOOR_CONFIG=/config/config.yaml
+      - type: bind
+        source: "${CONTRIBUTOOR_CONFIG_PATH}/config.yaml"
+        target: "/config/config.yaml"
+        read_only: true
     restart: always
+
+networks:
+  contributoor:
+    driver: bridge

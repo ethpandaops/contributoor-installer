@@ -127,10 +127,30 @@ func (s *dockerSidecar) Update() error {
 func (s *dockerSidecar) getComposeEnv() []string {
 	cfg := s.sidecarCfg.Get()
 
-	return append(os.Environ(),
+	env := append(
+		os.Environ(),
 		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", filepath.Dir(s.configPath)),
 		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", cfg.Version),
 	)
+
+	// Handle metrics address (always added).
+	metricsHost, metricsPort := cfg.GetMetricsHostPort()
+	env = append(
+		env,
+		fmt.Sprintf("CONTRIBUTOOR_METRICS_ADDRESS=%s", metricsHost),
+		fmt.Sprintf("CONTRIBUTOOR_METRICS_PORT=%s", metricsPort),
+	)
+
+	// Handle pprof address (only added if set).
+	if pprofHost, pprofPort := cfg.GetPprofHostPort(); pprofHost != "" {
+		env = append(
+			env,
+			fmt.Sprintf("CONTRIBUTOOR_PPROF_ADDRESS=%s", pprofHost),
+			fmt.Sprintf("CONTRIBUTOOR_PPROF_PORT=%s", pprofPort),
+		)
+	}
+
+	return env
 }
 
 func findComposeFile() (string, error) {
