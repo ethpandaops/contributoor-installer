@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   sentry:
     image: ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}
@@ -9,7 +7,6 @@ services:
       - contributoor
     ports:
       - "${CONTRIBUTOOR_METRICS_ADDRESS}:${CONTRIBUTOOR_METRICS_PORT}:${CONTRIBUTOOR_METRICS_PORT}"
-      - "${CONTRIBUTOOR_PPROF_ADDRESS}:${CONTRIBUTOOR_PPROF_PORT}:${CONTRIBUTOOR_PPROF_PORT}"
     extra_hosts:
       - "127.0.0.1:host-gateway"
       - "localhost:host-gateway"
