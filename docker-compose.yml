@@ -11,10 +11,7 @@ services:
       - "127.0.0.1:host-gateway"
       - "localhost:host-gateway"
     volumes:
-      - type: bind
-        source: "${CONTRIBUTOOR_CONFIG_PATH}/config.yaml"
-        target: "/config/config.yaml"
-        read_only: true
+      - ${CONTRIBUTOOR_CONFIG_PATH}/config.yaml:/config/config.yaml:ro
     restart: always
 
 networks:
