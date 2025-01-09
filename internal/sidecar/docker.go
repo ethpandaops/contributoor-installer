@@ -14,12 +14,6 @@ import (
 
 //go:generate mockgen -package mock -destination mock/docker.mock.go github.com/ethpandaops/contributoor-installer/internal/sidecar DockerSidecar
 
-var localHostnames = map[string]bool{
-	"localhost": true,
-	"127.0.0.1": true,
-	"0.0.0.0":   true,
-}
-
 type DockerSidecar interface {
 	SidecarRunner
 }
@@ -130,31 +124,6 @@ func (s *dockerSidecar) Update() error {
 	return nil
 }
 
-// IsLocalURL checks if the given URL is pointing to a local address.
-func IsLocalURL(url string) bool {
-	for hostname := range localHostnames {
-		if strings.Contains(url, hostname) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// RewriteBeaconURL rewrites local URLs to use host.docker.internal.
-func RewriteBeaconURL(url string) string {
-	if !IsLocalURL(url) {
-		return url
-	}
-
-	// Replace all local hostnames with host.docker.internal.
-	for hostname := range localHostnames {
-		url = strings.Replace(url, hostname, "host.docker.internal", 1)
-	}
-
-	return url
-}
-
 // findComposeFile finds the docker-compose file based on the OS.
 func findComposeFile() (string, error) {
 	// Get binary directory
@@ -217,15 +186,6 @@ func validateComposePath(path string) error {
 
 func (s *dockerSidecar) getComposeEnv() []string {
 	cfg := s.sidecarCfg.Get()
-
-	// Docker containers can't directly access the host via localhost/127.0.0.1.
-	// We rewrite these to host.docker.internal which resolves differently per platform:
-	// - macOS: Built-in DNS name that points to the Docker Desktop VM's gateway
-	// - Linux: Maps to host-gateway via extra_hosts in docker-compose.yml
-	// This provides a consistent way to access the host machine across platforms.
-	if cfg.BeaconNodeAddress != "" {
-		cfg.BeaconNodeAddress = RewriteBeaconURL(cfg.BeaconNodeAddress)
-	}
 
 	env := append(
 		os.Environ(),
