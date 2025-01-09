@@ -1,6 +1,6 @@
-# Contributoor - Installation
+# contributoor-installer
 
-This repository contains the installer for the [Contributoor](https://github.com/ethpandaops/contributoor) service, which collects data from Ethereum consensus clients.
+This repository contains the installer for the [contributoor](https://github.com/ethpandaops/contributoor) service, which collects data from Ethereum consensus clients.
 
 ## Getting Started
 
