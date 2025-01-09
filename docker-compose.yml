@@ -8,8 +8,7 @@ services:
     ports:
       - "${CONTRIBUTOOR_METRICS_ADDRESS}:${CONTRIBUTOOR_METRICS_PORT}:${CONTRIBUTOOR_METRICS_PORT}"
     extra_hosts:
-      - "127.0.0.1:host-gateway"
-      - "localhost:host-gateway"
+      - "host.docker.internal:host-gateway"
     volumes:
       - ${CONTRIBUTOOR_CONFIG_PATH}/config.yaml:/config/config.yaml:ro
     restart: always

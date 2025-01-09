@@ -152,3 +152,95 @@ func TestDockerService_Integration(t *testing.T) {
 		require.False(t, running)
 	})
 }
+
+func TestIsLocalURL(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+		want bool
+	}{
+		{
+			name: "localhost",
+			url:  "http://localhost:5052",
+			want: true,
+		},
+		{
+			name: "127.0.0.1",
+			url:  "http://127.0.0.1:5052",
+			want: true,
+		},
+		{
+			name: "0.0.0.0",
+			url:  "http://0.0.0.0:5052",
+			want: true,
+		},
+		{
+			name: "remote url",
+			url:  "http://example.com:5052",
+			want: false,
+		},
+		{
+			name: "empty url",
+			url:  "",
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sidecar.IsLocalURL(tt.url)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestRewriteBeaconURL(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+		want string
+	}{
+		{
+			name: "localhost",
+			url:  "http://localhost:5052",
+			want: "http://host.docker.internal:5052",
+		},
+		{
+			name: "127.0.0.1",
+			url:  "http://127.0.0.1:5052",
+			want: "http://host.docker.internal:5052",
+		},
+		{
+			name: "0.0.0.0",
+			url:  "http://0.0.0.0:5052",
+			want: "http://host.docker.internal:5052",
+		},
+		{
+			name: "remote url",
+			url:  "http://example.com:5052",
+			want: "http://example.com:5052",
+		},
+		{
+			name: "localhost with path",
+			url:  "http://localhost:5052/eth/v1/node/syncing",
+			want: "http://host.docker.internal:5052/eth/v1/node/syncing",
+		},
+		{
+			name: "localhost with protocol and path",
+			url:  "https://localhost:5052/eth/v1/node/syncing",
+			want: "https://host.docker.internal:5052/eth/v1/node/syncing",
+		},
+		{
+			name: "empty url",
+			url:  "",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sidecar.RewriteBeaconURL(tt.url)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}

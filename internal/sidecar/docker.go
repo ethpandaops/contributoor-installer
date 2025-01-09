@@ -14,6 +14,12 @@ import (
 
 //go:generate mockgen -package mock -destination mock/docker.mock.go github.com/ethpandaops/contributoor-installer/internal/sidecar DockerSidecar
 
+var localHostnames = map[string]bool{
+	"localhost": true,
+	"127.0.0.1": true,
+	"0.0.0.0":   true,
+}
+
 type DockerSidecar interface {
 	SidecarRunner
 }
@@ -124,35 +130,32 @@ func (s *dockerSidecar) Update() error {
 	return nil
 }
 
-func (s *dockerSidecar) getComposeEnv() []string {
-	cfg := s.sidecarCfg.Get()
-
-	env := append(
-		os.Environ(),
-		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", filepath.Dir(s.configPath)),
-		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", cfg.Version),
-	)
-
-	// Handle metrics address (always added).
-	metricsHost, metricsPort := cfg.GetMetricsHostPort()
-	env = append(
-		env,
-		fmt.Sprintf("CONTRIBUTOOR_METRICS_ADDRESS=%s", metricsHost),
-		fmt.Sprintf("CONTRIBUTOOR_METRICS_PORT=%s", metricsPort),
-	)
-
-	// Handle pprof address (only added if set).
-	if pprofHost, pprofPort := cfg.GetPprofHostPort(); pprofHost != "" {
-		env = append(
-			env,
-			fmt.Sprintf("CONTRIBUTOOR_PPROF_ADDRESS=%s", pprofHost),
-			fmt.Sprintf("CONTRIBUTOOR_PPROF_PORT=%s", pprofPort),
-		)
+// IsLocalURL checks if the given URL is pointing to a local address.
+func IsLocalURL(url string) bool {
+	for hostname := range localHostnames {
+		if strings.Contains(url, hostname) {
+			return true
+		}
 	}
 
-	return env
+	return false
 }
 
+// RewriteBeaconURL rewrites local URLs to use host.docker.internal.
+func RewriteBeaconURL(url string) string {
+	if !IsLocalURL(url) {
+		return url
+	}
+
+	// Replace all local hostnames with host.docker.internal.
+	for hostname := range localHostnames {
+		url = strings.Replace(url, hostname, "host.docker.internal", 1)
+	}
+
+	return url
+}
+
+// findComposeFile finds the docker-compose file based on the OS.
 func findComposeFile() (string, error) {
 	// Get binary directory
 	ex, err := os.Executable()
@@ -162,16 +165,15 @@ func findComposeFile() (string, error) {
 
 	binDir := filepath.Dir(ex)
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("could not get working directory: %w", err)
+	}
+
 	// Check release mode (next to binary)
 	composePath := filepath.Join(binDir, "docker-compose.yml")
 	if _, e := os.Stat(composePath); e == nil {
 		return composePath, nil
-	}
-
-	// Check dev mode paths
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("could not get working directory: %w", err)
 	}
 
 	// Try current directory
@@ -211,4 +213,42 @@ func validateComposePath(path string) error {
 	}
 
 	return nil
+}
+
+func (s *dockerSidecar) getComposeEnv() []string {
+	cfg := s.sidecarCfg.Get()
+
+	// Docker containers can't directly access the host via localhost/127.0.0.1.
+	// We rewrite these to host.docker.internal which resolves differently per platform:
+	// - macOS: Built-in DNS name that points to the Docker Desktop VM's gateway
+	// - Linux: Maps to host-gateway via extra_hosts in docker-compose.yml
+	// This provides a consistent way to access the host machine across platforms.
+	if cfg.BeaconNodeAddress != "" {
+		cfg.BeaconNodeAddress = RewriteBeaconURL(cfg.BeaconNodeAddress)
+	}
+
+	env := append(
+		os.Environ(),
+		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", filepath.Dir(s.configPath)),
+		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", cfg.Version),
+	)
+
+	// Handle metrics address (always added).
+	metricsHost, metricsPort := cfg.GetMetricsHostPort()
+	env = append(
+		env,
+		fmt.Sprintf("CONTRIBUTOOR_METRICS_ADDRESS=%s", metricsHost),
+		fmt.Sprintf("CONTRIBUTOOR_METRICS_PORT=%s", metricsPort),
+	)
+
+	// Handle pprof address (only added if set).
+	if pprofHost, pprofPort := cfg.GetPprofHostPort(); pprofHost != "" {
+		env = append(
+			env,
+			fmt.Sprintf("CONTRIBUTOOR_PPROF_ADDRESS=%s", pprofHost),
+			fmt.Sprintf("CONTRIBUTOOR_PPROF_PORT=%s", pprofPort),
+		)
+	}
+
+	return env
 }
