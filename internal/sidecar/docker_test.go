@@ -106,6 +106,11 @@ func TestDockerService_Integration(t *testing.T) {
 	// Write out dummy compose file.
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.yml"), []byte(composeFile), 0644))
 
+	// Change working directory to our test directory so findComposeFile finds our test file.
+	require.NoError(t, os.Chdir(tmpDir))
+
+	t.Setenv("CONTRIBUTOOR_CONFIG_PATH", tmpDir)
+
 	// Run our tests in a real container.
 	t.Run("lifecycle", func(t *testing.T) {
 		// Ensure Start() executes as expected.
