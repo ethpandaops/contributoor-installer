@@ -314,10 +314,15 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 	// Update config with validated values.
 	if err := p.display.sidecarCfg.Update(func(cfg *config.Config) {
 		cfg.OutputServer.Address = serverAddress
+
 		if username != "" && password != "" {
 			cfg.OutputServer.Credentials = validate.EncodeCredentials(username, password)
 		} else {
 			cfg.OutputServer.Credentials = ""
+		}
+
+		if validate.IsEthPandaOpsServer(serverAddress) {
+			cfg.OutputServer.Tls = true
 		}
 	}); err != nil {
 		p.openErrorModal(err)
