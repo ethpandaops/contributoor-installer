@@ -33,7 +33,7 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 
 			sidecarCfg, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
 			if err != nil {
-				return fmt.Errorf("error loading config: %w", err)
+				return fmt.Errorf("%s%v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 			}
 
 			dockerSidecar, err := sidecar.NewDockerSidecar(log, sidecarCfg, installerCfg)
