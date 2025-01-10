@@ -68,7 +68,7 @@ func NewConfigService(logger *logrus.Logger, configPath string) (ConfigManager, 
 
 	// Check if config exists
 	if _, serr := os.Stat(fullConfigPath); os.IsNotExist(serr) {
-		return nil, fmt.Errorf("config file not found at [%s]. Please run 'install.sh' first", fullConfigPath)
+		return nil, wrapMissingConfigError(fmt.Errorf("config file not found at [%s]", fullConfigPath))
 	}
 
 	// Load existing config
@@ -80,18 +80,18 @@ func NewConfigService(logger *logrus.Logger, configPath string) (ConfigManager, 
 	// First unmarshal YAML into a map
 	var yamlMap map[string]interface{}
 	if yerr := yaml.Unmarshal(data, &yamlMap); yerr != nil {
-		return nil, yerr
+		return nil, wrapInvalidConfigError(yerr)
 	}
 
 	// Convert to JSON
 	jsonBytes, err := json.Marshal(yamlMap)
 	if err != nil {
-		return nil, err
+		return nil, wrapInvalidConfigError(err)
 	}
 
 	oldConfig := &config.Config{}
 	if err := protojson.Unmarshal(jsonBytes, oldConfig); err != nil {
-		return nil, err
+		return nil, wrapInvalidConfigError(err)
 	}
 
 	// Get default config with latest schema
@@ -261,4 +261,25 @@ func migrateConfig(target, source *config.Config) error {
 		}
 	*/
 	return nil
+}
+
+// wrapInvalidConfigError wraps an error with a user-friendly message.
+func wrapInvalidConfigError(err error) error {
+	return fmt.Errorf("configuration error:\n\n"+
+		"Your config.yaml file appears to be invalid. Please check:\n"+
+		"1. All fields are correctly spelled\n"+
+		"2. No unknown fields are present\n"+
+		"3. All required fields are set\n\n"+
+		"If the problem persists, try removing your config.yaml and re-running install.sh\n\n"+
+		"For detailed configuration help, visit: https://github.com/ethpandaops/contributoor#configuration\n\n"+
+		"Debug details: %w",
+		err)
+}
+
+// wrapMissingConfigError wraps an error with a user-friendly message.
+func wrapMissingConfigError(err error) error {
+	return fmt.Errorf("configuration error:\n\n"+
+		"Your config.yaml file does not exist. Please run 'contributoor install' first.\n\n"+
+		"Debug details: %w",
+		err)
 }

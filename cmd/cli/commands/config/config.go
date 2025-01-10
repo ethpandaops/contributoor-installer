@@ -21,7 +21,7 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 
 			sidecarCfg, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
 			if err != nil {
-				return fmt.Errorf("%serror loading config: %v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
+				return fmt.Errorf("%s%v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 			}
 
 			return configureContributoor(c, log, sidecarCfg)

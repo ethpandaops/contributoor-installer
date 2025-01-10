@@ -146,7 +146,7 @@ func TestRegisterCommands(t *testing.T) {
 		{
 			name:          "fails when config service fails",
 			configPath:    "/invalid/path/that/doesnt/exist",
-			expectedError: "error loading config",
+			expectedError: "directory [/invalid/path/that/doesnt/exist] does not exist",
 		},
 	}
 
