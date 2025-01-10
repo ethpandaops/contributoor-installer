@@ -30,7 +30,7 @@ func NewOutputServerCredentialsPage(display *InstallDisplay) *OutputServerCreden
 
 	credentialsPage.initPage()
 	credentialsPage.page = tui.NewPage(
-		display.outputPage.GetPage(),
+		display.beaconPage.GetPage(),
 		"install-credentials",
 		"Output Server Credentials",
 		"Configure your output server authentication",
@@ -107,7 +107,7 @@ func (p *OutputServerCredentialsPage) initPage() {
 
 	// Create text view.
 	textView := tview.NewTextView()
-	textView.SetText("Please enter your output server credentials")
+	textView.SetText("Please enter your output server credentials\nThese would have been provided to you by the ethPandaOps team")
 	textView.SetTextAlign(tview.AlignCenter)
 	textView.SetWordWrap(true)
 	textView.SetTextColor(tview.Styles.PrimaryTextColor)

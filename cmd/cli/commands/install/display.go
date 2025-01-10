@@ -11,15 +11,16 @@ import (
 
 // InstallDisplay is the display for the install wizard.
 type InstallDisplay struct {
-	app                         *tview.Application
-	pages                       *tview.Pages
-	frame                       *tview.Frame
-	log                         *logrus.Logger
-	sidecarCfg                  sidecar.ConfigManager
-	installPages                []tui.PageInterface
-	welcomePage                 *WelcomePage
-	networkConfigPage           *NetworkConfigPage
-	beaconPage                  *BeaconNodePage
+	app               *tview.Application
+	pages             *tview.Pages
+	frame             *tview.Frame
+	log               *logrus.Logger
+	sidecarCfg        sidecar.ConfigManager
+	installPages      []tui.PageInterface
+	welcomePage       *WelcomePage
+	networkConfigPage *NetworkConfigPage
+	beaconPage        *BeaconNodePage
+	//nolint:unused // Disabled for now.
 	outputPage                  *OutputServerPage
 	outputServerCredentialsPage *OutputServerCredentialsPage
 	finishedPage                *FinishedPage
@@ -38,14 +39,12 @@ func NewInstallDisplay(log *logrus.Logger, app *tview.Application, sidecarCfg si
 	display.welcomePage = NewWelcomePage(display)
 	display.networkConfigPage = NewNetworkConfigPage(display)
 	display.beaconPage = NewBeaconNodePage(display)
-	display.outputPage = NewOutputServerPage(display)
 	display.outputServerCredentialsPage = NewOutputServerCredentialsPage(display)
 	display.finishedPage = NewFinishedPage(display)
 	display.installPages = []tui.PageInterface{
 		display.welcomePage,
 		display.networkConfigPage,
 		display.beaconPage,
-		display.outputPage,
 		display.outputServerCredentialsPage,
 		display.finishedPage,
 	}
@@ -91,8 +90,7 @@ func (d *InstallDisplay) getCurrentStep() int {
 		"install-welcome":     1,
 		"install-network":     2,
 		"install-beacon":      3,
-		"install-output":      4,
-		"install-credentials": 5,
+		"install-credentials": 4,
 	}
 
 	currentPage, _ := d.pages.GetFrontPage()

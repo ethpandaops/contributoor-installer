@@ -47,16 +47,22 @@ type OutputServerOption struct {
 	Description string
 }
 
+// OutputServerProduction is the production output server.
+const OutputServerProduction = "xatu.primary.production.platform.ethpandaops.io:443"
+
+// OutputServerStaging is the staging output server.
+const OutputServerStaging = "xatu.primary.staging.platform.ethpandaops.io:443"
+
 // AvailableOutputServers is a list of available output servers.
 var AvailableOutputServers = []OutputServerOption{
 	{
 		Label:       "ethPandaOps Production",
-		Value:       "xatu.primary.production.platform.ethpandaops.io:443",
+		Value:       OutputServerProduction,
 		Description: "The production server provided by ethPandaOps.",
 	},
 	{
 		Label:       "ethPandaOps Staging",
-		Value:       "xatu.primary.staging.platform.ethpandaops.io:443",
+		Value:       OutputServerStaging,
 		Description: "The staging server provided by ethPandaOps.",
 	},
 	{

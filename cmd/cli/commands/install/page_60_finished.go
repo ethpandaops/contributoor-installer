@@ -42,7 +42,7 @@ func (p *FinishedPage) initPage() {
 	var (
 		modalWidth = 70
 		lines      = tview.WordWrap("Nice work, you're all done! Contributoor has been configured successfully.", modalWidth-4)
-		height     = len(lines) + 4
+		height     = len(lines) + 3
 	)
 
 	// We need a form to house our input fields.

@@ -141,7 +141,7 @@ func validateAndUpdate(p *BeaconNodePage, input *tview.InputField) {
 		return
 	}
 
-	p.display.setPage(p.display.outputPage.GetPage())
+	p.display.setPage(p.display.outputServerCredentialsPage.GetPage())
 }
 
 func (p *BeaconNodePage) openErrorModal(err error) {

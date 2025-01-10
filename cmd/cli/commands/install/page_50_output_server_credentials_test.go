@@ -28,8 +28,8 @@ func TestOutputServerCredentialsPage(t *testing.T) {
 			app:        tview.NewApplication(),
 			log:        logrus.New(),
 			sidecarCfg: mockConfig,
-			outputPage: &OutputServerPage{
-				page: &tui.Page{ID: "output-server"},
+			beaconPage: &BeaconNodePage{
+				page: &tui.Page{ID: "beacon-node"},
 			},
 		}
 	}
@@ -70,7 +70,7 @@ func TestOutputServerCredentialsPage(t *testing.T) {
 		page := NewOutputServerCredentialsPage(mockDisplay)
 
 		// Verify parent page is set correctly.
-		assert.Equal(t, "output-server", page.page.Parent.ID)
+		assert.Equal(t, "beacon-node", page.page.Parent.ID)
 	})
 
 	t.Run("loads existing credentials", func(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
@@ -129,7 +130,10 @@ func newDefaultConfig() *config.Config {
 		RunMethod:         config.RunMethod_RUN_METHOD_DOCKER,
 		NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
 		BeaconNodeAddress: "",
-		OutputServer:      &config.OutputServer{},
+		OutputServer: &config.OutputServer{
+			Address: tui.OutputServerProduction,
+			Tls:     true,
+		},
 	}
 }
 

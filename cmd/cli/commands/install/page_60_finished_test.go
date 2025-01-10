@@ -28,8 +28,8 @@ func TestFinishedPage(t *testing.T) {
 		}
 
 		// Initialize requiredpages
-		display.outputPage = &OutputServerPage{
-			page: &tui.Page{ID: "output-server"},
+		display.beaconPage = &BeaconNodePage{
+			page: &tui.Page{ID: "beacon-node"},
 		}
 
 		display.outputServerCredentialsPage = NewOutputServerCredentialsPage(display)
