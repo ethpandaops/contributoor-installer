@@ -27,7 +27,8 @@ fi
 TOTAL_STEPS="8"
 CONTRIBUTOOR_PATH=${CONTRIBUTOOR_PATH:-"$HOME/.contributoor"}
 CONTRIBUTOOR_BIN="$CONTRIBUTOOR_PATH/bin"
-VERSION="latest"
+CONTRIBUTOOR_VERSION="latest"
+INSTALLER_VERSION="latest"
 
 ###############################################################################
 # UI Functions
@@ -152,7 +153,7 @@ add_to_path() {
 
 setup_installer() {
     local temp_archive=$(mktemp)
-    local checksums_url="https://github.com/ethpandaops/contributoor-installer/releases/latest/download/contributoor-installer_${VERSION}_checksums.txt"
+    local checksums_url="https://github.com/ethpandaops/contributoor-installer/releases/download/v${INSTALLER_VERSION}/contributoor-installer_${INSTALLER_VERSION}_checksums.txt"
     local checksums_file=$(mktemp)
     
     # Download checksums
@@ -160,7 +161,7 @@ setup_installer() {
     wait $!
     [ ! -f "$checksums_file" ] || [ ! -s "$checksums_file" ] && {
         rm -f "$checksums_file"
-        fail "Failed to download checksums file"
+        fail "Failed to download checksums file from: $checksums_url"
     }
     
     # Download installer
@@ -169,7 +170,7 @@ setup_installer() {
     wait $!
     [ ! -f "$temp_archive" ] || [ ! -s "$temp_archive" ] && {
         rm -f "$checksums_file" "$temp_archive"
-        fail "Failed to download installer binary"
+        fail "Failed to download installer binary from: $INSTALLER_URL"
     }
     success "Downloaded installer"
     
@@ -210,16 +211,16 @@ setup_installer() {
 setup_docker_contributoor() {
     docker system prune -f >/dev/null 2>&1 || true
 
-    docker pull "ethpandaops/contributoor:${VERSION}" >/dev/null 2>&1 &
+    docker pull "ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}" >/dev/null 2>&1 &
     spinner $!
     wait $!
     [ $? -ne 0 ] && fail "Failed to pull docker image"
-    success "Pulled docker image: ethpandaops/contributoor:${VERSION}"
+    success "Pulled docker image: ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}"
 }
 
 setup_binary_contributoor() {
     local temp_archive=$(mktemp)
-    local checksums_url="https://github.com/ethpandaops/contributoor/releases/download/v${VERSION}/contributoor_${VERSION}_checksums.txt"
+    local checksums_url="https://github.com/ethpandaops/contributoor/releases/download/v${CONTRIBUTOOR_VERSION}/contributoor_${CONTRIBUTOOR_VERSION}_checksums.txt"
     local checksums_file=$(mktemp)
     
     # Download checksums
@@ -227,7 +228,7 @@ setup_binary_contributoor() {
     wait $!
     [ ! -f "$checksums_file" ] || [ ! -s "$checksums_file" ] && {
         rm -f "$checksums_file"
-        fail "Failed to download checksums file"
+        fail "Failed to download checksums file from: $checksums_url"
     }
     
     # Download contributoor
@@ -236,12 +237,12 @@ setup_binary_contributoor() {
     wait $!
     [ ! -f "$temp_archive" ] || [ ! -s "$temp_archive" ] && {
         rm -f "$checksums_file" "$temp_archive"
-        fail "Failed to download contributoor binary"
+        fail "Failed to download contributoor binary from: $CONTRIBUTOOR_URL"
     }
     success "Downloaded contributoor"
     
     # Verify checksum
-    local binary_name="contributoor_${VERSION}_${PLATFORM}_${ARCH}.tar.gz"
+    local binary_name="contributoor_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}.tar.gz"
     local expected_checksum=$(grep "$binary_name" "$checksums_file" | cut -d' ' -f1)
     [ -z "$expected_checksum" ] && {
         rm -f "$checksums_file" "$temp_archive"
@@ -492,12 +493,22 @@ check_systemd_or_launchd() {
 # Version Management
 ###############################################################################
 
-get_latest_version() {
+get_latest_contributoor_version() {
     local release_info=$(curl -s "https://api.github.com/repos/ethpandaops/contributoor/releases/latest")
-    [ $? -ne 0 ] && fail "Failed to check for latest version"
+    [ $? -ne 0 ] && fail "Failed to check for latest contributoor version"
     
     local version=$(echo "$release_info" | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4 | sed 's/^v//')
-    [ -z "$version" ] && fail "Failed to determine latest version"
+    [ -z "$version" ] && fail "Failed to determine latest contributoor version"
+    
+    echo "$version"
+}
+
+get_latest_installer_version() {
+    local release_info=$(curl -s "https://api.github.com/repos/ethpandaops/contributoor-installer/releases/latest")
+    [ $? -ne 0 ] && fail "Failed to check for latest installer version"
+    
+    local version=$(echo "$release_info" | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4 | sed 's/^v//')
+    [ -z "$version" ] && fail "Failed to determine latest installer version: $release_info"
     
     echo "$version"
 }
@@ -541,7 +552,7 @@ update_config_file() {
         
         # Add our fields
         cat >> "$temp_config" << EOF
-version: ${VERSION}
+version: ${CONTRIBUTOOR_VERSION}
 contributoorDirectory: ${CONTRIBUTOOR_PATH}
 runMethod: ${INSTALL_MODE}
 EOF
@@ -558,7 +569,7 @@ main() {
     while getopts "p:v:h" FLAG; do
         case "$FLAG" in
             p) CONTRIBUTOOR_PATH="$OPTARG" ;;
-            v) VERSION="$OPTARG" ;;
+            v) CONTRIBUTOOR_VERSION="$OPTARG" ;;
             h) usage ;;
             *) usage ;;
         esac
@@ -587,13 +598,16 @@ main() {
 
     # Version management
     progress 2 "Determining version"
-    if [ "$VERSION" = "latest" ]; then
-        VERSION=$(get_latest_version)
-        success "Latest version: $VERSION"
+    INSTALLER_VERSION=$(get_latest_installer_version)
+
+    if [ "$CONTRIBUTOOR_VERSION" = "latest" ]; then
+        CONTRIBUTOOR_VERSION=$(get_latest_contributoor_version)
+        success "Latest contributoor version: $CONTRIBUTOOR_VERSION"
     else
-        validate_version "$VERSION"
-        success "Using specified version: $VERSION"
+        validate_version "$CONTRIBUTOOR_VERSION"
+        success "Using specified version: $CONTRIBUTOOR_VERSION"
     fi
+    success "Latest installer version: $INSTALLER_VERSION"
 
     # Installation path
     progress 3 "Installation path"
@@ -608,9 +622,9 @@ main() {
     success "Using path: $CONTRIBUTOOR_PATH"
 
     # Setup URLs
-    INSTALLER_BINARY_NAME="contributoor-installer_${VERSION}_${PLATFORM}_${ARCH}"
-    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/latest/download/${INSTALLER_BINARY_NAME}.tar.gz"
-    CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${VERSION}/contributoor_${VERSION}_${PLATFORM}_${ARCH}.tar.gz"
+    INSTALLER_BINARY_NAME="contributoor-installer_${INSTALLER_VERSION}_${PLATFORM}_${ARCH}"
+    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/download/v${INSTALLER_VERSION}/${INSTALLER_BINARY_NAME}.tar.gz"
+    CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${INSTALLER_VERSION}/contributoor_${INSTALLER_VERSION}_${PLATFORM}_${ARCH}.tar.gz"
 
     # Installation mode selection
     if [ "${TEST_MODE:-}" != "true" ]; then
@@ -629,7 +643,7 @@ main() {
             progress 1 "Detecting platform..."
             success "$PLATFORM ($ARCH)"
             progress 2 "Determining latest version"
-            success "Using version: $VERSION"
+            success "Using version: $CONTRIBUTOOR_VERSION"
             progress 3 "Installation path"
             success "Using path: $CONTRIBUTOOR_PATH"
             progress 4 "Select installation mode"
@@ -714,7 +728,7 @@ main() {
 
     # Run installer
     progress 8 "Run install wizard"
-    "$CONTRIBUTOOR_BIN/contributoor" --config-path "$CONTRIBUTOOR_PATH" install --version "$VERSION" --run-method "$INSTALL_MODE"
+    "$CONTRIBUTOOR_BIN/contributoor" --config-path "$CONTRIBUTOOR_PATH" install --version "$CONTRIBUTOOR_VERSION" --run-method "$INSTALL_MODE"
 }
 
 # Execute main installation
