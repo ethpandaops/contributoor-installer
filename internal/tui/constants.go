@@ -51,12 +51,12 @@ type OutputServerOption struct {
 var AvailableOutputServers = []OutputServerOption{
 	{
 		Label:       "ethPandaOps Production",
-		Value:       "https://xatu.primary.production.platform.ethpandaops.io",
+		Value:       "xatu.primary.production.platform.ethpandaops.io:443",
 		Description: "The production server provided by ethPandaOps.",
 	},
 	{
 		Label:       "ethPandaOps Staging",
-		Value:       "https://xatu.primary.staging.platform.ethpandaops.io",
+		Value:       "xatu.primary.staging.platform.ethpandaops.io:443",
 		Description: "The staging server provided by ethPandaOps.",
 	},
 	{
