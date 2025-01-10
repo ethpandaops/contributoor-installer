@@ -152,7 +152,7 @@ add_to_path() {
 
 setup_installer() {
     local temp_archive=$(mktemp)
-    local checksums_url="https://github.com/ethpandaops/contributoor-installer/releases/latest/download/checksums.txt"
+    local checksums_url="https://github.com/ethpandaops/contributoor-installer/releases/latest/download/contributoor-installer_${VERSION}_checksums.txt"
     local checksums_file=$(mktemp)
     
     # Download checksums
@@ -608,8 +608,7 @@ main() {
     success "Using path: $CONTRIBUTOOR_PATH"
 
     # Setup URLs
-    INSTALLER_BINARY_NAME="contributoor-installer_${PLATFORM}_"
-    [ "$ARCH" = "amd64" ] && INSTALLER_BINARY_NAME="${INSTALLER_BINARY_NAME}x86_64" || INSTALLER_BINARY_NAME="${INSTALLER_BINARY_NAME}${ARCH}"
+    INSTALLER_BINARY_NAME="contributoor-installer_${VERSION}_${PLATFORM}_${ARCH}"
     INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/latest/download/${INSTALLER_BINARY_NAME}.tar.gz"
     CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${VERSION}/contributoor_${VERSION}_${PLATFORM}_${ARCH}.tar.gz"
 
