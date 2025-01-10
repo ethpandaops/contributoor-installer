@@ -624,7 +624,7 @@ main() {
     # Setup URLs
     INSTALLER_BINARY_NAME="contributoor-installer_${INSTALLER_VERSION}_${PLATFORM}_${ARCH}"
     INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/download/v${INSTALLER_VERSION}/${INSTALLER_BINARY_NAME}.tar.gz"
-    CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${INSTALLER_VERSION}/contributoor_${INSTALLER_VERSION}_${PLATFORM}_${ARCH}.tar.gz"
+    CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${CONTRIBUTOOR_VERSION}/contributoor_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}.tar.gz"
 
     # Installation mode selection
     if [ "${TEST_MODE:-}" != "true" ]; then
