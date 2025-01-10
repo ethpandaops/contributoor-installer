@@ -22,20 +22,14 @@ archives:
     wrap_in_directory: false
     name_template: >-
       {{ .ProjectName }}_
+      {{- .Version }}_
       {{- .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else }}{{ .Arch }}{{ end }}
+      {{- .Arch }}
     files:
       - README*
       - LICENSE*
       - install.sh
       - docker-compose.yml
-
-checksum:
-  name_template: 'checksums.txt'
-
-snapshot:
-  name_template: "{{ incpatch .Version }}-next"
 
 changelog:
   sort: asc
@@ -44,4 +38,3 @@ changelog:
       - '^docs:'
       - '^test:'
       - '^ci:'
-      - Merge pull request 

@@ -18,6 +18,11 @@ COLOR_CYAN='\033[0;36m'
 COLOR_RESET='\033[0m'
 COLOR_BOLD='\033[1m'
 
+# Check if terminal type is supported, fallback to xterm-256color if not
+if ! tput clear >/dev/null 2>&1; then
+    export TERM=xterm-256color
+fi
+
 # Installation defaults
 TOTAL_STEPS="8"
 CONTRIBUTOOR_PATH=${CONTRIBUTOOR_PATH:-"$HOME/.contributoor"}
@@ -475,9 +480,9 @@ check_systemd_or_launchd() {
                 fail "Systemctl command not found. Please choose a different installation mode."
             fi
 
-            # Check if user has permissions to create services
-            if ! systemctl --user status >/dev/null 2>&1; then
-                fail "User systemd service management not available. Please check your systemd user configuration."
+            # Check if we can access system services
+            if ! sudo systemctl status >/dev/null 2>&1; then
+                fail "System service management not available. Please check your sudo permissions."
             fi
             ;;
     esac
@@ -611,8 +616,14 @@ main() {
     # Installation mode selection
     if [ "${TEST_MODE:-}" != "true" ]; then
         selected=1
-        trap 'tput cnorm' EXIT
-        tput civis
+        
+        # Check if tput works with current terminal
+        if ! tput clear >/dev/null 2>&1; then
+            export TERM=xterm-256color
+        fi
+        
+        trap 'tput cnorm 2>/dev/null || true' EXIT
+        tput civis 2>/dev/null || true
         while true; do
             clear
             print_logo

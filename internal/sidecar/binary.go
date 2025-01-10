@@ -217,10 +217,6 @@ func (s *binarySidecar) Update() error {
 		arch     = runtime.GOARCH
 	)
 
-	if arch == "amd64" {
-		arch = "x86_64"
-	}
-
 	binaryURL := fmt.Sprintf(
 		"https://github.com/%s/%s/releases/download/v%s/contributoor_%s_%s_%s.tar.gz",
 		s.installerCfg.GithubOrg,
