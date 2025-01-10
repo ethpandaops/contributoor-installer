@@ -112,7 +112,7 @@ EOF
     }
 }
 
-@test "get_latest_version returns valid version" {
+@test "get_latest_contributoor_version returns valid version" {
     # Mock curl to return a valid GitHub API response
     function curl() {
         echo '{"tag_name": "v1.2.3"}'
@@ -120,7 +120,20 @@ EOF
     }
     export -f curl
 
-    run get_latest_version
+    run get_latest_contributoor_version
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
+@test "get_latest_installer_version returns valid version" {
+    # Mock curl to return a valid GitHub API response
+    function curl() {
+        echo '{"tag_name": "v1.2.3"}'
+        return 0
+    }
+    export -f curl
+
+    run get_latest_installer_version
     [ "$status" -eq 0 ]
     [[ "$output" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
 }
@@ -193,20 +206,36 @@ EOF
     echo "$output" | grep -q "Provided version 1.0.0 not found"
 }
 
-@test "get_latest_version fails when bad response from GitHub is returned" {
+@test "get_latest_contributoor_version fails when bad response from GitHub is returned" {
     function curl() {
         return 1
     }
     export -f curl
 
-    run get_latest_version
+    run get_latest_contributoor_version
 
     echo "Status: $status"
     echo "Output: '$output'"
 
     [ "$status" -eq 1 ]
     echo "$output" | grep -F -q "**ERROR**"
-    echo "$output" | grep -q "Failed to determine latest version"
+    echo "$output" | grep -q "Failed to determine latest contributoor version"
+}
+
+@test "get_latest_installer_version fails when bad response from GitHub is returned" {
+    function curl() {
+        return 1
+    }
+    export -f curl
+
+    run get_latest_installer_version
+
+    echo "Status: $status"
+    echo "Output: '$output'"
+
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -F -q "**ERROR**"
+    echo "$output" | grep -q "Failed to determine latest installer version"
 }
 
 @test "add_to_path adds directory to PATH" {
@@ -249,10 +278,11 @@ EOF
     mkdir -p "$CONTRIBUTOOR_BIN"
     
     # Set required variables
-    ARCH="x86_64"
+    ARCH="amd64"
     PLATFORM="linux"
-    INSTALLER_BINARY_NAME="contributoor-installer_${PLATFORM}_${ARCH}"
-    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/latest/download/${INSTALLER_BINARY_NAME}.tar.gz"
+    INSTALLER_VERSION="1.0.0"
+    INSTALLER_BINARY_NAME="contributoor-installer_${INSTALLER_VERSION}_${PLATFORM}_${ARCH}"
+    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/download/v${INSTALLER_VERSION}/${INSTALLER_BINARY_NAME}.tar.gz"
     
     # Mock the curl commands
     function curl() {
@@ -277,7 +307,7 @@ EOF
         done
         
         case "$url" in
-            *"/checksums.txt")
+            *"checksums.txt")
                 echo "0123456789abcdef $INSTALLER_BINARY_NAME.tar.gz" > "$output_file"
                 ;;
             *)
@@ -312,10 +342,11 @@ EOF
     mkdir -p "$CONTRIBUTOOR_BIN"
     
     # Set required variables
-    ARCH="x86_64"
+    ARCH="amd64"
     PLATFORM="linux"
-    INSTALLER_BINARY_NAME="contributoor-installer_${PLATFORM}_${ARCH}"
-    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/latest/download/${INSTALLER_BINARY_NAME}.tar.gz"
+    INSTALLER_VERSION="1.0.0"
+    INSTALLER_BINARY_NAME="contributoor-installer_${INSTALLER_VERSION}_${PLATFORM}_${ARCH}"
+    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/download/v${INSTALLER_VERSION}/${INSTALLER_BINARY_NAME}.tar.gz"
     
     # Mock curl to return different checksums
     function curl() {
@@ -340,7 +371,7 @@ EOF
         done
         
         case "$url" in
-            *"/checksums.txt")
+            *"checksums.txt")
                 echo "different_hash $INSTALLER_BINARY_NAME.tar.gz" > "$output_file"
                 ;;
             *)
@@ -385,10 +416,10 @@ EOF
     mkdir -p "$CONTRIBUTOOR_BIN"
     
     # Set required variables
-    ARCH="x86_64"
+    ARCH="amd64"
     PLATFORM="linux"
-    VERSION="1.0.0"
-    CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${VERSION}/contributoor_${VERSION}_${PLATFORM}_${ARCH}.tar.gz"
+    CONTRIBUTOOR_VERSION="1.0.0"
+    CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${CONTRIBUTOOR_VERSION}/contributoor_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}.tar.gz"
     
     # Mock the curl commands
     function curl() {
@@ -414,10 +445,7 @@ EOF
         
         case "$url" in
             *"checksums.txt")
-                # Match the exact format expected by the script
-                cat > "$output_file" << EOF
-0123456789abcdef  contributoor_1.0.0_linux_x86_64.tar.gz
-EOF
+                echo "0123456789abcdef contributoor_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}.tar.gz" > "$output_file"
                 ;;
             *)
                 echo "mock binary" > "$output_file"
@@ -449,10 +477,10 @@ EOF
     mkdir -p "$CONTRIBUTOOR_BIN"
     
     # Set required variables
-    ARCH="x86_64"
+    ARCH="amd64"
     PLATFORM="linux"
-    VERSION="1.0.0"
-    CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${VERSION}/contributoor_${VERSION}_${PLATFORM}_${ARCH}.tar.gz"
+    CONTRIBUTOOR_VERSION="1.0.0"
+    CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${CONTRIBUTOOR_VERSION}/contributoor_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}.tar.gz"
     
     function curl() {
         local output_file=""
@@ -477,9 +505,7 @@ EOF
         
         case "$url" in
             *"checksums.txt")
-                cat > "$output_file" << EOF
-0123456789abcdef  contributoor_${VERSION}_${PLATFORM}_${ARCH}.tar.gz
-EOF
+                echo "0123456789abcdef contributoor_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}.tar.gz" > "$output_file"
                 ;;
             *)
                 echo "mock binary" > "$output_file"
@@ -645,8 +671,14 @@ EOF
 
     # Mock commands to simulate working systemd
     function pidof() { echo "1"; }
-    function systemctl() { return 0; }
-    export -f pidof systemctl
+    function sudo() { return 0; }
+    function command() {
+        case "$2" in
+            "systemctl") return 0 ;;
+            *) command "$@" ;;
+        esac
+    }
+    export -f pidof sudo command
  
     run check_systemd_or_launchd
     [ "$status" -eq 0 ]
