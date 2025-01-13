@@ -39,6 +39,16 @@ jobs:
       - name: Auto-merge if tests pass
         if: steps.cpr.outputs.pull-request-operation == 'created'
         run: |
+          # Wait a bit for GitHub to register the PR and start checks
+          echo "Waiting for GitHub to register the PR..."
+          sleep 15
+
+          # Verify PR exists
+          if ! gh pr view "${{ steps.cpr.outputs.pull-request-url }}" &>/dev/null; then
+            echo "PR not found: ${{ steps.cpr.outputs.pull-request-url }}"
+            exit 1
+          fi
+
           # Wait for checks to complete (timeout after 15 minutes)
           echo "Waiting for checks to complete..."
           timeout 15m gh pr checks "${{ steps.cpr.outputs.pull-request-url }}" --watch
