@@ -52,14 +52,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          token: ${{ secrets.PANDA_OPS_BOT_PAT }}
           fetch-depth: 0
 
       - name: Create Tag
         env:
           GITHUB_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config --global user.email "ethpandaopsbot@ethereum.org"
+          git config --global user.name "ethpandaopsbot"
           
           VERSION="${{ github.event.client_payload.version }}"
           
