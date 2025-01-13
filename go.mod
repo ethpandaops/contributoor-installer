@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/docker/go-connections v0.5.0
-	github.com/ethpandaops/contributoor v0.0.21
+	github.com/ethpandaops/contributoor v0.0.22
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rivo/tview v0.0.0-20241103174730-c76f7879f592
