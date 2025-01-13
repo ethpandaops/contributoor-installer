@@ -37,13 +37,12 @@ jobs:
             This PR was automatically created by the contributoor release workflow.
 
       - name: Auto-merge if tests pass
-        id: auto-merge
         if: steps.cpr.outputs.pull-request-operation == 'created'
         run: |
           # Enable auto-merge
           gh pr merge --auto --merge "${{ steps.cpr.outputs.pull-request-url }}"
           
-          # Wait for checks to complete (timeout after 10 minutes)
+          # Wait for checks to complete (timeout after 15 minutes)
           echo "Waiting for checks to complete..."
           timeout 15m gh pr checks "${{ steps.cpr.outputs.pull-request-url }}" --watch
         env:
