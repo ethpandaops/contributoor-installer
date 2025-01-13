@@ -39,12 +39,12 @@ jobs:
       - name: Auto-merge if tests pass
         if: steps.cpr.outputs.pull-request-operation == 'created'
         run: |
-          # Enable auto-merge
-          gh pr merge --auto --merge "${{ steps.cpr.outputs.pull-request-url }}"
-          
           # Wait for checks to complete (timeout after 15 minutes)
           echo "Waiting for checks to complete..."
           timeout 15m gh pr checks "${{ steps.cpr.outputs.pull-request-url }}" --watch
+          
+          # Enable auto-merge after checks pass
+          gh pr merge --auto --merge "${{ steps.cpr.outputs.pull-request-url }}"
         env:
           GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
 
@@ -56,17 +56,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create Release
+      - name: Create Tag
         run: |
           VERSION="${{ github.event.client_payload.version }}"
           
-          # Create and push tag
-          git tag "${VERSION}"
-          git push origin "${VERSION}"
-          
-          # Create GitHub release
-          gh release create "${VERSION}" \
-            --title "${VERSION}" \
-            --notes "Updates contributoor to ${{ github.event.client_payload.version }}"
+          # Create and push tag - this will trigger release.yml
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
         env:
           GITHUB_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }} 
