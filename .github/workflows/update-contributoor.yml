@@ -45,11 +45,15 @@ jobs:
       - name: Create Release
         if: steps.cpr.outputs.pull-request-operation == 'created'
         run: |
-          # Extract contributoor version without 'v' prefix
           VERSION="${{ github.event.client_payload.version }}"
           
           # Create and push tag
           git tag "${VERSION}"
           git push origin "${VERSION}"
+          
+          # Create GitHub release
+          gh release create "${VERSION}" \
+            --title "${VERSION}" \
+            --notes "Updates contributoor to ${{ github.event.client_payload.version }}"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }} 
