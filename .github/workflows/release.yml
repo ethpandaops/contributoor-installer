@@ -9,28 +9,31 @@ permissions:
   contents: write
 
 jobs:
-  go-test:
+  contributoor-go-tests:
+    name: Go Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/workflows/go-setup
       - run: go test -v -race ./...
 
-  shell-test:
+  contributoor-shell-tests:
+    name: Shell Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get install -y bats
       - run: bats install.bats
 
-  lint:
+  contributoor-lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: golangci/golangci-lint-action@v3
 
   goreleaser:
-    needs: [go-test, shell-test, lint]
+    needs: [contributoor-go-tests, contributoor-shell-tests, contributoor-lint]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
