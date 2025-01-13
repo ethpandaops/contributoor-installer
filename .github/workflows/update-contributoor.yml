@@ -25,6 +25,7 @@ jobs:
         id: cpr
         uses: peter-evans/create-pull-request@v7
         with:
+          token: ${{ secrets.PANDA_OPS_BOT_PAT }}
           commit-message: "chore: update contributoor to ${{ github.event.client_payload.version }}"
           title: "chore: update contributoor to ${{ github.event.client_payload.version }}"
           branch: update-contributoor-${{ github.event.client_payload.version }}
@@ -39,7 +40,7 @@ jobs:
         if: steps.cpr.outputs.pull-request-operation == 'created'
         run: gh pr merge --auto --merge "${{ steps.cpr.outputs.pull-request-url }}"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
 
       - name: Create Release
         if: steps.cpr.outputs.pull-request-operation == 'created'
