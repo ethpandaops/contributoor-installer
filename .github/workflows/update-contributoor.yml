@@ -13,7 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          GITHUB_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
+          fetch-depth: 0
+
       - name: Set up Go
         uses: ./.github/workflows/go-setup
 
@@ -40,6 +43,7 @@ jobs:
       - name: Enable auto-merge
         if: steps.cpr.outputs.pull-request-operation == 'created'
         env:
+          GITHUB_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
           GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
           PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
         run: |
@@ -55,22 +59,8 @@ jobs:
           token: ${{ secrets.PANDA_OPS_BOT_PAT }}
           fetch-depth: 0
 
-      - name: Create Tag
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
-          GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
-        run: |
-          git config --global user.email "ethpandaopsbot@ethereum.org"
-          git config --global user.name "ethpandaopsbot"
-          
-          VERSION="${{ github.event.client_payload.version }}"
-          
-          # Check if tag already exists
-          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
-            echo "Tag v${VERSION} already exists"
-            exit 1
-          fi
-          
-          # Create and push tag - this will trigger release.yml
-          git tag "${VERSION}"
-          git push origin "${VERSION}" 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CUSTOM_TAG: ${{ github.event.client_payload.version }}
