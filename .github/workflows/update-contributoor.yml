@@ -37,27 +37,13 @@ jobs:
             
             This PR was automatically created by the contributoor release workflow.
 
-      - name: Auto-merge if tests pass
+      - name: Enable auto-merge
         if: steps.cpr.outputs.pull-request-operation == 'created'
         env:
           GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
           PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
         run: |
-          # Wait a bit for GitHub to register the PR and start checks
-          echo "Waiting for GitHub to register the PR..."
-          sleep 30
-
-          # Verify PR exists
-          if ! gh pr view "$PR_URL" &>/dev/null; then
-            echo "PR not found: $PR_URL"
-            exit 1
-          fi
-
-          # Wait for checks to complete (timeout after 15 minutes)
-          echo "Waiting for checks to complete..."
-          timeout 15m gh pr checks "$PR_URL" --watch
-          
-          # Enable auto-merge after checks pass
+          # Enable auto-merge and let GitHub handle it
           gh pr merge --auto --merge "$PR_URL"
 
   create-release:
@@ -87,5 +73,5 @@ jobs:
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/ethpandaops/contributoor-installer.git"
           
           # Create and push tag - this will trigger release.yml
-          git tag "v${VERSION}"
-          git push origin "v${VERSION}" 
+          git tag "${VERSION}"
+          git push origin "${VERSION}" 
