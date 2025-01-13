@@ -1,4 +1,4 @@
-name: Update Contributoor
+name: update-contributoor-dependency
 
 on:
   repository_dispatch:
