@@ -11,6 +11,8 @@ permissions:
 jobs:
   update-pr:
     runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.cpr.outputs.pull-request-number }}
     steps:
       - uses: actions/checkout@v4
       
@@ -43,17 +45,41 @@ jobs:
           GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
           PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
         run: |
-          # Enable auto-merge and let GitHub handle it
-          gh pr merge --auto --merge "$PR_URL"
+          # Enable auto-merge with merge strategy and require all checks to pass
+          gh pr merge --auto --merge --delete-branch "$PR_URL"
+
+  wait-for-merge:
+    needs: update-pr
+    runs-on: ubuntu-latest
+    if: needs.update-pr.outputs.pr_number
+    steps:
+      - name: Wait for PR merge
+        env:
+          GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
+          PR_NUMBER: ${{ needs.update-pr.outputs.pr_number }}
+        run: |
+          while true; do
+            PR_STATE=$(gh pr view $PR_NUMBER --json state -q .state)
+            if [ "$PR_STATE" = "MERGED" ]; then
+              echo "PR was merged successfully"
+              break
+            elif [ "$PR_STATE" = "CLOSED" ]; then
+              echo "PR was closed without merging"
+              exit 1
+            fi
+            echo "Waiting for PR to be merged..."
+            sleep 30
+          done
 
   create-release:
-    needs: update-pr
+    needs: [wait-for-merge]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.PANDA_OPS_BOT_PAT }}
           fetch-depth: 0
+          ref: main
 
       - name: Create Tag
         env:
@@ -70,6 +96,9 @@ jobs:
             echo "Tag v${VERSION} already exists"
             exit 1
           fi
+          
+          # Pull latest changes
+          git pull origin main
           
           # Create and push tag - this will trigger release.yml
           git tag "${VERSION}"
