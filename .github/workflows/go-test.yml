@@ -11,8 +11,8 @@ permissions:
   checks: write
 
 jobs:
-  test:
-    name: test
+  go-tests:
+    name: Go Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
           path: test.json
 
   annotate:
-    needs: test
+    needs: go-tests
     runs-on: ubuntu-latest
     if: always()
     steps:
