@@ -18,7 +18,7 @@ jobs:
         with:
           token: ${{ secrets.PANDA_OPS_BOT_PAT }}
           fetch-depth: 0
-          ref: main
+          ref: master
 
       - name: Set up Go
         uses: ./.github/workflows/go-setup
@@ -61,7 +61,7 @@ jobs:
         with:
           token: ${{ secrets.PANDA_OPS_BOT_PAT }}
           fetch-depth: 0
-          ref: main
+          ref: master
       
       - name: Wait for PR merge
         env:
@@ -92,7 +92,7 @@ jobs:
         with:
           token: ${{ secrets.PANDA_OPS_BOT_PAT }}
           fetch-depth: 0
-          ref: main
+          ref: master
 
       - name: Create Tag
         env:
