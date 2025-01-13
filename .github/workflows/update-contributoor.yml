@@ -69,7 +69,12 @@ jobs:
           fetch-depth: 0
 
       - name: Create Tag
+        env:
+          GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
         run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          
           VERSION="${{ github.event.client_payload.version }}"
           
           # Check if tag already exists
@@ -78,8 +83,9 @@ jobs:
             exit 1
           fi
           
+          # Configure git with token
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/ethpandaops/contributoor-installer.git"
+          
           # Create and push tag - this will trigger release.yml
           git tag "v${VERSION}"
-          git push origin "v${VERSION}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }} 
+          git push origin "v${VERSION}" 
