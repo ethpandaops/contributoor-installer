@@ -43,8 +43,8 @@ github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/envoyproxy/protoc-gen-validate v1.1.0 h1:tntQDh69XqOCOZsDz0lVJQez/2L6Uu2PdjCQwWCJ3bM=
 github.com/envoyproxy/protoc-gen-validate v1.1.0/go.mod h1:sXRDRVmzEbkM7CVcM06s9shE/m23dg3wzjl0UWqJ2q4=
-github.com/ethpandaops/contributoor v0.0.17 h1:NbilCi+A+FqawsfjiqZkYjzwpWcmCtc5yqj1diDKORc=
-github.com/ethpandaops/contributoor v0.0.17/go.mod h1:Zjsbj+ThoEkzbrGeo7sHnQlB369Cbimc3MHnLtEH5m0=
+github.com/ethpandaops/contributoor v0.0.19 h1:JQNJ06cMt8oOAEa9+5NF5tEbUI4egSU6tw8Qa2e8DZ8=
+github.com/ethpandaops/contributoor v0.0.19/go.mod h1:Zjsbj+ThoEkzbrGeo7sHnQlB369Cbimc3MHnLtEH5m0=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/gdamore/encoding v1.0.0 h1:+7OoQ1Bc6eTm5niUzBa0Ctsh6JbMW6Ra+YNuAtDBdko=
