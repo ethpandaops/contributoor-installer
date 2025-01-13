@@ -58,6 +58,7 @@ jobs:
       - name: Create Tag
         env:
           GITHUB_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
+          GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
         run: |
           git config --global user.email "ethpandaopsbot@ethereum.org"
           git config --global user.name "ethpandaopsbot"
@@ -69,9 +70,6 @@ jobs:
             echo "Tag v${VERSION} already exists"
             exit 1
           fi
-          
-          # Configure git with token
-          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/ethpandaops/contributoor-installer.git"
           
           # Create and push tag - this will trigger release.yml
           git tag "${VERSION}"
