@@ -15,7 +15,11 @@ jobs:
       pr_number: ${{ steps.cpr.outputs.pull-request-number }}
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          token: ${{ secrets.PANDA_OPS_BOT_PAT }}
+          fetch-depth: 0
+          ref: main
+
       - name: Set up Go
         uses: ./.github/workflows/go-setup
 
@@ -53,20 +57,29 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.update-pr.outputs.pr_number
     steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PANDA_OPS_BOT_PAT }}
+          fetch-depth: 0
+          ref: main
+      
       - name: Wait for PR merge
         env:
           GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
           PR_NUMBER: ${{ needs.update-pr.outputs.pr_number }}
         run: |
           while true; do
-            PR_STATE=$(gh pr view $PR_NUMBER --json state -q .state)
-            if [ "$PR_STATE" = "MERGED" ]; then
+            STATUS=$(gh pr view $PR_NUMBER --json state,mergeStateStatus -q '[.state, .mergeStateStatus] | join(",")')
+            echo "PR status: $STATUS"
+            
+            if [[ "$STATUS" == "MERGED,"* ]]; then
               echo "PR was merged successfully"
               break
-            elif [ "$PR_STATE" = "CLOSED" ]; then
+            elif [[ "$STATUS" == "CLOSED,"* ]]; then
               echo "PR was closed without merging"
               exit 1
             fi
+            
             echo "Waiting for PR to be merged..."
             sleep 30
           done
