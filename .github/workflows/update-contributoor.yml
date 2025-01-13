@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   update-pr:
@@ -38,25 +39,26 @@ jobs:
 
       - name: Auto-merge if tests pass
         if: steps.cpr.outputs.pull-request-operation == 'created'
+        env:
+          GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
+          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
         run: |
           # Wait a bit for GitHub to register the PR and start checks
           echo "Waiting for GitHub to register the PR..."
-          sleep 15
+          sleep 30
 
           # Verify PR exists
-          if ! gh pr view "${{ steps.cpr.outputs.pull-request-url }}" &>/dev/null; then
-            echo "PR not found: ${{ steps.cpr.outputs.pull-request-url }}"
+          if ! gh pr view "$PR_URL" &>/dev/null; then
+            echo "PR not found: $PR_URL"
             exit 1
           fi
 
           # Wait for checks to complete (timeout after 15 minutes)
           echo "Waiting for checks to complete..."
-          timeout 15m gh pr checks "${{ steps.cpr.outputs.pull-request-url }}" --watch
+          timeout 15m gh pr checks "$PR_URL" --watch
           
           # Enable auto-merge after checks pass
-          gh pr merge --auto --merge "${{ steps.cpr.outputs.pull-request-url }}"
-        env:
-          GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
+          gh pr merge --auto --merge "$PR_URL"
 
   create-release:
     needs: update-pr
@@ -69,6 +71,12 @@ jobs:
       - name: Create Tag
         run: |
           VERSION="${{ github.event.client_payload.version }}"
+          
+          # Check if tag already exists
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${VERSION} already exists"
+            exit 1
+          fi
           
           # Create and push tag - this will trigger release.yml
           git tag "v${VERSION}"
