@@ -111,7 +111,7 @@ jobs:
           fi
           
           # Pull latest changes
-          git pull origin main
+          git pull origin master
           
           # Create and push tag - this will trigger release.yml
           git tag "${VERSION}"
