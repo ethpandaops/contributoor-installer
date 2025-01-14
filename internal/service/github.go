@@ -66,7 +66,7 @@ type githubService struct {
 
 // NewGitHubService creates a new GitHubService.
 func NewGitHubService(log *logrus.Logger, installerCfg *installer.Config) (GitHubService, error) {
-	githubURL, err := validateGitHubURL(installerCfg.GithubOrg, installerCfg.GithubRepo)
+	githubURL, err := validateGitHubURL(installerCfg.GithubOrg, installerCfg.GithubContributoorRepo)
 	if err != nil {
 		return nil, fmt.Errorf("invalid github url: %w", err)
 	}

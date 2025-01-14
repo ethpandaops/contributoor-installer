@@ -155,6 +155,10 @@ setup_installer() {
     local temp_archive=$(mktemp)
     local checksums_url="https://github.com/ethpandaops/contributoor-installer/releases/download/v${INSTALLER_VERSION}/contributoor-installer_${INSTALLER_VERSION}_checksums.txt"
     local checksums_file=$(mktemp)
+    local release_dir="$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}"
+    
+    # Create version-specific release directory
+    mkdir -p "$release_dir"
     
     # Download checksums
     curl -L -f -s "$checksums_url" -o "$checksums_file" &
@@ -191,20 +195,26 @@ setup_installer() {
     rm -f "$checksums_file"
     
     # Extract and set permissions
-    tar --no-same-owner -xzf "$temp_archive" -C "$CONTRIBUTOOR_BIN" &
+    tar --no-same-owner -xzf "$temp_archive" -C "$release_dir" &
     spinner $!
     wait $!
 
-    [ ! -f "$CONTRIBUTOOR_BIN/contributoor" ] && fail "Failed to extract installer binary"
+    [ ! -f "$release_dir/contributoor" ] && fail "Failed to extract installer binary"
     success "Extracted archive"
     
-    chmod +x "$CONTRIBUTOOR_BIN/contributoor"
-    [ -f "$CONTRIBUTOOR_BIN/docker-compose.yml" ] && {
-        chmod 644 "$CONTRIBUTOOR_BIN/docker-compose.yml"
-        chmod 755 "$CONTRIBUTOOR_BIN"
+    chmod +x "$release_dir/contributoor"
+    [ -f "$release_dir/docker-compose.yml" ] && {
+        chmod 644 "$release_dir/docker-compose.yml"
+        chmod 755 "$release_dir"
     } || fail "docker-compose.yml not found after extraction"
     
-    success "Set installer permissions: $CONTRIBUTOOR_BIN/contributoor"
+    # Create/update symlink
+    rm -f "$CONTRIBUTOOR_BIN/contributoor" # Remove existing symlink or file
+    if ! ln -sf "$release_dir/contributoor" "$CONTRIBUTOOR_BIN/contributoor"; then
+        fail "Failed to create symlink from $CONTRIBUTOOR_BIN/contributoor to $release_dir/contributoor"
+    fi
+    
+    success "Set installer permissions and created symlink: $CONTRIBUTOOR_BIN/contributoor -> $release_dir/contributoor"
     rm -f "$temp_archive"
 }
 
@@ -222,6 +232,10 @@ setup_binary_contributoor() {
     local temp_archive=$(mktemp)
     local checksums_url="https://github.com/ethpandaops/contributoor/releases/download/v${CONTRIBUTOOR_VERSION}/contributoor_${CONTRIBUTOOR_VERSION}_checksums.txt"
     local checksums_file=$(mktemp)
+    local release_dir="$CONTRIBUTOOR_PATH/releases/contributoor-${CONTRIBUTOOR_VERSION}"
+    
+    # Create version-specific release directory
+    mkdir -p "$release_dir"
     
     # Download checksums
     curl -L -f -s "$checksums_url" -o "$checksums_file" &
@@ -258,24 +272,24 @@ setup_binary_contributoor() {
     rm -f "$checksums_file"
     
     # Extract and set permissions
-    tar --no-same-owner -xzf "$temp_archive" -C "$CONTRIBUTOOR_BIN" &
+    tar --no-same-owner -xzf "$temp_archive" -C "$release_dir" &
     spinner $!
     wait $!
 
-    [ ! -f "$CONTRIBUTOOR_BIN/sentry" ] && fail "Failed to extract contributoor binary"
+    [ ! -f "$release_dir/sentry" ] && fail "Failed to extract contributoor binary"
     success "Extracted archive"
     
-    chmod +x "$CONTRIBUTOOR_BIN/sentry"
-    success "Set contributoor permissions: $CONTRIBUTOOR_BIN/sentry"
-    rm -f "$temp_archive"
-
-    # After setting permissions, create service files based on platform
-    if [ "$INSTALL_MODE" = "RUN_METHOD_BINARY" ]; then
-        # Create logs directory for binary output
-        mkdir -p "$CONTRIBUTOOR_PATH/logs" || fail "Could not create the contributoor logs directory"
-        chmod -R 755 "$CONTRIBUTOOR_PATH/logs"
-        success "Created logs directory: $CONTRIBUTOOR_PATH/logs"
+    chmod +x "$release_dir/sentry"
+    chmod 755 "$release_dir"
+    
+    # Create/update symlink
+    rm -f "$CONTRIBUTOOR_BIN/sentry" # Remove existing symlink or file
+    if ! ln -sf "$release_dir/sentry" "$CONTRIBUTOOR_BIN/sentry"; then
+        fail "Failed to create symlink from $CONTRIBUTOOR_BIN/sentry to $release_dir/sentry"
     fi
+    
+    success "Set contributoor permissions and created symlink: $CONTRIBUTOOR_BIN/sentry -> $release_dir/sentry"
+    rm -f "$temp_archive"
 }
 
 setup_systemd_contributoor() {
@@ -607,7 +621,6 @@ main() {
         validate_version "$CONTRIBUTOOR_VERSION"
         success "Using specified version: $CONTRIBUTOOR_VERSION"
     fi
-    success "Latest installer version: $INSTALLER_VERSION"
 
     # Installation path
     progress 3 "Installation path"
@@ -695,6 +708,11 @@ main() {
     mkdir -p "$CONTRIBUTOOR_BIN" || fail "Could not create the contributoor bin directory"
     chmod -R 755 "$CONTRIBUTOOR_BIN"
     success "bin directory: $CONTRIBUTOOR_BIN" 
+
+    # Create releases directory
+    mkdir -p "$CONTRIBUTOOR_PATH/releases" || fail "Could not create the contributoor releases directory"
+    chmod -R 755 "$CONTRIBUTOOR_PATH/releases"
+    success "releases directory: $CONTRIBUTOOR_PATH/releases"
 
     # Create logs directory if needed
     mkdir -p "$CONTRIBUTOOR_PATH/logs" || fail "Could not create the contributoor logs directory"

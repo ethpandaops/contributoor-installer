@@ -75,6 +75,7 @@ func updateContributoor(
 		targetVersion  string
 		cfg            = sidecarCfg.Get()
 		currentVersion = cfg.Version
+		err            error
 	)
 
 	fmt.Printf("%sUpdating Contributoor Version%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
@@ -82,16 +83,15 @@ func updateContributoor(
 
 	defer func() {
 		if !success {
-			if err := rollbackVersion(sidecarCfg, currentVersion); err != nil {
-				log.Error(err)
+			if rollbackErr := rollbackVersion(sidecarCfg, currentVersion); rollbackErr != nil {
+				log.Error(rollbackErr)
 			}
 		}
 	}()
 
-	// Determine target version.
-	targetVersion, err := determineTargetVersion(c, github)
+	// Determine target version first
+	targetVersion, err = determineTargetVersion(c, github)
 	if err != nil || targetVersion == "" {
-		// Flag as success, there's nothing to update on rollback if we fail to determine the target version.
 		success = true
 
 		return err
@@ -99,9 +99,8 @@ func updateContributoor(
 
 	fmt.Printf("%-20s: %s\n", "Latest Version", targetVersion)
 
-	// Check if update is needed.
+	// Check if update is needed
 	if targetVersion == currentVersion {
-		// Flag as success, there's nothing to update.
 		success = true
 
 		printUpdateStatus(c.IsSet("version"), targetVersion)
@@ -109,9 +108,9 @@ func updateContributoor(
 		return nil
 	}
 
-	// Update config version.
-	if uerr := updateConfigVersion(sidecarCfg, targetVersion); uerr != nil {
-		return uerr
+	// Update config version
+	if configErr := updateConfigVersion(sidecarCfg, targetVersion); configErr != nil {
+		return configErr
 	}
 
 	// Refresh our config state, given it was updated above.

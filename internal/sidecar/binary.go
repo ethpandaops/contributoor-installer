@@ -66,9 +66,10 @@ func NewBinarySidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installer
 func (s *binarySidecar) Start() error {
 	cfg := s.sidecarCfg.Get()
 
+	// Use symlink path instead of direct binary path
 	binaryPath := filepath.Join(cfg.ContributoorDirectory, "bin", "sentry")
 	if _, err := os.Stat(binaryPath); err != nil {
-		return fmt.Errorf("binary not found at %s - please reinstall", binaryPath)
+		return fmt.Errorf("binary symlink not found at %s - please reinstall", binaryPath)
 	}
 
 	expandedDir, err := homedir.Expand(cfg.ContributoorDirectory)
@@ -186,19 +187,38 @@ func (s *binarySidecar) IsRunning() (bool, error) {
 func (s *binarySidecar) Update() error {
 	cfg := s.sidecarCfg.Get()
 
+	// Update installer first
+	if err := updateInstaller(cfg, s.installerCfg); err != nil {
+		s.logger.Warnf("Failed to update installer: %v", err)
+	}
+
+	// Update sidecar
+	if err := s.updateSidecar(); err != nil {
+		return fmt.Errorf("failed to update sidecar: %w", err)
+	}
+
+	return nil
+}
+
+// updateSidecar updates the sidecar binary to the specified version.
+func (s *binarySidecar) updateSidecar() error {
+	cfg := s.sidecarCfg.Get()
+
 	expandedDir, err := homedir.Expand(cfg.ContributoorDirectory)
 	if err != nil {
 		return fmt.Errorf("failed to expand config path: %w", err)
 	}
 
-	binaryPath := filepath.Join(expandedDir, "bin", "sentry")
-	binaryDir := filepath.Dir(binaryPath)
+	// Define both symlink and release paths
+	symlinkPath := filepath.Join(expandedDir, "bin", "sentry")
+	releaseDir := filepath.Join(expandedDir, "releases", fmt.Sprintf("contributoor-%s", cfg.Version))
+	releaseBinaryPath := filepath.Join(releaseDir, "sentry")
 
 	// Download and verify checksums.
 	checksumURL := fmt.Sprintf(
 		"https://github.com/%s/%s/releases/download/v%s/contributoor_%s_checksums.txt",
 		s.installerCfg.GithubOrg,
-		s.installerCfg.GithubRepo,
+		s.installerCfg.GithubContributoorRepo,
 		cfg.Version,
 		cfg.Version,
 	)
@@ -211,7 +231,7 @@ func (s *binarySidecar) Update() error {
 
 	defer resp.Body.Close()
 
-	// Determine platform and arch
+	// Determine platform and arch.
 	var (
 		platform = runtime.GOOS
 		arch     = runtime.GOARCH
@@ -220,7 +240,7 @@ func (s *binarySidecar) Update() error {
 	binaryURL := fmt.Sprintf(
 		"https://github.com/%s/%s/releases/download/v%s/contributoor_%s_%s_%s.tar.gz",
 		s.installerCfg.GithubOrg,
-		s.installerCfg.GithubRepo,
+		s.installerCfg.GithubContributoorRepo,
 		cfg.Version,
 		cfg.Version,
 		platform,
@@ -242,12 +262,12 @@ func (s *binarySidecar) Update() error {
 	}
 	defer os.Remove(tmpFile.Name())
 
-	// Copy download to temp file
+	// Copy download to temp file.
 	if _, ioerr := io.Copy(tmpFile, resp.Body); ioerr != nil {
 		return fmt.Errorf("failed to write binary to temp file: %w", err)
 	}
 
-	// Stop service if running
+	// Stop service if running.
 	running, err := s.IsRunning()
 	if err != nil {
 		return fmt.Errorf("failed to check if service is running: %w", err)
@@ -259,25 +279,32 @@ func (s *binarySidecar) Update() error {
 		}
 	}
 
-	// Extract binary
-	if err := os.MkdirAll(binaryDir, 0755); err != nil {
-		return fmt.Errorf("failed to create binary directory: %w", err)
+	// Create release directory.
+	if err := os.MkdirAll(releaseDir, 0755); err != nil {
+		return fmt.Errorf("failed to create release directory: %w", err)
 	}
 
-	//nolint:gosec // binaryPath is controlled by us.
-	cmd := exec.Command("tar", "--no-same-owner", "-xzf", tmpFile.Name(), "-C", binaryDir)
+	// Extract binary to release directory.
+	cmd := exec.Command("tar", "--no-same-owner", "-xzf", tmpFile.Name(), "-C", releaseDir) //nolint:gosec // controlled extraction.
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to extract binary: %w", err)
 	}
 
-	// Set permissions
-	if err := os.Chmod(binaryPath, 0755); err != nil {
+	// Set permissions on release binary.
+	if err := os.Chmod(releaseBinaryPath, 0755); err != nil {
 		return fmt.Errorf("failed to set binary permissions: %w", err)
 	}
 
-	fmt.Printf("%sBinary updated successfully%s\n", tui.TerminalColorGreen, tui.TerminalColorReset)
+	// Update symlink.
+	if err := os.Remove(symlinkPath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove old symlink: %w", err)
+	}
 
-	// Restart if it was running
+	if err := os.Symlink(releaseBinaryPath, symlinkPath); err != nil {
+		return fmt.Errorf("failed to create symlink: %w", err)
+	}
+
+	// Restart if it was running.
 	if running {
 		if err := s.Start(); err != nil {
 			return fmt.Errorf("failed to restart service: %w", err)

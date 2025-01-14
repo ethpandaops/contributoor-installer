@@ -107,6 +107,23 @@ func (s *dockerSidecar) IsRunning() (bool, error) {
 func (s *dockerSidecar) Update() error {
 	cfg := s.sidecarCfg.Get()
 
+	// Update installer first.
+	if err := updateInstaller(cfg, s.installerCfg); err != nil {
+		s.logger.Warnf("Failed to update installer: %v", err)
+	}
+
+	// Update sidecar.
+	if err := s.updateSidecar(); err != nil {
+		return fmt.Errorf("failed to update sidecar: %w", err)
+	}
+
+	return nil
+}
+
+// updateSidecar updates the docker image to the specified version.
+func (s *dockerSidecar) updateSidecar() error {
+	cfg := s.sidecarCfg.Get()
+
 	image := fmt.Sprintf("%s:%s", s.installerCfg.DockerImage, cfg.Version)
 
 	cmd := exec.Command("docker", "pull", image)
@@ -115,7 +132,7 @@ func (s *dockerSidecar) Update() error {
 	}
 
 	fmt.Printf(
-		"%sImage %s updated successfully%s\n",
+		"%sContributoor image %s updated successfully%s\n",
 		tui.TerminalColorGreen,
 		image,
 		tui.TerminalColorReset,
@@ -126,7 +143,7 @@ func (s *dockerSidecar) Update() error {
 
 // findComposeFile finds the docker-compose file based on the OS.
 func findComposeFile() (string, error) {
-	// Get binary directory
+	// Get binary directory.
 	ex, err := os.Executable()
 	if err != nil {
 		return "", fmt.Errorf("could not get executable path: %w", err)
@@ -134,18 +151,31 @@ func findComposeFile() (string, error) {
 
 	binDir := filepath.Dir(ex)
 
+	// Get the actual binary path (resolve symlink).
+	actualBin, err := filepath.EvalSymlinks(ex)
+	if err != nil {
+		return "", fmt.Errorf("could not resolve symlink: %w", err)
+	}
+
+	releaseDir := filepath.Dir(actualBin)
+
+	// First check release directory (next to actual binary).
+	composePath := filepath.Join(releaseDir, "docker-compose.yml")
+	if _, e := os.Stat(composePath); e == nil {
+		return composePath, nil
+	}
+
+	// Fallback to bin directory for backward compatibility.
+	if _, statErr := os.Stat(filepath.Join(binDir, "docker-compose.yml")); statErr == nil {
+		return filepath.Join(binDir, "docker-compose.yml"), nil
+	}
+
+	// Try current directory.
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("could not get working directory: %w", err)
 	}
 
-	// Check release mode (next to binary)
-	composePath := filepath.Join(binDir, "docker-compose.yml")
-	if _, e := os.Stat(composePath); e == nil {
-		return composePath, nil
-	}
-
-	// Try current directory
 	if _, err := os.Stat(filepath.Join(cwd, "docker-compose.yml")); err == nil {
 		return filepath.Join(cwd, "docker-compose.yml"), nil
 	}
