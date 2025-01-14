@@ -12,16 +12,19 @@ type Config struct {
 	DockerTag string
 	// GithubOrg is the organization name housing the sidecar repository.
 	GithubOrg string
-	// GithubRepo is the repository name of the sidecar repository.
-	GithubRepo string
+	// GithubContributoorRepo is the repository name of the sidecar repository.
+	GithubContributoorRepo string
+	// GithubInstallerRepo is the repository name of the installer repository.
+	GithubInstallerRepo string
 }
 
 // NewConfig returns the default installer configuration.
 func NewConfig() *Config {
 	return &Config{
-		LogLevel:    logrus.InfoLevel.String(),
-		DockerImage: "ethpandaops/contributoor",
-		GithubOrg:   "ethpandaops",
-		GithubRepo:  "contributoor",
+		LogLevel:               logrus.InfoLevel.String(),
+		DockerImage:            "ethpandaops/contributoor",
+		GithubOrg:              "ethpandaops",
+		GithubContributoorRepo: "contributoor",
+		GithubInstallerRepo:    "contributoor-installer",
 	}
 }

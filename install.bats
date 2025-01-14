@@ -275,7 +275,9 @@ EOF
 }
 
 @test "setup_installer downloads and verifies checksums" {
-    mkdir -p "$CONTRIBUTOOR_BIN"
+    # Create required directories
+    mkdir -p "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}"
+    mkdir -p "$CONTRIBUTOOR_PATH/bin"
     
     # Set required variables
     ARCH="amd64"
@@ -324,18 +326,45 @@ EOF
     
     # Mock tar extraction
     function tar() {
-        touch "$CONTRIBUTOOR_BIN/contributoor"
-        touch "$CONTRIBUTOOR_BIN/docker-compose.yml"
+        # Create the binary and make it executable
+        touch "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/contributoor"
+        chmod +x "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/contributoor"
+        
+        # Create docker-compose.yml
+        touch "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.yml"
+        
+        return 0
+    }
+
+    # Mock ln for symlink creation
+    function ln() {
+        if [[ "$1" == "-sf" ]]; then
+            # Create the symlink target
+            touch "$3"
+            chmod +x "$3"
+            
+            # Also create docker-compose.yml in the same directory if it's the binary symlink
+            if [[ "$3" == *"/bin/contributoor" ]]; then
+                cp "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.yml" "$(dirname "$3")/docker-compose.yml"
+            fi
+        fi
         return 0
     }
     
-    export -f curl sha256sum tar
+    export -f curl sha256sum tar ln
     
     run setup_installer
     
+    echo "Status: $status"
+    echo "Output: $output"
+    
     [ "$status" -eq 0 ]
-    [ -f "$CONTRIBUTOOR_BIN/contributoor" ]
-    [ -f "$CONTRIBUTOOR_BIN/docker-compose.yml" ]
+    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/contributoor" ]
+    [ -x "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/contributoor" ]
+    [ -f "$CONTRIBUTOOR_PATH/bin/contributoor" ]
+    [ -x "$CONTRIBUTOOR_PATH/bin/contributoor" ]
+    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.yml" ]
+    [ -f "$CONTRIBUTOOR_PATH/bin/docker-compose.yml" ]
 }
 
 @test "setup_installer fails on checksum mismatch" {
@@ -413,12 +442,15 @@ EOF
 }
 
 @test "setup_binary_contributoor downloads and verifies binary checksum" {
-    mkdir -p "$CONTRIBUTOOR_BIN"
+    # Create required directories
+    mkdir -p "$CONTRIBUTOOR_PATH/releases/contributoor-${CONTRIBUTOOR_VERSION}"
+    mkdir -p "$CONTRIBUTOOR_PATH/bin"
     
     # Set required variables
     ARCH="amd64"
     PLATFORM="linux"
     CONTRIBUTOOR_VERSION="1.0.0"
+    CONTRIBUTOOR_BINARY_NAME="contributoor_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}"
     CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${CONTRIBUTOOR_VERSION}/contributoor_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}.tar.gz"
     
     # Mock the curl commands
@@ -445,7 +477,7 @@ EOF
         
         case "$url" in
             *"checksums.txt")
-                echo "0123456789abcdef contributoor_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}.tar.gz" > "$output_file"
+                echo "0123456789abcdef $CONTRIBUTOOR_BINARY_NAME.tar.gz" > "$output_file"
                 ;;
             *)
                 echo "mock binary" > "$output_file"
@@ -461,16 +493,34 @@ EOF
     
     # Mock tar
     function tar() {
-        touch "$CONTRIBUTOOR_BIN/sentry"
+        # Create the binary and make it executable
+        touch "$CONTRIBUTOOR_PATH/releases/contributoor-${CONTRIBUTOOR_VERSION}/sentry"
+        chmod +x "$CONTRIBUTOOR_PATH/releases/contributoor-${CONTRIBUTOOR_VERSION}/sentry"
         return 0
     }
     
-    export -f curl sha256sum tar
+    # Mock ln for symlink creation
+    function ln() {
+        if [[ "$1" == "-sf" ]]; then
+            # Create the symlink target
+            touch "$3"
+            chmod +x "$3"
+        fi
+        return 0
+    }
+    
+    export -f curl sha256sum tar ln
     
     run setup_binary_contributoor
     
+    echo "Status: $status"
+    echo "Output: $output"
+    
     [ "$status" -eq 0 ]
-    [ -f "$CONTRIBUTOOR_BIN/sentry" ]
+    [ -f "$CONTRIBUTOOR_PATH/releases/contributoor-${CONTRIBUTOOR_VERSION}/sentry" ]
+    [ -x "$CONTRIBUTOOR_PATH/releases/contributoor-${CONTRIBUTOOR_VERSION}/sentry" ]
+    [ -f "$CONTRIBUTOOR_PATH/bin/sentry" ]
+    [ -x "$CONTRIBUTOOR_PATH/bin/sentry" ]
 }
 
 @test "setup_binary_contributoor fails on missing binary" {
