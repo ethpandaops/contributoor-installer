@@ -274,6 +274,71 @@ EOF
     [ "$(grep -c "export PATH=\"\$PATH:$CONTRIBUTOOR_BIN\"" "$test_rc")" -eq 1 ]
 }
 
+@test "add_to_path shows console message when path is added" {
+    # Setup test shell environment
+    local test_rc="$TEST_DIR/.zshrc"
+    export SHELL="/bin/zsh"
+    export HOME="$TEST_DIR"
+    touch "$test_rc"
+    
+    # Reset the flag
+    export ADDED_TO_PATH=false
+    
+    # Export all required functions and variables
+    export CONTRIBUTOOR_BIN
+    export COLOR_GREEN COLOR_YELLOW COLOR_RESET
+    export -f add_to_path success warn
+    
+    # Call add_to_path in a way that preserves the variable
+    run bash -c '
+        source ./install.sh
+        add_to_path
+        echo "ADDED_TO_PATH=$ADDED_TO_PATH"
+    '
+    
+    # Verify path was added
+    grep -q "export PATH=\"\$PATH:$CONTRIBUTOOR_BIN\"" "$test_rc"
+    [ "$?" -eq 0 ]
+    
+    # Verify success message was shown
+    echo "$output" | grep -q "Added.*to PATH in"
+    
+    # Verify ADDED_TO_PATH was set to true
+    echo "$output" | grep -q "ADDED_TO_PATH=true"
+}
+
+@test "add_to_path does not show console message when path already exists" {
+    # Setup test shell environment
+    local test_rc="$TEST_DIR/.zshrc"
+    export SHELL="/bin/zsh"
+    export HOME="$TEST_DIR"
+    touch "$test_rc"
+    
+    # Add path entry first
+    echo "export PATH=\"\$PATH:$CONTRIBUTOOR_BIN\"" >> "$test_rc"
+    
+    # Reset the flag
+    export ADDED_TO_PATH=false
+    
+    # Export all required functions and variables
+    export CONTRIBUTOOR_BIN
+    export COLOR_GREEN COLOR_YELLOW COLOR_RESET
+    export -f add_to_path success warn
+    
+    # Call add_to_path in a way that preserves the variable
+    run bash -c '
+        source ./install.sh
+        add_to_path
+        echo "ADDED_TO_PATH=$ADDED_TO_PATH"
+    '
+    
+    # Verify warning message was shown
+    echo "$output" | grep -q "PATH entry already exists"
+    
+    # Verify ADDED_TO_PATH is still false
+    echo "$output" | grep -q "ADDED_TO_PATH=false"
+}
+
 @test "setup_installer downloads and verifies checksums" {
     # Create required directories
     mkdir -p "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}"

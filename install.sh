@@ -29,6 +29,7 @@ CONTRIBUTOOR_PATH=${CONTRIBUTOOR_PATH:-"$HOME/.contributoor"}
 CONTRIBUTOOR_BIN="$CONTRIBUTOOR_PATH/bin"
 CONTRIBUTOOR_VERSION="latest"
 INSTALLER_VERSION="latest"
+ADDED_TO_PATH=false
 
 ###############################################################################
 # UI Functions
@@ -137,11 +138,16 @@ add_to_path() {
 
     if [ -n "$shell_rc" ] && [ -f "$shell_rc" ]; then
         local path_line="export PATH=\"\$PATH:$CONTRIBUTOOR_BIN\""
-        if ! grep -Fxq "$path_line" "$shell_rc"; then
+        # Less strict grep check
+        if ! grep -F "$CONTRIBUTOOR_BIN" "$shell_rc" >/dev/null 2>&1; then
             echo "$path_line" >> "$shell_rc"
-            echo "Added $CONTRIBUTOOR_BIN to PATH in $shell_rc"
-            echo "NOTE: You'll need to run 'source $shell_rc' or start a new terminal for the PATH changes to take effect"
+            ADDED_TO_PATH=true
+            success "Added $CONTRIBUTOOR_BIN to PATH in $shell_rc"
+        else
+            warn "PATH entry already exists in $shell_rc"
         fi
+    else
+        warn "Could not determine shell configuration file"
     fi
 
     export PATH="$PATH:$CONTRIBUTOOR_BIN"
@@ -594,12 +600,6 @@ main() {
     ARCH=$(detect_architecture)
     PLATFORM=$(detect_platform)
     
-    # Add to PATH if needed
-    case ":$PATH:" in
-        *":$CONTRIBUTOOR_BIN:"*) ;; # Already in PATH
-        *) add_to_path ;;
-    esac
-
     # Clear screen and show logo
     if [ "${TEST_MODE:-}" != "true" ]; then
         clear
@@ -633,6 +633,11 @@ main() {
         CONTRIBUTOOR_BIN="$CONTRIBUTOOR_PATH/bin"
     fi
     success "Using path: $CONTRIBUTOOR_PATH"
+
+    # Create logs directory if needed
+    mkdir -p "$CONTRIBUTOOR_PATH/logs" || fail "Could not create the contributoor logs directory"
+    chmod -R 755 "$CONTRIBUTOOR_PATH/logs"
+    success "logs directory: $CONTRIBUTOOR_PATH/logs"
 
     # Setup URLs
     INSTALLER_BINARY_NAME="contributoor-installer_${INSTALLER_VERSION}_${PLATFORM}_${ARCH}"
@@ -714,10 +719,8 @@ main() {
     chmod -R 755 "$CONTRIBUTOOR_PATH/releases"
     success "releases directory: $CONTRIBUTOOR_PATH/releases"
 
-    # Create logs directory if needed
-    mkdir -p "$CONTRIBUTOOR_PATH/logs" || fail "Could not create the contributoor logs directory"
-    chmod -R 755 "$CONTRIBUTOOR_PATH/logs"
-    success "logs directory: $CONTRIBUTOOR_PATH/logs"
+    # Now that all directories are set up and mode is selected, add to PATH if needed
+    add_to_path
 
     # Prepare installation for the mode selected.
     # If binary, download the contributoor binary.
@@ -747,6 +750,11 @@ main() {
     # Run installer
     progress 8 "Run install wizard"
     "$CONTRIBUTOOR_BIN/contributoor" --config-path "$CONTRIBUTOOR_PATH" install --version "$CONTRIBUTOOR_VERSION" --run-method "$INSTALL_MODE"
+
+    # Show PATH refresh message if needed.
+    if [ "$ADDED_TO_PATH" = true ]; then
+        printf "${COLOR_YELLOW}NOTE: To use contributoor commands, either start a new terminal or run: source ~/.$(basename "$SHELL")rc${COLOR_RESET}\n"
+    fi
 }
 
 # Execute main installation
