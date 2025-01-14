@@ -4,12 +4,32 @@ This repository contains the installer for the [contributoor](https://github.com
 
 ## Getting Started
 
-```bash
-curl -O https://raw.githubusercontent.com/ethpandaops/contributoor-installer/refs/heads/master/install.sh && chmod +x install.sh && ./install.sh
-```
-> If you would prefer to check the installation script before running it, you may download and run it manually.
+<details>
+  <summary>🔒 Installation</summary>
 
-## Post-Installation
+  Download and inspect the installation script before running:
+  ```bash
+  # Download the script.
+  curl -O https://raw.githubusercontent.com/ethpandaops/contributoor-installer/refs/heads/master/install.sh
+  
+  # Inspect the script contents.
+  less install.sh
+  
+  # Make it executable and run if you're satisfied with the contents.
+  chmod +x install.sh && ./install.sh
+  ```
+</details>
+
+<details>
+  <summary>🚀 Quick Installation</summary>
+
+  If you trust the source, you can run this one-liner:
+  ```bash
+  curl -O https://raw.githubusercontent.com/ethpandaops/contributoor-installer/refs/heads/master/install.sh && chmod +x install.sh && ./install.sh
+  ```
+</details>
+
+## ⚙️ Post-Installation
 
 > **Note:** you may need to start a new shell session before you can run the `contributoor` command.
 
@@ -24,42 +44,46 @@ contributoor config   # View/edit configuration
 contributoor update   # Update to latest version
 ```
 
-## Development
+## 🔨 Development
 
-### Go Tests
+<details>
+  <summary>Go Tests</summary>
 
-Execute the full test suite:
+  Execute the full test suite:
 
-```bash
-go test ./...
-```
+  ```bash
+  go test ./...
+  ```
 
-Run short tests only:
+  Run short tests only:
 
-```bash
-go test -test.short ./...
-```
+  ```bash
+  go test -test.short ./...
+  ```
 
-Run with coverage:
+  Run with coverage:
 
-```bash
-go test -failfast -cover -coverpkg=./... -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
-```
+  ```bash
+  go test -failfast -cover -coverpkg=./... -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
+  ```
+</details>
 
-### Shell Tests
+<details>
+  <summary>Shell Tests</summary>
 
-Requires [`bats`](https://github.com/bats-core/bats-core):
+  Requires [`bats`](https://github.com/bats-core/bats-core):
 
-```bash
-bats *.bats
-```
+  ```bash
+  bats *.bats
+  ```
 
-For test coverage (requires [`kcov`](https://github.com/SimonKagstrom/kcov)):
+  For test coverage (requires [`kcov`](https://github.com/SimonKagstrom/kcov)):
 
-```bash
-kcov --bash-parser="$(which bash)" --include-pattern=install.sh /path/to/coverage/output bats --tap install.bats
-```
+  ```bash
+  kcov --bash-parser="$(which bash)" --include-pattern=install.sh /path/to/coverage/output bats --tap install.bats
+  ```
+</details>
 
-## Contributing
+## 🤝 Contributing
 
 Contributoor is part of EthPandaOps' suite of tools for Ethereum network operations. Contributions are welcome! Please check our [GitHub repository](https://github.com/ethpandaops) for more information.
