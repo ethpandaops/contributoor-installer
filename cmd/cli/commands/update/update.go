@@ -89,7 +89,7 @@ func updateContributoor(
 		}
 	}()
 
-	// Determine target version first
+	// Determine target version first.
 	targetVersion, err = determineTargetVersion(c, github)
 	if err != nil || targetVersion == "" {
 		success = true
@@ -99,7 +99,7 @@ func updateContributoor(
 
 	fmt.Printf("%-20s: %s\n", "Latest Version", targetVersion)
 
-	// Check if update is needed
+	// Check if update is needed.
 	if targetVersion == currentVersion {
 		success = true
 
@@ -108,7 +108,7 @@ func updateContributoor(
 		return nil
 	}
 
-	// Update config version
+	// Update config version.
 	if configErr := updateConfigVersion(sidecarCfg, targetVersion); configErr != nil {
 		return configErr
 	}
