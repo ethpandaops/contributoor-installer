@@ -53,6 +53,20 @@ func (mr *MockDockerSidecarMockRecorder) IsRunning() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsRunning", reflect.TypeOf((*MockDockerSidecar)(nil).IsRunning))
 }
 
+// Logs mocks base method.
+func (m *MockDockerSidecar) Logs(arg0 int, arg1 bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Logs", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Logs indicates an expected call of Logs.
+func (mr *MockDockerSidecarMockRecorder) Logs(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Logs", reflect.TypeOf((*MockDockerSidecar)(nil).Logs), arg0, arg1)
+}
+
 // Start mocks base method.
 func (m *MockDockerSidecar) Start() error {
 	m.ctrl.T.Helper()

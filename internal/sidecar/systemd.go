@@ -248,3 +248,15 @@ func (s *systemdSidecar) checkDaemonExists() error {
 
 	return nil
 }
+
+// Logs shows the logs from the log files (systemd/launchd is configured to punch out logs to
+// the path as the binary sidecar).
+func (s *systemdSidecar) Logs(tailLines int, follow bool) error {
+	// Create a binary sidecar just for log viewing.
+	binarySidecar, err := NewBinarySidecar(s.logger, s.sidecarCfg, s.installerCfg)
+	if err != nil {
+		return fmt.Errorf("failed to create binary sidecar for logs: %w", err)
+	}
+
+	return binarySidecar.Logs(tailLines, follow)
+}

@@ -361,9 +361,9 @@ setup_macos_launchd() {
     <key>WorkingDirectory</key>
     <string>$CONTRIBUTOOR_PATH</string>
     <key>StandardOutPath</key>
-    <string>$CONTRIBUTOOR_PATH/logs/service.log</string>
+    <string>$CONTRIBUTOOR_PATH/logs/debug.log</string>
     <key>StandardErrorPath</key>
-    <string>$CONTRIBUTOOR_PATH/logs/error.log</string>
+    <string>$CONTRIBUTOOR_PATH/logs/service.log</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
