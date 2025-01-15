@@ -95,7 +95,7 @@ func (s *dockerSidecar) Stop() error {
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		// Don't return error here, try our fallback.
-		s.logger.Warnf("failed to stop via compose: %v\noutput: %s", err, string(output))
+		s.logger.Debugf("failed to stop via compose: %v\noutput: %s", err, string(output))
 	}
 
 	// Fallback in the case of a configuration change between versions, attempt to remove
