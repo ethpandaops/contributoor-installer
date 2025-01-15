@@ -142,7 +142,7 @@ func (d *InstallDisplay) OnComplete() error {
 
 	fmt.Printf("\n%sInstallation complete%s\n", tui.TerminalColorGreen, tui.TerminalColorReset)
 	fmt.Printf("You can now manage contributoor using the following command(s):\n")
-	fmt.Printf("    contributoor [start|stop|status|update|config]\n")
+	fmt.Printf("    contributoor [start|stop|restart|status|update|config|logs]\n")
 
 	return nil
 }

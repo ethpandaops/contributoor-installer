@@ -42,6 +42,7 @@ contributoor status   # Check service status
 contributoor restart  # Restart the service
 contributoor config   # View/edit configuration
 contributoor update   # Update to latest version
+contributoor logs     # Show logs
 ```
 
 ## 🔨 Development
