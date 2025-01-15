@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -171,6 +172,41 @@ func TestDockerService_Integration(t *testing.T) {
 
 		require.NoError(t, ds.Stop())
 		running, err := ds.IsRunning()
+		require.NoError(t, err)
+		require.False(t, running)
+	})
+
+	t.Run("lifecycle_with_external_container", func(t *testing.T) {
+		// Write out compose file.
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.yml"), []byte(composeFile), 0644))
+
+		// Start a container directly with docker (not via compose) of the same name. This mimics
+		// a container the installer isn't aware of.
+		cmd := exec.Command("docker", "run", "-d", "--name", "contributoor", "busybox",
+			"sh", "-c", "while true; do echo 'Container is running'; sleep 1; done")
+		output, err := cmd.CombinedOutput()
+		require.NoError(t, err, "failed to start container: %s", string(output))
+
+		// IsRunning should detect the external container.
+		running, err := ds.IsRunning()
+		require.NoError(t, err)
+		require.True(t, running, "IsRunning should detect externally started container")
+
+		// Stop should be able to handle the external container.
+		require.NoError(t, ds.Stop())
+
+		// Verify container is stopped.
+		running, err = ds.IsRunning()
+		require.NoError(t, err)
+		require.False(t, running, "Container should be stopped")
+
+		// Finally, test normal compose lifecycle works after cleaning up external container.
+		require.NoError(t, ds.Start())
+		checkContainerHealth(t)
+
+		require.NoError(t, ds.Stop())
+
+		running, err = ds.IsRunning()
 		require.NoError(t, err)
 		require.False(t, running)
 	})

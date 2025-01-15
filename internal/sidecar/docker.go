@@ -83,7 +83,8 @@ func (s *dockerSidecar) Start() error {
 
 // Stop stops and removes the docker container using docker-compose.
 func (s *dockerSidecar) Stop() error {
-	// Stop and remove containers, volumes, and networks
+	// First try to stop via compose. If there has been any sort of configuration change
+	// between versions, then this will not stop the container.
 	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
 	cmd := exec.Command("docker", "compose", "-f", s.composePath, "down",
 		"--remove-orphans",
@@ -93,7 +94,15 @@ func (s *dockerSidecar) Stop() error {
 	cmd.Env = s.getComposeEnv()
 
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to stop containers: %w\nOutput: %s", err, string(output))
+		// Don't return error here, try our fallback.
+		s.logger.Debugf("failed to stop via compose: %v\noutput: %s", err, string(output))
+	}
+
+	// Fallback in the case of a configuration change between versions, attempt to remove
+	// the container by name.
+	cmd = exec.Command("docker", "rm", "-f", "contributoor")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to stop container: %w\nOutput: %s", err, string(output))
 	}
 
 	fmt.Printf("%sContributoor stopped successfully%s\n", tui.TerminalColorGreen, tui.TerminalColorReset)
@@ -103,23 +112,31 @@ func (s *dockerSidecar) Stop() error {
 
 // IsRunning checks if the docker container is running.
 func (s *dockerSidecar) IsRunning() (bool, error) {
+	// Check via compose first. If there has been any sort of configuration change between
+	// versions, then this will return a non running state.
 	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
 	cmd := exec.Command("docker", "compose", "-f", s.composePath, "ps", "--format", "{{.State}}")
 	cmd.Env = s.getComposeEnv()
 
 	output, err := cmd.Output()
+	if err == nil {
+		states := strings.Split(strings.TrimSpace(string(output)), "\n")
+		for _, state := range states {
+			if strings.Contains(strings.ToLower(state), "running") {
+				return true, nil
+			}
+		}
+	}
+
+	// In that case, we will fallback to checking for any container with the name 'contributoor'.
+	cmd = exec.Command("docker", "ps", "-q", "-f", "name=contributoor", "-f", "status=running")
+
+	output, err = cmd.Output()
 	if err != nil {
 		return false, fmt.Errorf("failed to check container status: %w", err)
 	}
 
-	states := strings.Split(strings.TrimSpace(string(output)), "\n")
-	for _, state := range states {
-		if strings.Contains(strings.ToLower(state), "running") {
-			return true, nil
-		}
-	}
-
-	return false, nil
+	return len(strings.TrimSpace(string(output))) > 0, nil
 }
 
 // Update pulls the latest image and restarts the container.
