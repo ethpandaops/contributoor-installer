@@ -33,6 +33,13 @@ services:
       start_period: 1s
 `
 
+const composePortsFile = `
+services:
+  test:
+    ports:
+      - "9090:9090"
+`
+
 // TestDockerService_Integration tests the docker sidecar.
 // We use test-containers to boot an instance of docker-in-docker.
 // We can then use this to test our docker service in isolation.
@@ -96,57 +103,73 @@ func TestDockerService_Integration(t *testing.T) {
 	containerPort, err := container.MappedPort(ctx, nat.Port(fmt.Sprintf("%d/tcp", port)))
 	require.NoError(t, err)
 
-	// Create docker service with mock config
+	// Create docker service with mock config.
 	ds, err := sidecar.NewDockerSidecar(logger, mockSidecarConfig, mockInstallerConfig)
 	require.NoError(t, err)
 
-	// Set docker host to test container.
+	// Set docker host to test container
 	t.Setenv("DOCKER_HOST", fmt.Sprintf("tcp://localhost:%s", containerPort.Port()))
-
-	// Write out dummy compose file.
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.yml"), []byte(composeFile), 0644))
-
-	// Change working directory to our test directory so findComposeFile finds our test file.
-	require.NoError(t, os.Chdir(tmpDir))
-
 	t.Setenv("CONTRIBUTOOR_CONFIG_PATH", tmpDir)
 
-	// Run our tests in a real container.
-	t.Run("lifecycle", func(t *testing.T) {
-		// Ensure Start() executes as expected.
-		require.NoError(t, ds.Start())
+	// Change working directory to our test directory.
+	require.NoError(t, os.Chdir(tmpDir))
 
-		// Wait for the container to be healthy.
+	// Helper function for container health check.
+	checkContainerHealth := func(t *testing.T) {
+		t.Helper()
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		for {
 			select {
 			case <-ctx.Done():
-				// If we timeout, log the container logs so we get some idea of what went wrong.
 				logs, err := container.Logs(context.Background())
 				if err == nil {
 					t.Logf("docker-in-docker container logs:\n%s", logs)
 				}
-
 				t.Fatal("timeout waiting for docker-in-docker container to become healthy")
 			default:
-				// Check if the container is running.
 				running, err := ds.IsRunning()
 				require.NoError(t, err)
-
 				if running {
-					goto containerRunning
+					return
 				}
-
 				time.Sleep(time.Second)
 			}
 		}
+	}
 
-	containerRunning:
-		// Stop container and verify it's not running anymore.
+	t.Run("lifecycle_without_metrics", func(t *testing.T) {
+		// Write out compose file.
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.yml"), []byte(composeFile), 0644))
+
+		require.NoError(t, ds.Start())
+		checkContainerHealth(t)
+
 		require.NoError(t, ds.Stop())
+		running, err := ds.IsRunning()
+		require.NoError(t, err)
+		require.False(t, running)
+	})
 
+	t.Run("lifecycle_with_metrics", func(t *testing.T) {
+		cfgWithMetrics := &config.Config{
+			Version:               "latest",
+			ContributoorDirectory: tmpDir,
+			RunMethod:             config.RunMethod_RUN_METHOD_DOCKER,
+			MetricsAddress:        "0.0.0.0:9090",
+		}
+
+		mockSidecarConfig.EXPECT().Get().Return(cfgWithMetrics).AnyTimes()
+
+		// Write out compose files.
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.yml"), []byte(composeFile), 0644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.ports.yml"), []byte(composePortsFile), 0644))
+
+		require.NoError(t, ds.Start())
+		checkContainerHealth(t)
+
+		require.NoError(t, ds.Stop())
 		running, err := ds.IsRunning()
 		require.NoError(t, err)
 		require.False(t, running)

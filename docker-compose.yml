@@ -1,12 +1,11 @@
 services:
   sentry:
+    container_name: contributoor
     image: ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}
     entrypoint: ["/usr/local/bin/sentry"]
     command: ["--config=/config/config.yaml"]
     networks:
       - contributoor
-    ports:
-      - "${CONTRIBUTOOR_METRICS_ADDRESS:-127.0.0.1}:${CONTRIBUTOOR_METRICS_PORT:-9090}:${CONTRIBUTOOR_METRICS_PORT:-9090}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

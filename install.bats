@@ -395,8 +395,9 @@ EOF
         touch "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/contributoor"
         chmod +x "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/contributoor"
         
-        # Create docker-compose.yml
+        # Create compose files
         touch "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.yml"
+        touch "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.ports.yml"
         
         return 0
     }
@@ -408,9 +409,10 @@ EOF
             touch "$3"
             chmod +x "$3"
             
-            # Also create docker-compose.yml in the same directory if it's the binary symlink
+            # Also create compose files in the same directory if it's the binary symlink
             if [[ "$3" == *"/bin/contributoor" ]]; then
                 cp "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.yml" "$(dirname "$3")/docker-compose.yml"
+                cp "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.ports.yml" "$(dirname "$3")/docker-compose.ports.yml"
             fi
         fi
         return 0
@@ -430,6 +432,7 @@ EOF
     [ -x "$CONTRIBUTOOR_PATH/bin/contributoor" ]
     [ -f "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.yml" ]
     [ -f "$CONTRIBUTOOR_PATH/bin/docker-compose.yml" ]
+    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.ports.yml" ]
 }
 
 @test "setup_installer fails on checksum mismatch" {

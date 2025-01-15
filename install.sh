@@ -209,10 +209,16 @@ setup_installer() {
     success "Extracted archive"
     
     chmod +x "$release_dir/contributoor"
+
     [ -f "$release_dir/docker-compose.yml" ] && {
         chmod 644 "$release_dir/docker-compose.yml"
         chmod 755 "$release_dir"
     } || fail "docker-compose.yml not found after extraction"
+
+    [ -f "$release_dir/docker-compose.ports.yml" ] && {
+        chmod 644 "$release_dir/docker-compose.ports.yml"
+        chmod 755 "$release_dir"
+    } || fail "docker-compose.ports.yml not found after extraction"
     
     # Create/update symlink
     rm -f "$CONTRIBUTOOR_BIN/contributoor" # Remove existing symlink or file

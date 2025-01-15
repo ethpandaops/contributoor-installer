@@ -30,6 +30,7 @@ archives:
       - LICENSE*
       - install.sh
       - docker-compose.yml
+      - docker-compose.ports.yml
 
 changelog:
   sort: asc
