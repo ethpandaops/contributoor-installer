@@ -3,11 +3,9 @@ package sidecar_test
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sync"
 	"testing"
 	"time"
 
@@ -126,18 +124,10 @@ func TestDockerService_Integration(t *testing.T) {
 		for {
 			select {
 			case <-ctx.Done():
-				// Fix data race by using a mutex for logs access
-				var logsMutex sync.Mutex
-				logsMutex.Lock()
 				logs, err := container.Logs(context.Background())
 				if err == nil {
-					// Convert logs to string before logging
-					logsBytes, err := io.ReadAll(logs)
-					if err == nil {
-						t.Logf("docker-in-docker container logs:\n%s", string(logsBytes))
-					}
+					t.Logf("docker-in-docker container logs:\n%s", logs)
 				}
-				logsMutex.Unlock()
 				t.Fatal("timeout waiting for docker-in-docker container to become healthy")
 			default:
 				running, err := ds.IsRunning()
