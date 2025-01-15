@@ -189,7 +189,7 @@ func (s *binarySidecar) Update() error {
 
 	// Update installer first
 	if err := updateInstaller(cfg, s.installerCfg); err != nil {
-		s.logger.Warnf("Failed to update installer: %v", err)
+		return fmt.Errorf("failed to update installer: %w", err)
 	}
 
 	// Update sidecar
