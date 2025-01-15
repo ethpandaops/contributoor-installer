@@ -899,3 +899,89 @@ EOF
     grep -q "<string>$CONTRIBUTOOR_BIN/sentry</string>" "$TEST_DIR/io.ethpandaops.contributoor.plist"
     grep -q "<string>$USER</string>" "$TEST_DIR/io.ethpandaops.contributoor.plist"
 }
+
+@test "service start prompt handles yes response" {
+    # Create test script
+    cat > "$TEST_DIR/prompt_test.sh" << 'EOF'
+#!/bin/bash
+source ./install.sh
+contributoor() { return 0; }
+export -f contributoor
+CONTRIBUTOOR_BIN="$TEST_DIR/bin"
+printf "\nWould you like to start contributoor now? [y/N]: "
+read -r START_SERVICE
+case "$(echo "$START_SERVICE" | tr "[:upper:]" "[:lower:]")" in
+    y|yes)
+        contributoor --config-path "$TEST_DIR" restart
+        ;;
+    *)
+        printf "You can start contributoor later by running: contributoor start"
+        ;;
+esac
+EOF
+    chmod +x "$TEST_DIR/prompt_test.sh"
+
+    # Run test with yes input
+    printf 'y\n' | "$TEST_DIR/prompt_test.sh"
+    local result=$?
+
+    [ "$result" -eq 0 ]
+}
+
+@test "service start prompt handles no response" {
+    # Create test script
+    cat > "$TEST_DIR/prompt_test.sh" << 'EOF'
+#!/bin/bash
+source ./install.sh
+contributoor() { return 0; }
+export -f contributoor
+CONTRIBUTOOR_BIN="$TEST_DIR/bin"
+printf "\nWould you like to start contributoor now? [y/N]: "
+read -r START_SERVICE
+case "$(echo "$START_SERVICE" | tr "[:upper:]" "[:lower:]")" in
+    y|yes)
+        contributoor --config-path "$TEST_DIR" restart
+        ;;
+    *)
+        printf "You can start contributoor later by running: contributoor start"
+        ;;
+esac
+EOF
+    chmod +x "$TEST_DIR/prompt_test.sh"
+
+    # Run test with no input
+    output=$(printf 'n\n' | "$TEST_DIR/prompt_test.sh")
+    local result=$?
+
+    [ "$result" -eq 0 ]
+    echo "$output" | grep -q "You can start contributoor later"
+}
+
+@test "service start prompt handles empty response" {
+    # Create test script
+    cat > "$TEST_DIR/prompt_test.sh" << 'EOF'
+#!/bin/bash
+source ./install.sh
+contributoor() { return 0; }
+export -f contributoor
+CONTRIBUTOOR_BIN="$TEST_DIR/bin"
+printf "\nWould you like to start contributoor now? [y/N]: "
+read -r START_SERVICE
+case "$(echo "$START_SERVICE" | tr "[:upper:]" "[:lower:]")" in
+    y|yes)
+        contributoor --config-path "$TEST_DIR" restart
+        ;;
+    *)
+        printf "You can start contributoor later by running: contributoor start"
+        ;;
+esac
+EOF
+    chmod +x "$TEST_DIR/prompt_test.sh"
+
+    # Run test with empty input
+    output=$(printf '\n' | "$TEST_DIR/prompt_test.sh")
+    local result=$?
+
+    [ "$result" -eq 0 ]
+    echo "$output" | grep -q "You can start contributoor later"
+}
