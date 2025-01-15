@@ -24,7 +24,7 @@ if ! tput clear >/dev/null 2>&1; then
 fi
 
 # Installation defaults
-TOTAL_STEPS="8"
+TOTAL_STEPS="9"
 CONTRIBUTOOR_PATH=${CONTRIBUTOOR_PATH:-"$HOME/.contributoor"}
 CONTRIBUTOOR_BIN="$CONTRIBUTOOR_PATH/bin"
 CONTRIBUTOOR_VERSION="latest"
@@ -757,9 +757,21 @@ main() {
     progress 8 "Run install wizard"
     "$CONTRIBUTOOR_BIN/contributoor" --config-path "$CONTRIBUTOOR_PATH" install --version "$CONTRIBUTOOR_VERSION" --run-method "$INSTALL_MODE"
 
+    # Ask user if they want to start the service
+    printf "\nWould you like to start contributoor now? [y/N]: "
+    read -r START_SERVICE
+    case "$(echo "$START_SERVICE" | tr '[:upper:]' '[:lower:]')" in
+        y|yes)
+            "$CONTRIBUTOOR_BIN/contributoor" --config-path "$CONTRIBUTOOR_PATH" restart
+            ;;
+        *)
+            printf "${COLOR_YELLOW}You can start contributoor later by running:${COLOR_RESET} contributoor start"
+            ;;
+    esac
+
     # Show PATH refresh message if needed.
     if [ "$ADDED_TO_PATH" = true ]; then
-        printf "${COLOR_YELLOW}NOTE: To use contributoor commands, either start a new terminal or run: source ~/.$(basename "$SHELL")rc${COLOR_RESET}\n"
+        printf "\n\n${COLOR_YELLOW}NOTE: To use contributoor commands, either start a new terminal or run:${COLOR_RESET} source ~/.$(basename "$SHELL")rc\n"
     fi
 }
 
