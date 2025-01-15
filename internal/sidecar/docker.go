@@ -309,3 +309,23 @@ func (s *dockerSidecar) getComposeEnv() []string {
 
 	return env
 }
+
+// Logs shows the logs from the docker container.
+func (s *dockerSidecar) Logs(tailLines int, follow bool) error {
+	args := []string{"compose", "-f", s.composePath, "logs"}
+
+	if tailLines > 0 {
+		args = append(args, "--tail", fmt.Sprintf("%d", tailLines))
+	}
+
+	if follow {
+		args = append(args, "-f")
+	}
+
+	cmd := exec.Command("docker", args...)
+	cmd.Env = s.getComposeEnv()
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}

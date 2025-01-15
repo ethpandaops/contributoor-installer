@@ -313,3 +313,33 @@ func (s *binarySidecar) updateSidecar() error {
 
 	return nil
 }
+
+// Logs shows the logs from the binary sidecar.
+func (s *binarySidecar) Logs(tailLines int, follow bool) error {
+	cfg := s.sidecarCfg.Get()
+
+	expandedDir, err := homedir.Expand(cfg.ContributoorDirectory)
+	if err != nil {
+		return fmt.Errorf("failed to expand config path: %w", err)
+	}
+
+	logFile := filepath.Join(expandedDir, "logs", "debug.log")
+
+	args := []string{}
+
+	if follow {
+		args = append(args, "-f")
+	}
+
+	if tailLines > 0 {
+		args = append(args, "-n", fmt.Sprintf("%d", tailLines))
+	}
+
+	args = append(args, logFile)
+
+	cmd := exec.Command("tail", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/config"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/install"
+	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/logs"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/restart"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/start"
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/commands/status"
@@ -104,6 +105,11 @@ func main() {
 
 	config.RegisterCommands(app, options.NewCommandOpts(
 		options.WithName("config"),
+		options.WithLogger(log),
+	))
+
+	logs.RegisterCommands(app, options.NewCommandOpts(
+		options.WithName("logs"),
 		options.WithLogger(log),
 	))
 

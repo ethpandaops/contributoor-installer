@@ -25,4 +25,7 @@ type SidecarRunner interface {
 
 	// IsRunning checks if the service is running.
 	IsRunning() (bool, error)
+
+	// Logs returns the logs from the service.
+	Logs(tailLines int, follow bool) error
 }
