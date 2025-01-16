@@ -3,6 +3,7 @@ package sidecar_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,6 +25,7 @@ import (
 const composeFile = `
 services:
   sentry:
+    container_name: contributoor
     image: busybox
     command: ["sh", "-c", "while true; do echo 'Container is running'; sleep 1; done"]
     healthcheck:
@@ -124,19 +126,22 @@ func TestDockerService_Integration(t *testing.T) {
 	require.NoError(t, os.Chdir(tmpDir))
 
 	// Helper function for container health check.
-	checkContainerHealth := func(t *testing.T) {
+	checkContainerHealth := func(t *testing.T, ds sidecar.DockerSidecar) {
 		t.Helper()
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
+		var lastLogs []byte
 		for {
 			select {
 			case <-ctx.Done():
+				// Get logs only once at timeout
 				logs, err := container.Logs(context.Background())
 				if err == nil {
-					t.Logf("docker-in-docker container logs:\n%s", logs)
+					logBytes, _ := io.ReadAll(logs)
+					lastLogs = logBytes
 				}
-				t.Fatal("timeout waiting for docker-in-docker container to become healthy")
+				t.Fatalf("timeout waiting for docker-in-docker container to become healthy\nLast logs: %s", string(lastLogs))
 			default:
 				running, err := ds.IsRunning()
 				require.NoError(t, err)
@@ -153,7 +158,13 @@ func TestDockerService_Integration(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.yml"), []byte(composeFile), 0644))
 
 		require.NoError(t, ds.Start())
-		checkContainerHealth(t)
+		checkContainerHealth(t, ds)
+
+		// Verify the container is using the default network
+		cmd := exec.Command("docker", "container", "inspect", "--format", "{{range $net,$v := .NetworkSettings.Networks}}{{printf \"%s\" $net}}{{end}}", "contributoor")
+		output, err := cmd.Output()
+		require.NoError(t, err)
+		require.Contains(t, string(output), "contributoor", "Container should be connected to default network")
 
 		require.NoError(t, ds.Stop())
 		running, err := ds.IsRunning()
@@ -176,7 +187,13 @@ func TestDockerService_Integration(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.ports.yml"), []byte(composePortsFile), 0644))
 
 		require.NoError(t, ds.Start())
-		checkContainerHealth(t)
+		checkContainerHealth(t, ds)
+
+		// Verify the container is using the default network
+		cmd := exec.Command("docker", "container", "inspect", "--format", "{{range $net,$v := .NetworkSettings.Networks}}{{printf \"%s\" $net}}{{end}}", "contributoor")
+		output, err := cmd.Output()
+		require.NoError(t, err)
+		require.Contains(t, string(output), "contributoor", "Container should be connected to default network")
 
 		require.NoError(t, ds.Stop())
 		running, err := ds.IsRunning()
@@ -210,7 +227,13 @@ func TestDockerService_Integration(t *testing.T) {
 
 		// Finally, test normal compose lifecycle works after cleaning up external container.
 		require.NoError(t, ds.Start())
-		checkContainerHealth(t)
+		checkContainerHealth(t, ds)
+
+		// Verify the container is using the default network
+		cmd = exec.Command("docker", "container", "inspect", "--format", "{{range $net,$v := .NetworkSettings.Networks}}{{printf \"%s\" $net}}{{end}}", "contributoor")
+		output, err = cmd.Output()
+		require.NoError(t, err)
+		require.Contains(t, string(output), "contributoor", "Container should be connected to default network")
 
 		require.NoError(t, ds.Stop())
 
@@ -233,13 +256,29 @@ func TestDockerService_Integration(t *testing.T) {
 			DockerNetwork:         customNetwork,
 		}
 
-		mockSidecarConfig.EXPECT().Get().Return(cfgWithNetwork).AnyTimes()
+		// Create new mock and DockerSidecar instance for this test
+		mockSidecarConfigCustom := mock.NewMockConfigManager(ctrl)
+		mockSidecarConfigCustom.EXPECT().Get().Return(cfgWithNetwork).AnyTimes()
+		mockSidecarConfigCustom.EXPECT().GetConfigPath().Return(filepath.Join(tmpDir, "config.yaml")).AnyTimes()
 
-		require.NoError(t, ds.Start())
-		checkContainerHealth(t)
+		dsCustom, err := sidecar.NewDockerSidecar(logger, mockSidecarConfigCustom, mockInstallerConfig)
+		require.NoError(t, err)
 
-		require.NoError(t, ds.Stop())
-		running, err := ds.IsRunning()
+		// Write out compose file
+		composeFilePath := filepath.Join(tmpDir, "docker-compose.yml")
+		require.NoError(t, os.WriteFile(composeFilePath, []byte(composeFile), 0644))
+
+		require.NoError(t, dsCustom.Start())
+		checkContainerHealth(t, dsCustom)
+
+		// Verify the container is using the custom network
+		verifyCmd := exec.Command("docker", "container", "inspect", "--format", "{{range $net,$v := .NetworkSettings.Networks}}{{printf \"%s\" $net}}{{end}}", "contributoor")
+		verifyOutput, err := verifyCmd.Output()
+		require.NoError(t, err)
+		require.Contains(t, string(verifyOutput), customNetwork, "Container should be connected to custom network")
+
+		require.NoError(t, dsCustom.Stop())
+		running, err := dsCustom.IsRunning()
 		require.NoError(t, err)
 		require.False(t, running)
 	})
