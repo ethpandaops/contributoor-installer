@@ -45,7 +45,7 @@ func (p *WelcomePage) initPage() {
 
 	modal := tview.NewModal().
 		SetText(helperText).
-		AddButtons([]string{tui.ButtonNext, tui.ButtonClose}).
+		AddButtons([]string{tui.ButtonNext}).
 		SetBackgroundColor(tui.ColorFormBackground).
 		SetButtonStyle(tcell.StyleDefault.
 			Background(tcell.ColorDefault).

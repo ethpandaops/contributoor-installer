@@ -14,4 +14,6 @@ services:
 
 networks:
   contributoor:
+    name: ${CONTRIBUTOOR_DOCKER_NETWORK:-contributoor}
     driver: bridge
+    external: true

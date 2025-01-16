@@ -13,6 +13,14 @@ func ValidateBeaconNodeAddress(address string) error {
 		return fmt.Errorf("beacon node address must start with http:// or https://")
 	}
 
+	// Skip health check if using Docker network hostname (non-localhost).
+	host := strings.TrimPrefix(strings.TrimPrefix(address, "http://"), "https://")
+	host = strings.Split(host, ":")[0]
+
+	if !strings.HasPrefix(host, "127.0.0.1") && !strings.HasPrefix(host, "localhost") {
+		return nil
+	}
+
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	resp, err := client.Get(fmt.Sprintf("%s/eth/v1/node/health", address))

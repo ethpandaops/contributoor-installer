@@ -23,7 +23,7 @@ import (
 
 const composeFile = `
 services:
-  test:
+  sentry:
     image: busybox
     command: ["sh", "-c", "while true; do echo 'Container is running'; sleep 1; done"]
     healthcheck:
@@ -32,6 +32,14 @@ services:
       timeout: 1s
       retries: 3
       start_period: 1s
+    networks:
+      - contributoor
+
+networks:
+  contributoor:
+    name: ${CONTRIBUTOOR_DOCKER_NETWORK:-contributoor}
+    driver: bridge
+    external: true
 `
 
 const composePortsFile = `
@@ -207,6 +215,31 @@ func TestDockerService_Integration(t *testing.T) {
 		require.NoError(t, ds.Stop())
 
 		running, err = ds.IsRunning()
+		require.NoError(t, err)
+		require.False(t, running)
+	})
+
+	t.Run("lifecycle_with_custom_network", func(t *testing.T) {
+		// Create a custom network first
+		customNetwork := "test_network"
+		cmd := exec.Command("docker", "network", "create", customNetwork)
+		require.NoError(t, cmd.Run())
+		defer exec.Command("docker", "network", "rm", customNetwork).Run() //nolint:errcheck // test.
+
+		cfgWithNetwork := &config.Config{
+			Version:               "latest",
+			ContributoorDirectory: tmpDir,
+			RunMethod:             config.RunMethod_RUN_METHOD_DOCKER,
+			DockerNetwork:         customNetwork,
+		}
+
+		mockSidecarConfig.EXPECT().Get().Return(cfgWithNetwork).AnyTimes()
+
+		require.NoError(t, ds.Start())
+		checkContainerHealth(t)
+
+		require.NoError(t, ds.Stop())
+		running, err := ds.IsRunning()
 		require.NoError(t, err)
 		require.False(t, running)
 	})

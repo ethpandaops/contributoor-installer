@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethpandaops/contributoor-installer/internal/installer"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
+	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 )
 
@@ -60,6 +61,15 @@ func NewDockerSidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installer
 
 // Start starts the docker container using docker-compose.
 func (s *dockerSidecar) Start() error {
+	// Create the network if it doesn't exist and no custom network specified. We need to do this
+	// because we specify 'external: true' in the docker-compose.yml file, which allows users to
+	// use contributoor with an existing network, but also means we need to create the network if
+	// it doesn't exist. If 'external: false', then the network is automatically created by compose.
+	if s.sidecarCfg.Get().DockerNetwork == "" {
+		cmd := exec.Command("docker", "network", "create", "--driver", "bridge", "contributoor")
+		_ = cmd.Run()
+	}
+
 	// If metrics are enabled, append our ports.yml as an additional -f arg.
 	var additionalArgs []string
 	if metricsHost, _ := s.sidecarCfg.Get().GetMetricsHostPort(); metricsHost != "" {
@@ -105,6 +115,12 @@ func (s *dockerSidecar) Stop() error {
 		return fmt.Errorf("failed to stop container: %w\nOutput: %s", err, string(output))
 	}
 
+	// Remove default network if we're not using a custom one
+	if s.sidecarCfg.Get().DockerNetwork == "" {
+		cmd = exec.Command("docker", "network", "rm", "contributoor")
+		_ = cmd.Run() // Ignore error as network might be in use by other containers
+	}
+
 	fmt.Printf("%sContributoor stopped successfully%s\n", tui.TerminalColorGreen, tui.TerminalColorReset)
 
 	return nil
@@ -129,7 +145,7 @@ func (s *dockerSidecar) IsRunning() (bool, error) {
 	}
 
 	// In that case, we will fallback to checking for any container with the name 'contributoor'.
-	cmd = exec.Command("docker", "ps", "-q", "-f", "name=contributoor", "-f", "status=running")
+	cmd = exec.Command("docker", "ps", "-q", "-f", "name=contributoor")
 
 	output, err = cmd.Output()
 	if err != nil {
@@ -305,6 +321,11 @@ func (s *dockerSidecar) getComposeEnv() []string {
 		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", filepath.Dir(s.configPath)),
 		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", cfg.Version),
 	)
+
+	// Add docker network if using docker
+	if cfg.RunMethod == config.RunMethod_RUN_METHOD_DOCKER && cfg.DockerNetwork != "" {
+		env = append(env, fmt.Sprintf("CONTRIBUTOOR_DOCKER_NETWORK=%s", cfg.DockerNetwork))
+	}
 
 	// Handle metrics address (only added if set).
 	if metricsHost, metricsPort := cfg.GetMetricsHostPort(); metricsHost != "" {
