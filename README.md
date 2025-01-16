@@ -4,8 +4,7 @@ This repository contains the installer for the [contributoor](https://github.com
 
 ## Getting Started
 
-<details>
-  <summary>🔒 Installation</summary>
+  ### 🔒 Installation
 
   Download and inspect the installation script before running:
   ```bash
@@ -18,7 +17,6 @@ This repository contains the installer for the [contributoor](https://github.com
   # Make it executable and run if you're satisfied with the contents.
   chmod +x install.sh && ./install.sh
   ```
-</details>
 
 <details>
   <summary>🚀 Quick Installation</summary>
