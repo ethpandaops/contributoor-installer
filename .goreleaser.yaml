@@ -1,3 +1,5 @@
+project_name: contributoor-installer
+
 before:
   hooks:
     - go mod tidy
@@ -15,7 +17,8 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w
+      - -s -w -X github.com/ethpandaops/contributoor-installer/internal/installer.Release={{.Tag}} -X github.com/ethpandaops/contributoor-installer/internal/installer.GitCommit={{.ShortCommit}} -X github.com/ethpandaops/contributoor-installer/internal/installer.GOOS={{.Os}} -X github.com/ethpandaops/contributoor-installer/internal/installer.GOARCH={{.Arch}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
   - format: tar.gz

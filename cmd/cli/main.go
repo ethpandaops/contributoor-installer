@@ -66,6 +66,19 @@ func main() {
 			Usage: "Contributoor config asset `path`",
 			Value: "~/.contributoor",
 		},
+		cli.BoolFlag{
+			Name:  "release, r",
+			Usage: "Print release and exit",
+		},
+	}
+
+	app.Before = func(c *cli.Context) error {
+		if c.Bool("release") {
+			fmt.Printf("%s\n", installer.Release)
+			os.Exit(0)
+		}
+
+		return nil
 	}
 
 	install.RegisterCommands(app, options.NewCommandOpts(
