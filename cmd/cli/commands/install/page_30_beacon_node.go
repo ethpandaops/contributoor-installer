@@ -112,17 +112,6 @@ func (p *BeaconNodePage) initPage() {
 		}
 
 		form.AddFormItem(networkDropdown)
-
-		// Now that we have the button, set up the dropdown callback
-		if button := form.GetButton(0); button != nil {
-			if item := p.form.GetFormItem(1); item != nil {
-				if dropdown, ok := item.(*tview.DropDown); ok && dropdown != nil {
-					dropdown.SetSelectedFunc(func(text string, index int) {
-						p.display.app.SetFocus(button)
-					})
-				}
-			}
-		}
 	}
 
 	// Add our form to the page for easy access during validation.
@@ -147,6 +136,17 @@ func (p *BeaconNodePage) initPage() {
 		form.SetButtonActivatedStyle(tcell.StyleDefault.
 			Background(tui.ColorButtonActivated).
 			Foreground(tcell.ColorBlack))
+
+		// Set up dropdown callback now that we have the button
+		if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
+			if item := p.form.GetFormItem(1); item != nil {
+				if dropdown, ok := item.(*tview.DropDown); ok && dropdown != nil {
+					dropdown.SetSelectedFunc(func(text string, index int) {
+						p.display.app.SetFocus(button)
+					})
+				}
+			}
+		}
 
 		// Set up dropdown callback now that we have the button
 		if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
