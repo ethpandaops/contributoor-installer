@@ -4,16 +4,8 @@ services:
     image: ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}
     entrypoint: ["/usr/local/bin/sentry"]
     command: ["--config=/config/config.yaml"]
-    networks:
-      - contributoor
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
       - ${CONTRIBUTOOR_CONFIG_PATH}/config.yaml:/config/config.yaml:ro
     restart: always
-
-networks:
-  contributoor:
-    name: ${CONTRIBUTOOR_DOCKER_NETWORK:-contributoor}
-    driver: bridge
-    external: true

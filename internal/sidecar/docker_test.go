@@ -51,6 +51,18 @@ services:
       - "9090:9090"
 `
 
+const composeNetworkFile = `
+services:
+  sentry:
+    networks:
+      - contributoor
+
+networks:
+  contributoor:
+    name: ${CONTRIBUTOOR_DOCKER_NETWORK}
+    external: true
+`
+
 // TestDockerService_Integration tests the docker sidecar.
 // We use test-containers to boot an instance of docker-in-docker.
 // We can then use this to test our docker service in isolation.
@@ -185,6 +197,7 @@ func TestDockerService_Integration(t *testing.T) {
 		// Write out compose files.
 		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.yml"), []byte(composeFile), 0644))
 		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.ports.yml"), []byte(composePortsFile), 0644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.network.yml"), []byte(composeNetworkFile), 0644))
 
 		require.NoError(t, ds.Start())
 		checkContainerHealth(t, ds)
@@ -267,6 +280,7 @@ func TestDockerService_Integration(t *testing.T) {
 		// Write out compose file
 		composeFilePath := filepath.Join(tmpDir, "docker-compose.yml")
 		require.NoError(t, os.WriteFile(composeFilePath, []byte(composeFile), 0644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.network.yml"), []byte(composeNetworkFile), 0644))
 
 		require.NoError(t, dsCustom.Start())
 		checkContainerHealth(t, dsCustom)

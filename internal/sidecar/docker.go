@@ -21,59 +21,73 @@ type DockerSidecar interface {
 
 // dockerSidecar is a basic service for interacting with the docker container.
 type dockerSidecar struct {
-	logger           *logrus.Logger
-	composePath      string
-	composePortsPath string
-	configPath       string
-	sidecarCfg       ConfigManager
-	installerCfg     *installer.Config
+	logger             *logrus.Logger
+	composePath        string
+	composePortsPath   string
+	composeNetworkPath string
+	configPath         string
+	sidecarCfg         ConfigManager
+	installerCfg       *installer.Config
 }
 
 // NewDockerSidecar creates a new DockerSidecar.
 func NewDockerSidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installerCfg *installer.Config) (DockerSidecar, error) {
-	composePath, err := findComposeFile()
+	var (
+		composeFilename        = "docker-compose.yml"
+		composePortsFilename   = "docker-compose.ports.yml"
+		composeNetworkFilename = "docker-compose.network.yml"
+	)
+
+	composePath, err := findComposeFile(composeFilename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find docker-compose.yml: %w", err)
+		return nil, fmt.Errorf("failed to find %s: %w", composeFilename, err)
 	}
 
-	composePortsPath, err := findComposePortsFile()
+	composePortsPath, err := findComposeFile(composePortsFilename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find docker-compose.ports.yml: %w", err)
+		return nil, fmt.Errorf("failed to find %s: %w", composePortsFilename, err)
+	}
+
+	composeNetworkPath, err := findComposeFile(composeNetworkFilename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find %s: %w", composeNetworkFilename, err)
 	}
 
 	if err := validateComposePath(composePath); err != nil {
-		return nil, fmt.Errorf("invalid docker-compose file: %w", err)
+		return nil, fmt.Errorf("invalid %s file: %w", composeFilename, err)
 	}
 
 	if err := validateComposePath(composePortsPath); err != nil {
-		return nil, fmt.Errorf("invalid docker-compose.ports file: %w", err)
+		return nil, fmt.Errorf("invalid %s file: %w", composePortsFilename, err)
+	}
+
+	if err := validateComposePath(composeNetworkPath); err != nil {
+		return nil, fmt.Errorf("invalid %s file: %w", composeNetworkFilename, err)
 	}
 
 	return &dockerSidecar{
-		logger:           logger,
-		composePath:      filepath.Clean(composePath),
-		composePortsPath: filepath.Clean(composePortsPath),
-		configPath:       sidecarCfg.GetConfigPath(),
-		sidecarCfg:       sidecarCfg,
-		installerCfg:     installerCfg,
+		logger:             logger,
+		composePath:        filepath.Clean(composePath),
+		composePortsPath:   filepath.Clean(composePortsPath),
+		composeNetworkPath: filepath.Clean(composeNetworkPath),
+		configPath:         sidecarCfg.GetConfigPath(),
+		sidecarCfg:         sidecarCfg,
+		installerCfg:       installerCfg,
 	}, nil
 }
 
 // Start starts the docker container using docker-compose.
 func (s *dockerSidecar) Start() error {
-	// Create the network if it doesn't exist and no custom network specified. We need to do this
-	// because we specify 'external: true' in the docker-compose.yml file, which allows users to
-	// use contributoor with an existing network, but also means we need to create the network if
-	// it doesn't exist. If 'external: false', then the network is automatically created by compose.
-	if s.sidecarCfg.Get().DockerNetwork == "" {
-		cmd := exec.Command("docker", "network", "create", "--driver", "bridge", "contributoor")
-		_ = cmd.Run()
-	}
-
 	// If metrics are enabled, append our ports.yml as an additional -f arg.
 	var additionalArgs []string
+
 	if metricsHost, _ := s.sidecarCfg.Get().GetMetricsHostPort(); metricsHost != "" {
 		additionalArgs = append(additionalArgs, "-f", s.composePortsPath)
+	}
+
+	// If using a custom network, append network compose file.
+	if s.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER && s.sidecarCfg.Get().DockerNetwork != "" {
+		additionalArgs = append(additionalArgs, "-f", s.composeNetworkPath)
 	}
 
 	args := append([]string{"compose", "-f", s.composePath}, additionalArgs...)
@@ -113,12 +127,6 @@ func (s *dockerSidecar) Stop() error {
 	cmd = exec.Command("docker", "rm", "-f", "contributoor")
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to stop container: %w\nOutput: %s", err, string(output))
-	}
-
-	// Remove default network if we're not using a custom one
-	if s.sidecarCfg.Get().DockerNetwork == "" {
-		cmd = exec.Command("docker", "network", "rm", "contributoor")
-		_ = cmd.Run() // Ignore error as network might be in use by other containers
 	}
 
 	fmt.Printf("%sContributoor stopped successfully%s\n", tui.TerminalColorGreen, tui.TerminalColorReset)
@@ -191,100 +199,6 @@ func (s *dockerSidecar) updateSidecar() error {
 	)
 
 	return nil
-}
-
-// findComposeFile finds the docker-compose file based on the OS.
-func findComposeFile() (string, error) {
-	// Get binary directory.
-	ex, err := os.Executable()
-	if err != nil {
-		return "", fmt.Errorf("could not get executable path: %w", err)
-	}
-
-	binDir := filepath.Dir(ex)
-
-	// Get the actual binary path (resolve symlink).
-	actualBin, err := filepath.EvalSymlinks(ex)
-	if err != nil {
-		return "", fmt.Errorf("could not resolve symlink: %w", err)
-	}
-
-	releaseDir := filepath.Dir(actualBin)
-
-	// First check release directory (next to actual binary).
-	composePath := filepath.Join(releaseDir, "docker-compose.yml")
-	if _, e := os.Stat(composePath); e == nil {
-		return composePath, nil
-	}
-
-	// Fallback to bin directory for backward compatibility.
-	if _, statErr := os.Stat(filepath.Join(binDir, "docker-compose.yml")); statErr == nil {
-		return filepath.Join(binDir, "docker-compose.yml"), nil
-	}
-
-	// Try current directory.
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("could not get working directory: %w", err)
-	}
-
-	if _, err := os.Stat(filepath.Join(cwd, "docker-compose.yml")); err == nil {
-		return filepath.Join(cwd, "docker-compose.yml"), nil
-	}
-
-	// Try repo root
-	if _, err := os.Stat(filepath.Join(cwd, "..", "..", "docker-compose.yml")); err == nil {
-		return filepath.Join(cwd, "..", "..", "docker-compose.yml"), nil
-	}
-
-	return "", fmt.Errorf("docker-compose.yml not found")
-}
-
-// findComposeFile finds the docker-compose file based on the OS.
-func findComposePortsFile() (string, error) {
-	// Get binary directory.
-	ex, err := os.Executable()
-	if err != nil {
-		return "", fmt.Errorf("could not get executable path: %w", err)
-	}
-
-	binDir := filepath.Dir(ex)
-
-	// Get the actual binary path (resolve symlink).
-	actualBin, err := filepath.EvalSymlinks(ex)
-	if err != nil {
-		return "", fmt.Errorf("could not resolve symlink: %w", err)
-	}
-
-	releaseDir := filepath.Dir(actualBin)
-
-	// First check release directory (next to actual binary).
-	composePath := filepath.Join(releaseDir, "docker-compose.ports.yml")
-	if _, e := os.Stat(composePath); e == nil {
-		return composePath, nil
-	}
-
-	// Fallback to bin directory for backward compatibility.
-	if _, statErr := os.Stat(filepath.Join(binDir, "docker-compose.ports.yml")); statErr == nil {
-		return filepath.Join(binDir, "docker-compose.ports.yml"), nil
-	}
-
-	// Try current directory.
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("could not get working directory: %w", err)
-	}
-
-	if _, err := os.Stat(filepath.Join(cwd, "docker-compose.ports.yml")); err == nil {
-		return filepath.Join(cwd, "docker-compose.ports.yml"), nil
-	}
-
-	// Try repo root
-	if _, err := os.Stat(filepath.Join(cwd, "..", "..", "docker-compose.ports.yml")); err == nil {
-		return filepath.Join(cwd, "..", "..", "docker-compose.ports.yml"), nil
-	}
-
-	return "", fmt.Errorf("docker-compose.ports.yml not found")
 }
 
 func validateComposePath(path string) error {
@@ -366,4 +280,51 @@ func (s *dockerSidecar) Logs(tailLines int, follow bool) error {
 	cmd.Stderr = os.Stderr
 
 	return cmd.Run()
+}
+
+// findComposeFile finds the docker-compose file based on the OS.
+func findComposeFile(filename string) (string, error) {
+	// Get binary directory.
+	ex, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("could not get executable path: %w", err)
+	}
+
+	binDir := filepath.Dir(ex)
+
+	// Get the actual binary path (resolve symlink).
+	actualBin, err := filepath.EvalSymlinks(ex)
+	if err != nil {
+		return "", fmt.Errorf("could not resolve symlink: %w", err)
+	}
+
+	releaseDir := filepath.Dir(actualBin)
+
+	// First check release directory (next to actual binary).
+	composePath := filepath.Join(releaseDir, filename)
+	if _, e := os.Stat(composePath); e == nil {
+		return composePath, nil
+	}
+
+	// Fallback to bin directory for backward compatibility.
+	if _, statErr := os.Stat(filepath.Join(binDir, filename)); statErr == nil {
+		return filepath.Join(binDir, filename), nil
+	}
+
+	// Try current directory.
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("could not get working directory: %w", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(cwd, filename)); err == nil {
+		return filepath.Join(cwd, filename), nil
+	}
+
+	// Try repo root
+	if _, err := os.Stat(filepath.Join(cwd, "..", "..", filename)); err == nil {
+		return filepath.Join(cwd, "..", "..", filename), nil
+	}
+
+	return "", fmt.Errorf("%s not found", filename)
 }

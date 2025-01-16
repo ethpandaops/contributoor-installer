@@ -1,0 +1,9 @@
+services:
+  sentry:
+    networks:
+      - contributoor
+
+networks:
+  contributoor:
+    name: ${CONTRIBUTOOR_DOCKER_NETWORK}
+    external: true
