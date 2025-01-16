@@ -9,3 +9,8 @@ services:
     volumes:
       - ${CONTRIBUTOOR_CONFIG_PATH}/config.yaml:/config/config.yaml:ro
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1024M
