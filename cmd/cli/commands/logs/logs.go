@@ -71,6 +71,7 @@ func showLogs(
 		cfg    = sidecarCfg.Get()
 	)
 
+	fmt.Print("in here")
 	// Get the appropriate runner based on run method.
 	switch cfg.RunMethod {
 	case config.RunMethod_RUN_METHOD_DOCKER:
@@ -82,6 +83,8 @@ func showLogs(
 	default:
 		return fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
 	}
+
+	fmt.Print("in here2")
 
 	// Check if service is running.
 	running, err := runner.IsRunning()

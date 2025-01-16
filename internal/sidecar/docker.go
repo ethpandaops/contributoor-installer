@@ -78,20 +78,7 @@ func NewDockerSidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installer
 
 // Start starts the docker container using docker-compose.
 func (s *dockerSidecar) Start() error {
-	// If metrics are enabled, append our ports.yml as an additional -f arg.
-	var additionalArgs []string
-
-	if metricsHost, _ := s.sidecarCfg.Get().GetMetricsHostPort(); metricsHost != "" {
-		additionalArgs = append(additionalArgs, "-f", s.composePortsPath)
-	}
-
-	// If using a custom network, append network compose file.
-	if s.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER && s.sidecarCfg.Get().DockerNetwork != "" {
-		additionalArgs = append(additionalArgs, "-f", s.composeNetworkPath)
-	}
-
-	args := append([]string{"compose", "-f", s.composePath}, additionalArgs...)
-	args = append(args, "up", "-d", "--pull", "always")
+	args := append(s.getComposeArgs(), "up", "-d", "--pull", "always")
 
 	cmd := exec.Command("docker", args...)
 	cmd.Env = s.getComposeEnv()
@@ -109,12 +96,13 @@ func (s *dockerSidecar) Start() error {
 func (s *dockerSidecar) Stop() error {
 	// First try to stop via compose. If there has been any sort of configuration change
 	// between versions, then this will not stop the container.
-	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
-	cmd := exec.Command("docker", "compose", "-f", s.composePath, "down",
+	args := append(s.getComposeArgs(), "down",
 		"--remove-orphans",
 		"-v",
 		"--rmi", "local",
 		"--timeout", "30")
+
+	cmd := exec.Command("docker", args...)
 	cmd.Env = s.getComposeEnv()
 
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -138,8 +126,8 @@ func (s *dockerSidecar) Stop() error {
 func (s *dockerSidecar) IsRunning() (bool, error) {
 	// Check via compose first. If there has been any sort of configuration change between
 	// versions, then this will return a non running state.
-	//nolint:gosec // validateComposePath() and filepath.Clean() in-use.
-	cmd := exec.Command("docker", "compose", "-f", s.composePath, "ps", "--format", "{{.State}}")
+	args := append(s.getComposeArgs(), "ps", "--format", "{{.State}}")
+	cmd := exec.Command("docker", args...)
 	cmd.Env = s.getComposeEnv()
 
 	output, err := cmd.Output()
@@ -264,7 +252,7 @@ func (s *dockerSidecar) getComposeEnv() []string {
 
 // Logs shows the logs from the docker container.
 func (s *dockerSidecar) Logs(tailLines int, follow bool) error {
-	args := []string{"compose", "-f", s.composePath, "logs"}
+	args := append(s.getComposeArgs(), "logs")
 
 	if tailLines > 0 {
 		args = append(args, "--tail", fmt.Sprintf("%d", tailLines))
@@ -278,8 +266,24 @@ func (s *dockerSidecar) Logs(tailLines int, follow bool) error {
 	cmd.Env = s.getComposeEnv()
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Dir = filepath.Dir(s.composePath)
 
 	return cmd.Run()
+}
+
+// getComposeArgs returns the consistent set of compose arguments including file paths.
+func (s *dockerSidecar) getComposeArgs() []string {
+	var additionalArgs []string
+
+	if metricsHost, _ := s.sidecarCfg.Get().GetMetricsHostPort(); metricsHost != "" {
+		additionalArgs = append(additionalArgs, "-f", s.composePortsPath)
+	}
+
+	if s.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER && s.sidecarCfg.Get().DockerNetwork != "" {
+		additionalArgs = append(additionalArgs, "-f", s.composeNetworkPath)
+	}
+
+	return append([]string{"compose", "-f", s.composePath}, additionalArgs...)
 }
 
 // findComposeFile finds the docker-compose file based on the OS.
