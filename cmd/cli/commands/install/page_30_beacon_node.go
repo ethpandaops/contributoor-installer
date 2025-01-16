@@ -1,6 +1,9 @@
 package install
 
 import (
+	"os/exec"
+	"strings"
+
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/ethpandaops/contributoor-installer/internal/validate"
 	"github.com/ethpandaops/contributoor/pkg/config/v1"
@@ -44,9 +47,9 @@ func (p *BeaconNodePage) initPage() {
 	var (
 		// Some basic dimensions for the page modal.
 		modalWidth     = 70
-		lines          = tview.WordWrap("Please enter the address of your Beacon Node.\nFor example: http://localhost:5052", modalWidth-4)
-		textViewHeight = len(lines) + 4
-		formHeight     = 3 // Input field + a bit of padding.
+		lines          = tview.WordWrap("Please enter the address of your Beacon Node.\nFor example: http://127.0.0.1:5052", modalWidth-4)
+		textViewHeight = len(lines) + 8
+		formHeight     = 6 // Input field + network dropdown + button + padding
 
 		// Main grids.
 		contentGrid = tview.NewGrid()
@@ -71,6 +74,46 @@ func (p *BeaconNodePage) initPage() {
 		SetLabelColor(tcell.ColorLightGray)
 	form.AddFormItem(inputField)
 
+	// Only show docker network options if runMethod is Docker.
+	if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
+		// Get list of existing Docker networks the user has.
+		networks := []string{"<Please Select>"}
+		cmd := exec.Command("docker", "network", "ls", "--format", "{{.Name}}")
+
+		output, err := cmd.Output()
+		if err == nil {
+			for _, network := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+				if network != "" && !strings.Contains(network, "contributoor") {
+					networks = append(networks, network)
+				}
+			}
+		}
+
+		// Add network dropdown.
+		networkDropdown := tview.NewDropDown().
+			SetLabel("Optional Docker Network: ").
+			SetOptions(networks, nil).
+			SetFieldBackgroundColor(tcell.ColorBlack).
+			SetLabelColor(tcell.ColorLightGray).
+			SetFieldTextColor(tcell.ColorLightGray)
+
+		// Set current value if exists.
+		currentNetwork := p.display.sidecarCfg.Get().DockerNetwork
+		if currentNetwork == "" {
+			networkDropdown.SetCurrentOption(0) // Select placeholder by default
+		} else {
+			for i, network := range networks {
+				if network == currentNetwork {
+					networkDropdown.SetCurrentOption(i)
+
+					break
+				}
+			}
+		}
+
+		form.AddFormItem(networkDropdown)
+	}
+
 	// Add our form to the page for easy access during validation.
 	p.form = form
 
@@ -93,32 +136,70 @@ func (p *BeaconNodePage) initPage() {
 		form.SetButtonActivatedStyle(tcell.StyleDefault.
 			Background(tui.ColorButtonActivated).
 			Foreground(tcell.ColorBlack))
+
+		// Set up dropdown callback now that we have the button
+		if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
+			if item := p.form.GetFormItem(1); item != nil {
+				if dropdown, ok := item.(*tview.DropDown); ok && dropdown != nil {
+					dropdown.SetSelectedFunc(func(text string, index int) {
+						p.display.app.SetFocus(button)
+					})
+				}
+			}
+		}
+
+		// Set up dropdown callback now that we have the button
+		if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
+			if item := p.form.GetFormItem(1); item != nil {
+				if dropdown, ok := item.(*tview.DropDown); ok && dropdown != nil {
+					dropdown.SetSelectedFunc(func(text string, index int) {
+						p.display.app.SetFocus(button)
+					})
+				}
+			}
+		}
 	}
 
-	// Create the main text view.
-	textView := tview.NewTextView()
-	textView.SetText("Please enter the address of your Beacon Node.\nFor example: http://localhost:5052")
-	textView.SetTextAlign(tview.AlignCenter)
-	textView.SetWordWrap(true)
-	textView.SetTextColor(tview.Styles.PrimaryTextColor)
-	textView.SetBackgroundColor(tui.ColorFormBackground)
-	textView.SetBorderPadding(0, 0, 0, 0)
+	// Create the header text view
+	headerView := tview.NewTextView()
+	headerView.SetText("Please enter the address of your Beacon Node.")
+	headerView.SetTextAlign(tview.AlignCenter)
+	headerView.SetTextColor(tview.Styles.PrimaryTextColor)
+	headerView.SetBackgroundColor(tui.ColorFormBackground)
+	headerView.SetBorderPadding(0, 0, 0, 0)
+
+	// Create the examples text view.
+	optionsView := tview.NewTextView()
+
+	var optionsText string
+	if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
+		optionsText = "\nExamples:\n1. Local beacon node (e.g., http://127.0.0.1:5052)\n2. Docker container (e.g., http://beacon:5052)\n   - Optionally specify an existing Docker network to join"
+	} else {
+		optionsText = "\nExample: http://127.0.0.1:5052"
+	}
+
+	optionsView.SetText(optionsText)
+	optionsView.SetTextAlign(tview.AlignLeft)
+	optionsView.SetWordWrap(true)
+	optionsView.SetTextColor(tview.Styles.PrimaryTextColor)
+	optionsView.SetBackgroundColor(tui.ColorFormBackground)
+	optionsView.SetBorderPadding(0, 0, 0, 0)
 
 	// Set up the content grid.
-	contentGrid.SetRows(2, 2, 1, 4, 1, 2, 2)
+	contentGrid.SetRows(1, 1, 5, 1, 6, 1)
 	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 	contentGrid.SetBorder(true)
 	contentGrid.SetTitle(" Beacon Node ")
 
 	// Add items to content grid using spacers.
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 0, 0, 1, 1, 0, 0, false)
-	contentGrid.AddItem(textView, 1, 0, 1, 1, 0, 0, false)
-	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 2, 0, 1, 1, 0, 0, false)
-	contentGrid.AddItem(formFrame, 3, 0, 2, 1, 0, 0, true)
-	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 5, 0, 2, 1, 0, 0, false)
+	contentGrid.AddItem(headerView, 1, 0, 1, 1, 0, 0, false)
+	contentGrid.AddItem(optionsView, 2, 0, 1, 1, 0, 0, false)
+	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 3, 0, 1, 1, 0, 0, false)
+	contentGrid.AddItem(formFrame, 4, 0, 2, 1, 0, 0, true)
 
 	// Border grid.
-	borderGrid.SetRows(0, textViewHeight+formHeight+4, 0, 2)
+	borderGrid.SetRows(0, textViewHeight+formHeight+1, 0, 2)
 	borderGrid.AddItem(contentGrid, 1, 1, 1, 1, 0, 0, true)
 
 	// Set initial focus.
@@ -127,6 +208,19 @@ func (p *BeaconNodePage) initPage() {
 }
 
 func validateAndUpdate(p *BeaconNodePage, input *tview.InputField) {
+	var networkName string
+
+	if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
+		if item := p.form.GetFormItem(1); item != nil {
+			if dropdown, ok := item.(*tview.DropDown); ok {
+				_, networkName = dropdown.GetCurrentOption()
+				if networkName == "<Please Select>" {
+					networkName = ""
+				}
+			}
+		}
+	}
+
 	if err := validate.ValidateBeaconNodeAddress(input.GetText()); err != nil {
 		p.openErrorModal(err)
 
@@ -135,6 +229,7 @@ func validateAndUpdate(p *BeaconNodePage, input *tview.InputField) {
 
 	if err := p.display.sidecarCfg.Update(func(cfg *config.Config) {
 		cfg.BeaconNodeAddress = input.GetText()
+		cfg.DockerNetwork = networkName
 	}); err != nil {
 		p.openErrorModal(err)
 

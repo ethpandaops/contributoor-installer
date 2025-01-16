@@ -219,6 +219,11 @@ setup_installer() {
         chmod 644 "$release_dir/docker-compose.ports.yml"
         chmod 755 "$release_dir"
     } || fail "docker-compose.ports.yml not found after extraction"
+
+    [ -f "$release_dir/docker-compose.network.yml" ] && {
+        chmod 644 "$release_dir/docker-compose.network.yml"
+        chmod 755 "$release_dir"
+    } || fail "docker-compose.network.yml not found after extraction"
     
     # Create/update symlink
     rm -f "$CONTRIBUTOOR_BIN/contributoor" # Remove existing symlink or file

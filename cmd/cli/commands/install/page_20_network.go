@@ -22,7 +22,7 @@ func NewNetworkConfigPage(display *InstallDisplay) *NetworkConfigPage {
 
 	networkConfigPage.initPage()
 	networkConfigPage.page = tui.NewPage(
-		nil,
+		display.welcomePage.GetPage(),
 		"install-network",
 		"Network Selection",
 		"Select which network you're using",

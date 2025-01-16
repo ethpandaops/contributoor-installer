@@ -24,6 +24,9 @@ func TestNetworkConfigPage(t *testing.T) {
 			app:        tview.NewApplication(),
 			log:        logrus.New(),
 			sidecarCfg: mockConfig,
+			welcomePage: &WelcomePage{
+				page: &tui.Page{ID: "welcome"},
+			},
 		}
 	}
 

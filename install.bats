@@ -398,6 +398,7 @@ EOF
         # Create compose files
         touch "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.yml"
         touch "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.ports.yml"
+        touch "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.network.yml"
         
         return 0
     }
@@ -413,6 +414,7 @@ EOF
             if [[ "$3" == *"/bin/contributoor" ]]; then
                 cp "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.yml" "$(dirname "$3")/docker-compose.yml"
                 cp "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.ports.yml" "$(dirname "$3")/docker-compose.ports.yml"
+                cp "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.network.yml" "$(dirname "$3")/docker-compose.network.yml"
             fi
         fi
         return 0
@@ -431,8 +433,8 @@ EOF
     [ -f "$CONTRIBUTOOR_PATH/bin/contributoor" ]
     [ -x "$CONTRIBUTOOR_PATH/bin/contributoor" ]
     [ -f "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.yml" ]
-    [ -f "$CONTRIBUTOOR_PATH/bin/docker-compose.yml" ]
     [ -f "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.ports.yml" ]
+    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.network.yml" ]
 }
 
 @test "setup_installer fails on checksum mismatch" {

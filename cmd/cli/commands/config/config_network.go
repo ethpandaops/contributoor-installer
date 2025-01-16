@@ -1,6 +1,9 @@
 package config
 
 import (
+	"os/exec"
+	"strings"
+
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/ethpandaops/contributoor-installer/internal/validate"
 	"github.com/ethpandaops/contributoor/pkg/config/v1"
@@ -85,6 +88,47 @@ func (p *NetworkConfigPage) initPage() {
 		p.description.SetText(networkDescriptions[option])
 	})
 	form.AddInputField("Beacon Node Address", p.display.sidecarCfg.Get().BeaconNodeAddress, 0, nil, nil)
+
+	// Add Docker network dropdown if using Docker.
+	if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
+		// Get list of existing Docker networks.
+		networks := []string{"<Please Select>"}
+		cmd := exec.Command("docker", "network", "ls", "--format", "{{.Name}}")
+
+		output, err := cmd.Output()
+		if err == nil {
+			for _, network := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+				if network != "" && !strings.Contains(network, "contributoor") {
+					networks = append(networks, network)
+				}
+			}
+		}
+
+		// Add network dropdown.
+		networkDropdown := tview.NewDropDown().
+			SetLabel("Optional Docker Network: ").
+			SetOptions(networks, nil).
+			SetFieldBackgroundColor(tcell.ColorBlack).
+			SetLabelColor(tcell.ColorLightGray).
+			SetFieldTextColor(tcell.ColorLightGray)
+
+		// Set current value if exists.
+		currentNetwork := p.display.sidecarCfg.Get().DockerNetwork
+		if currentNetwork == "" {
+			networkDropdown.SetCurrentOption(0)
+		} else {
+			for i, network := range networks {
+				if network == currentNetwork {
+					networkDropdown.SetCurrentOption(i)
+
+					break
+				}
+			}
+		}
+
+		form.AddFormItem(networkDropdown)
+	}
+
 	form.AddInputField("Metrics Address", p.display.sidecarCfg.Get().MetricsAddress, 0, nil, nil)
 
 	// Add a save button and ensure we validate the input.
@@ -172,11 +216,30 @@ func (p *NetworkConfigPage) initPage() {
 func validateAndUpdateNetwork(p *NetworkConfigPage) {
 	networkDropdown, _ := p.form.GetFormItem(0).(*tview.DropDown)
 	beaconInput, _ := p.form.GetFormItem(1).(*tview.InputField)
-	metricsInput, _ := p.form.GetFormItem(2).(*tview.InputField)
+
+	var (
+		dockerNetwork  string
+		metricsAddress string
+	)
+
+	if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
+		dockerDropdown, ok := p.form.GetFormItem(2).(*tview.DropDown)
+		if ok {
+			_, dockerNetwork = dockerDropdown.GetCurrentOption()
+			if dockerNetwork == "<Please Select>" {
+				dockerNetwork = ""
+			}
+		}
+
+		metricsInput, _ := p.form.GetFormItem(3).(*tview.InputField)
+		metricsAddress = metricsInput.GetText()
+	} else {
+		metricsInput, _ := p.form.GetFormItem(2).(*tview.InputField)
+		metricsAddress = metricsInput.GetText()
+	}
 
 	_, networkName := networkDropdown.GetCurrentOption()
 	beaconAddress := beaconInput.GetText()
-	metricsAddress := metricsInput.GetText()
 
 	if err := validate.ValidateBeaconNodeAddress(beaconAddress); err != nil {
 		p.openErrorModal(err)
@@ -194,6 +257,7 @@ func validateAndUpdateNetwork(p *NetworkConfigPage) {
 		cfg.NetworkName = config.NetworkName(config.NetworkName_value[networkName])
 		cfg.BeaconNodeAddress = beaconAddress
 		cfg.MetricsAddress = metricsAddress
+		cfg.DockerNetwork = dockerNetwork
 	}); err != nil {
 		p.openErrorModal(err)
 
