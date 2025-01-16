@@ -341,15 +341,14 @@ EOF
 
 @test "setup_installer downloads and verifies checksums" {
     # Create required directories
-    mkdir -p "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}"
+    mkdir -p "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}"
     mkdir -p "$CONTRIBUTOOR_PATH/bin"
     
     # Set required variables
     ARCH="amd64"
     PLATFORM="linux"
-    INSTALLER_VERSION="1.0.0"
-    INSTALLER_BINARY_NAME="contributoor-installer_${INSTALLER_VERSION}_${PLATFORM}_${ARCH}"
-    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/download/v${INSTALLER_VERSION}/${INSTALLER_BINARY_NAME}.tar.gz"
+    INSTALLER_BINARY_NAME="contributoor-installer_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}"
+    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/download/v${CONTRIBUTOOR_VERSION}/${INSTALLER_BINARY_NAME}.tar.gz"
     
     # Mock the curl commands
     function curl() {
@@ -392,13 +391,13 @@ EOF
     # Mock tar extraction
     function tar() {
         # Create the binary and make it executable
-        touch "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/contributoor"
-        chmod +x "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/contributoor"
+        touch "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/contributoor"
+        chmod +x "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/contributoor"
         
         # Create compose files
-        touch "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.yml"
-        touch "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.ports.yml"
-        touch "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.network.yml"
+        touch "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.yml"
+        touch "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.ports.yml"
+        touch "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.network.yml"
         
         return 0
     }
@@ -412,9 +411,9 @@ EOF
             
             # Also create compose files in the same directory if it's the binary symlink
             if [[ "$3" == *"/bin/contributoor" ]]; then
-                cp "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.yml" "$(dirname "$3")/docker-compose.yml"
-                cp "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.ports.yml" "$(dirname "$3")/docker-compose.ports.yml"
-                cp "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.network.yml" "$(dirname "$3")/docker-compose.network.yml"
+                cp "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.yml" "$(dirname "$3")/docker-compose.yml"
+                cp "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.ports.yml" "$(dirname "$3")/docker-compose.ports.yml"
+                cp "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.network.yml" "$(dirname "$3")/docker-compose.network.yml"
             fi
         fi
         return 0
@@ -428,13 +427,13 @@ EOF
     echo "Output: $output"
     
     [ "$status" -eq 0 ]
-    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/contributoor" ]
-    [ -x "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/contributoor" ]
+    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/contributoor" ]
+    [ -x "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/contributoor" ]
     [ -f "$CONTRIBUTOOR_PATH/bin/contributoor" ]
     [ -x "$CONTRIBUTOOR_PATH/bin/contributoor" ]
-    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.yml" ]
-    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.ports.yml" ]
-    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}/docker-compose.network.yml" ]
+    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.yml" ]
+    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.ports.yml" ]
+    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.network.yml" ]
 }
 
 @test "setup_installer fails on checksum mismatch" {
@@ -443,9 +442,9 @@ EOF
     # Set required variables
     ARCH="amd64"
     PLATFORM="linux"
-    INSTALLER_VERSION="1.0.0"
-    INSTALLER_BINARY_NAME="contributoor-installer_${INSTALLER_VERSION}_${PLATFORM}_${ARCH}"
-    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/download/v${INSTALLER_VERSION}/${INSTALLER_BINARY_NAME}.tar.gz"
+    CONTRIBUTOOR_VERSION="1.0.0"
+    INSTALLER_BINARY_NAME="contributoor-installer_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}"
+    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/download/v${CONTRIBUTOOR_VERSION}/${INSTALLER_BINARY_NAME}.tar.gz"
     
     # Mock curl to return different checksums
     function curl() {
