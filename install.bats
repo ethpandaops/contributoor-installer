@@ -492,6 +492,9 @@ EOF
 }
 
 @test "setup_docker_contributoor pulls image" {
+    # Set required variables
+    CONTRIBUTOOR_VERSION="1.0.0"
+
     # Mock docker commands
     function docker() {
         case "$1" in
@@ -499,6 +502,10 @@ EOF
                 return 0
                 ;;
             "pull")
+                if [[ "$2" != "ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}" ]]; then
+                    echo "Invalid image tag: $2"
+                    return 1
+                fi
                 return 0
                 ;;
         esac
@@ -507,6 +514,8 @@ EOF
     export -f docker
     
     run setup_docker_contributoor
+    echo "Status: $status"
+    echo "Output: $output"
     [ "$status" -eq 0 ]
 }
 

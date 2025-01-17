@@ -17,6 +17,7 @@ import (
 
 type DockerSidecar interface {
 	SidecarRunner
+	GetComposeEnv() []string
 }
 
 // dockerSidecar is a basic service for interacting with the docker container.
@@ -81,7 +82,7 @@ func (s *dockerSidecar) Start() error {
 	args := append(s.getComposeArgs(), "up", "-d", "--pull", "always")
 
 	cmd := exec.Command("docker", args...)
-	cmd.Env = s.getComposeEnv()
+	cmd.Env = s.GetComposeEnv()
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to start containers: %w\nOutput: %s", err, string(output))
@@ -103,7 +104,7 @@ func (s *dockerSidecar) Stop() error {
 		"--timeout", "30")
 
 	cmd := exec.Command("docker", args...)
-	cmd.Env = s.getComposeEnv()
+	cmd.Env = s.GetComposeEnv()
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		// Don't return error here, try our fallback.
@@ -128,7 +129,7 @@ func (s *dockerSidecar) IsRunning() (bool, error) {
 	// versions, then this will return a non running state.
 	args := append(s.getComposeArgs(), "ps", "--format", "{{.State}}")
 	cmd := exec.Command("docker", args...)
-	cmd.Env = s.getComposeEnv()
+	cmd.Env = s.GetComposeEnv()
 
 	output, err := cmd.Output()
 	if err == nil {
@@ -170,9 +171,10 @@ func (s *dockerSidecar) Update() error {
 
 // updateSidecar updates the docker image to the specified version.
 func (s *dockerSidecar) updateSidecar() error {
-	cfg := s.sidecarCfg.Get()
-
-	image := fmt.Sprintf("%s:%s", s.installerCfg.DockerImage, cfg.Version)
+	var (
+		cfg   = s.sidecarCfg.Get()
+		image = fmt.Sprintf("%s:%s", s.installerCfg.DockerImage, cfg.Version)
+	)
 
 	cmd := exec.Command("docker", "pull", image)
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -215,7 +217,8 @@ func validateComposePath(path string) error {
 	return nil
 }
 
-func (s *dockerSidecar) getComposeEnv() []string {
+// GetComposeEnv returns the environment variables for docker-compose.
+func (s *dockerSidecar) GetComposeEnv() []string {
 	cfg := s.sidecarCfg.Get()
 
 	env := append(
@@ -263,7 +266,7 @@ func (s *dockerSidecar) Logs(tailLines int, follow bool) error {
 	}
 
 	cmd := exec.Command("docker", args...)
-	cmd.Env = s.getComposeEnv()
+	cmd.Env = s.GetComposeEnv()
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = filepath.Dir(s.composePath)

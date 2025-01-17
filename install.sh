@@ -235,8 +235,6 @@ setup_installer() {
 }
 
 setup_docker_contributoor() {
-    docker system prune -f >/dev/null 2>&1 || true
-
     docker pull "ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}" >/dev/null 2>&1 &
     spinner $!
     wait $!

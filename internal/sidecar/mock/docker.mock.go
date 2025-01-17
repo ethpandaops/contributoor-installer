@@ -38,6 +38,20 @@ func (m *MockDockerSidecar) EXPECT() *MockDockerSidecarMockRecorder {
 	return m.recorder
 }
 
+// GetComposeEnv mocks base method.
+func (m *MockDockerSidecar) GetComposeEnv() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetComposeEnv")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetComposeEnv indicates an expected call of GetComposeEnv.
+func (mr *MockDockerSidecarMockRecorder) GetComposeEnv() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComposeEnv", reflect.TypeOf((*MockDockerSidecar)(nil).GetComposeEnv))
+}
+
 // IsRunning mocks base method.
 func (m *MockDockerSidecar) IsRunning() (bool, error) {
 	m.ctrl.T.Helper()
