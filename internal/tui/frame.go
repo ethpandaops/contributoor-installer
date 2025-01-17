@@ -35,7 +35,6 @@ func CreatePageFrame(opts PageFrameOptions) *tview.Frame {
 	// Set navigation text based on context
 	switch opts.HelpType {
 	case HelpSettings:
-		frame.AddText("Navigation: Settings > "+opts.Title, true, tview.AlignLeft, tcell.ColorWhite)
 		frame.AddText("Tab: Go to the Buttons   Ctrl+C: Quit without Saving", false, tview.AlignCenter, tcell.ColorWhite)
 		frame.AddText("Arrow keys: Navigate             Space/Enter: Select", false, tview.AlignCenter, tcell.ColorWhite)
 	default: // HelpWizard

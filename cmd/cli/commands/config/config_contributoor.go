@@ -114,14 +114,14 @@ func (p *ContributoorSettingsPage) initPage() {
 	}
 
 	// Add our form fields.
-	form.AddDropDown("Log Level", logLevels, currentLogLevelIndex, func(option string, index int) {
+	form.AddDropDown("Log Level", logLevels, currentLogLevelIndex, func(text string, index int) {
 		p.description.SetText("Set the logging verbosity level. Debug and Trace provide more detailed output.")
 	})
 
-	form.AddDropDown("Run Mode", runModeLabels, currentRunModeIndex, func(option string, index int) {
-		if option == config.RunMethod_RUN_METHOD_DOCKER.String() {
+	form.AddDropDown("Run Mode", runModeLabels, currentRunModeIndex, func(text string, index int) {
+		if text == strings.ToLower(config.RunMethod_RUN_METHOD_DOCKER.DisplayName()) {
 			p.description.SetText("Run using Docker containers (recommended)")
-		} else if runModes[index] == config.RunMethod_RUN_METHOD_SYSTEMD {
+		} else if text == getServiceManagerLabel() {
 			p.description.SetText(getServiceManagerDescription())
 		} else {
 			p.description.SetText("Run directly as a binary on your system")
@@ -139,7 +139,15 @@ func (p *ContributoorSettingsPage) initPage() {
 	// Define key bindings for the save button.
 	saveButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyTab, tcell.KeyBacktab:
+		case tcell.KeyTab:
+			// When tabbing from save button, go back to first form item.
+			form.SetFocus(0)
+			p.display.app.SetFocus(form)
+
+			return nil
+		case tcell.KeyBacktab:
+			// When back-tabbing from save button, go to last form item.
+			form.SetFocus(form.GetFormItemCount() - 1)
 			p.display.app.SetFocus(form)
 
 			return nil
@@ -150,29 +158,32 @@ func (p *ContributoorSettingsPage) initPage() {
 
 	// Define key bindings for the form.
 	form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// Get the currently focused item.
 		formIndex, _ := form.GetFocusedItemIndex()
 
 		switch event.Key() {
 		case tcell.KeyTab:
+			// If we're on the last form item, move to save button.
 			if formIndex == form.GetFormItemCount()-1 {
 				p.display.app.SetFocus(saveButton)
 
 				return nil
 			}
-
-			return event
 		case tcell.KeyBacktab:
+			// If we're on the first form item, move to save button.
 			if formIndex == 0 {
 				p.display.app.SetFocus(saveButton)
 
 				return nil
 			}
-
-			return event
-		default:
-			return event
 		}
+
+		return event
 	})
+
+	// Set initial focus to first form item
+	form.SetFocus(0)
+	p.display.app.SetFocus(form)
 
 	// We wrap the form in a frame to add a border and title.
 	formFrame := tview.NewFrame(form)
@@ -213,11 +224,10 @@ func validateAndUpdateContributoor(p *ContributoorSettingsPage) {
 
 	_, logLevelText := logLevel.GetCurrentOption()
 	runModeIndex, _ := runMode.GetCurrentOption()
-	runModeText := runModes[runModeIndex]
 
 	if err := p.display.sidecarCfg.Update(func(cfg *config.Config) {
 		cfg.LogLevel = logLevelText
-		cfg.RunMethod = runModeText
+		cfg.RunMethod = runModes[runModeIndex]
 	}); err != nil {
 		p.openErrorModal(err)
 
