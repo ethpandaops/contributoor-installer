@@ -38,21 +38,6 @@ func (m *MockDockerSidecar) EXPECT() *MockDockerSidecarMockRecorder {
 	return m.recorder
 }
 
-// GetArchSuffix mocks base method.
-func (m *MockDockerSidecar) GetArchSuffix() (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetArchSuffix")
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetArchSuffix indicates an expected call of GetArchSuffix.
-func (mr *MockDockerSidecarMockRecorder) GetArchSuffix() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArchSuffix", reflect.TypeOf((*MockDockerSidecar)(nil).GetArchSuffix))
-}
-
 // GetComposeEnv mocks base method.
 func (m *MockDockerSidecar) GetComposeEnv() []string {
 	m.ctrl.T.Helper()
