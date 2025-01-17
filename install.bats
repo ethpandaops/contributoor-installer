@@ -862,10 +862,18 @@ EOF
             "launchctl")
                 case "$2" in
                     "list") echo "12345 0 io.ethpandaops.contributoor" ;;
+                    "stop") printf "\n${COLOR_GREEN}✓ Stopped launchd service${COLOR_RESET}" ;;
+                    "unload") printf "\n${COLOR_GREEN}✓ Removed launchd service files${COLOR_RESET}" ;;
                     *) return 0 ;;
                 esac
                 ;;
-            *) return 0 ;;
+            "rm") 
+                "${@:1}"
+                ;;
+            *)
+                "${@:2}"
+                return 0 
+                ;;
         esac
     }
     export -f sudo
@@ -994,4 +1002,192 @@ EOF
 
     [ "$result" -eq 0 ]
     echo "$output" | grep -q "You can start contributoor later"
+}
+
+@test "uninstall handles user confirmation correctly" {
+    # Create test environment
+    mkdir -p "$TEST_DIR/.contributoor"
+    touch "$TEST_DIR/.zshrc"
+    echo 'export PATH="$PATH:/some/path/.contributoor/bin"' >> "$TEST_DIR/.zshrc"
+    
+    # Setup mock functions
+    function detect_platform() { echo "darwin"; }
+    function sudo() { "${@:2}"; return 0; }
+    function docker() {
+        case "$1" in
+            "ps") echo "123 contributoor" ;;
+            "images") echo "456 ethpandaops/contributoor" ;;
+            "stop") return 0 ;;
+            "rm") return 0 ;;
+            "rmi") return 0 ;;
+            *) return 0 ;;
+        esac
+    }
+    export -f detect_platform sudo docker
+    export HOME="$TEST_DIR"
+    
+    # Test 'no' response
+    run bash -c '
+        source ./install.sh
+        printf "n\n" | uninstall
+    '
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q "Uninstall cancelled"
+    
+    # Test 'yes' response
+    run bash -c '
+        source ./install.sh
+        printf "y\n" | uninstall
+    '
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q "Uninstalling contributoor"
+    echo "$output" | grep -q "Contributoor has been uninstalled successfully"
+}
+
+@test "uninstall cleans up all components" {
+    # Create test environment
+    mkdir -p "$TEST_DIR/.contributoor/bin"
+    touch "$TEST_DIR/.zshrc"
+    echo 'export PATH="$PATH:/some/path/.contributoor/bin"' >> "$TEST_DIR/.zshrc"
+    export HOME="$TEST_DIR"
+    
+    # Run uninstall with 'yes' response
+    run bash -c '
+        source ./install.sh
+        
+        # Setup mock functions
+        detect_platform() { echo "linux"; }
+        command() {
+            case "$2" in
+                "systemctl") return 0 ;;
+                "docker") return 0 ;;
+                *) command "$@" ;;
+            esac
+        }
+        sudo() { 
+            case "$1" in
+                "systemctl")
+                    case "$2" in
+                        "list-unit-files") echo "contributoor.service enabled" ;;
+                        "stop") printf "\n${COLOR_GREEN}✓ Stopped systemd service${COLOR_RESET}" ;;
+                        "disable") printf "\n${COLOR_GREEN}✓ Disabled systemd service${COLOR_RESET}" ;;
+                        *) return 0 ;;
+                    esac
+                    ;;
+                "rm") 
+                    "${@:1}"
+                    ;;
+                *)
+                    "${@:2}"
+                    return 0 
+                    ;;
+            esac
+        }
+        docker() {
+            case "$1" in
+                "ps") 
+                    [ "$2" = "-a" ] && echo "123 contributoor" || echo "123 contributoor"
+                    ;;
+                "images") echo "456 ethpandaops/contributoor" ;;
+                "stop") printf "\n${COLOR_GREEN}✓ Stopped Docker containers${COLOR_RESET}" ;;
+                "rm") printf "\n${COLOR_GREEN}✓ Removed Docker containers${COLOR_RESET}" ;;
+                "rmi") printf "\n${COLOR_GREEN}✓ Removed Docker images${COLOR_RESET}" ;;
+                *) return 0 ;;
+            esac
+        }
+        export -f detect_platform command sudo docker
+        
+        printf "y\n" | uninstall
+    '
+    
+    # Check status and output
+    [ "$status" -eq 0 ]
+    
+    # Verify systemd cleanup
+    echo "$output" | grep -q "Stopped systemd service"
+    echo "$output" | grep -q "Removed systemd service files"
+    
+    # Verify docker cleanup
+    echo "$output" | grep -q "Stopped Docker containers"
+    echo "$output" | grep -q "Removed Docker containers"
+    echo "$output" | grep -q "Removed Docker images"
+    
+    # Verify PATH cleanup
+    echo "$output" | grep -q "Cleaned PATH from"
+    ! grep -q "contributoor" "$TEST_DIR/.zshrc"
+    
+    # Verify directory cleanup
+    [ ! -d "$TEST_DIR/.contributoor" ]
+}
+
+@test "uninstall handles darwin platform correctly" {
+    # Create test environment
+    mkdir -p "$TEST_DIR/.contributoor"
+    export HOME="$TEST_DIR"
+    
+    # Run uninstall with 'yes' response
+    run bash -c '
+        source ./install.sh
+        
+        # Setup mock functions
+        detect_platform() { echo "darwin"; }
+        sudo() { 
+            case "$1" in
+                "launchctl")
+                    case "$2" in
+                        "list") echo "123 0 io.ethpandaops.contributoor" ;;
+                        "stop") printf "\n${COLOR_GREEN}✓ Stopped launchd service${COLOR_RESET}" ;;
+                        "unload") printf "\n${COLOR_GREEN}✓ Removed launchd service files${COLOR_RESET}" ;;
+                        *) return 0 ;;
+                    esac
+                    ;;
+                "rm") 
+                    "${@:1}"
+                    ;;
+                *)
+                    "${@:2}"
+                    return 0 
+                    ;;
+            esac
+        }
+        export -f detect_platform sudo
+        
+        printf "y\n" | uninstall
+    '
+    
+    # Check status and output
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q "Stopped launchd service"
+    echo "$output" | grep -q "Removed launchd service files"
+}
+
+@test "uninstall handles missing components gracefully" {
+    # Create minimal test environment.
+    mkdir -p "$TEST_DIR"
+    
+    # Setup mock functions.
+    function detect_platform() { echo "linux"; }
+    function command() {
+        case "$2" in
+            "systemctl") return 1 ;; # systemd not available
+            "docker") return 1 ;; # docker not available
+            *) command "$@" ;;
+        esac
+    }
+    function sudo() {
+        "${@:2}"
+        return 0
+    }
+    export -f detect_platform command sudo
+    export HOME="$TEST_DIR"
+    
+    # Run uninstall with 'yes' response.
+    run bash -c '
+        source ./install.sh
+        printf "y\n" | uninstall
+    '
+    
+    # Should complete successfully even with nothing to clean.
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q "Contributoor has been uninstalled successfully"
 }

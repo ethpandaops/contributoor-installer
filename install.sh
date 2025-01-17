@@ -89,9 +89,10 @@ warn() {
 }
 
 usage() {
-    echo "Usage: $0 [-p path] [-v version]"
+    echo "Usage: $0 [-p path] [-v version] [-u]"
     echo "  -p: Path to install contributoor (default: $HOME/.contributoor)"
     echo "  -v: Version of contributoor to install without 'v' prefix (default: latest, example: 0.0.6)"
+    echo "  -u: Uninstall Contributoor"
     exit 1
 }
 
@@ -592,12 +593,97 @@ EOF
     }
 }
 
+uninstall() {
+    printf "\n${COLOR_RED}Warning, this will:${COLOR_RESET}\n"
+    printf " • Stop and remove any contributoor services (systemd/launchd)\n"
+    printf " • Stop and remove any contributoor Docker containers and images\n"
+    printf " • Remove contributoor from your PATH\n"
+    printf " • Delete all contributoor data from ${HOME}/.contributoor\n\n"
+    printf "Are you sure you want to uninstall? [y/N]: "
+    read -r confirm
+    case "$(echo "$confirm" | tr '[:upper:]' '[:lower:]')" in
+        y|yes) ;;
+        *) printf "\nUninstall cancelled\n"; exit 1 ;;
+    esac
+
+    printf "\n${COLOR_RED}Uninstalling contributoor...${COLOR_RESET}\n"
+
+    # First stop all services based on platform
+    case "$(detect_platform)" in
+        "darwin")
+            if sudo launchctl list | grep -q "io.ethpandaops.contributoor"; then
+                sudo launchctl stop io.ethpandaops.contributoor
+                sudo launchctl unload -w "/Library/LaunchDaemons/io.ethpandaops.contributoor.plist"
+                success "Stopped launchd service"
+                
+                sudo rm -f "/Library/LaunchDaemons/io.ethpandaops.contributoor.plist"
+                success "Removed launchd service files"
+            fi
+            ;;
+        *)
+            if command -v systemctl >/dev/null 2>&1 && sudo systemctl list-unit-files | grep -q "contributoor.service"; then
+                sudo systemctl stop contributoor.service
+                success "Stopped systemd service"
+
+                sudo systemctl disable contributoor.service >/dev/null 2>&1
+                sudo rm -f "/etc/systemd/system/contributoor.service"
+                sudo rm -rf "/etc/systemd/system/contributoor.service.d"
+                sudo rm -f "/etc/systemd/system/contributoor.service.wants"
+                sudo rm -f "/etc/systemd/system/multi-user.target.wants/contributoor.service"
+                sudo systemctl daemon-reload
+                success "Removed systemd service files"
+            fi
+            ;;
+    esac
+
+    # Stop and clean up docker containers and images if they exist
+    if command -v docker >/dev/null 2>&1; then
+        # Stop running containers first
+        if docker ps | grep -q "contributoor"; then
+            docker stop $(docker ps | grep "contributoor" | awk '{print $1}') >/dev/null 2>&1
+            success "Stopped Docker containers"
+        fi
+
+        # Remove containers
+        if docker ps -a | grep -q "contributoor"; then
+            docker rm -f $(docker ps -a | grep "contributoor" | awk '{print $1}') >/dev/null 2>&1
+            success "Removed Docker containers"
+        fi
+
+        # Remove images
+        if docker images | grep -q "ethpandaops/contributoor"; then
+            docker rmi -f $(docker images | grep "ethpandaops/contributoor" | awk '{print $3}') >/dev/null 2>&1
+            success "Removed Docker images"
+        fi
+    fi
+
+    # Remove PATH entry from shell config
+    for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.profile"; do
+        if [ -f "$rc" ]; then
+            temp_file=$(mktemp)
+            grep -v "export PATH=.*contributoor.*bin" "$rc" > "$temp_file"
+            mv "$temp_file" "$rc"
+            success "Cleaned PATH from $rc"
+        fi
+    done
+
+    # Remove contributoor directory
+    if [ -d "$HOME/.contributoor" ]; then
+        rm -rf "$HOME/.contributoor"
+        success "Removed contributoor directory"
+    fi
+
+    printf "\n\n${COLOR_GREEN}Contributoor has been uninstalled successfully${COLOR_RESET}\n\n"
+    exit 0
+}
+
 main() {
     # Parse arguments
-    while getopts "p:v:h" FLAG; do
+    while getopts "p:v:hu" FLAG; do
         case "$FLAG" in
             p) CONTRIBUTOOR_PATH="$OPTARG" ;;
             v) CONTRIBUTOOR_VERSION="$OPTARG" ;;
+            u) uninstall ;;
             h) usage ;;
             *) usage ;;
         esac

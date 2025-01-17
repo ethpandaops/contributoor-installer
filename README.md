@@ -27,6 +27,15 @@ This repository contains the installer for the [contributoor](https://github.com
   ```
 </details>
 
+<details>
+  <summary>😔 Uninstall</summary>
+
+  Uninstalling contributoor can be done by running the installer with the `-u` flag:
+  ```bash
+  curl -O https://raw.githubusercontent.com/ethpandaops/contributoor-installer/refs/heads/master/install.sh && chmod +x install.sh && ./install.sh -u
+  ```
+</details>
+
 ## ⚙️ Post-Installation
 
 > **Note:** you may need to start a new shell session before you can run the `contributoor` command.
