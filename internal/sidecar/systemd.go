@@ -35,6 +35,10 @@ func NewSystemdSidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installe
 
 // Start starts the service.
 func (s *systemdSidecar) Start() error {
+	if err := s.checkBinaryExists(); err != nil {
+		return wrapNotInstalledError(err, "systemd")
+	}
+
 	if runtime.GOOS == ArchDarwin {
 		return s.startLaunchd()
 	}
@@ -44,6 +48,10 @@ func (s *systemdSidecar) Start() error {
 
 // Stop stops the service.
 func (s *systemdSidecar) Stop() error {
+	if err := s.checkDaemonExists(); err != nil {
+		return err
+	}
+
 	if runtime.GOOS == ArchDarwin {
 		return s.stopLaunchd()
 	}
@@ -87,9 +95,21 @@ func (s *systemdSidecar) Update() error {
 	return s.reloadSystemd()
 }
 
+// Logs shows the logs from the log files (systemd/launchd is configured to punch out logs to
+// the path as the binary sidecar).
+func (s *systemdSidecar) Logs(tailLines int, follow bool) error {
+	// Create a binary sidecar just for log viewing.
+	binarySidecar, err := NewBinarySidecar(s.logger, s.sidecarCfg, s.installerCfg)
+	if err != nil {
+		return fmt.Errorf("failed to create binary sidecar for logs: %w", err)
+	}
+
+	return binarySidecar.Logs(tailLines, follow)
+}
+
 func (s *systemdSidecar) startSystemd() error {
 	if err := s.checkDaemonExists(); err != nil {
-		return fmt.Errorf("service not found: %w", err)
+		return wrapNotInstalledError(err, "systemd")
 	}
 
 	cmd := exec.Command("sudo", "systemctl", "start", "contributoor.service")
@@ -104,7 +124,7 @@ func (s *systemdSidecar) startSystemd() error {
 
 func (s *systemdSidecar) stopSystemd() error {
 	if err := s.checkDaemonExists(); err != nil {
-		return fmt.Errorf("service not found: %w", err)
+		return wrapNotInstalledError(err, "systemd")
 	}
 
 	cmd := exec.Command("sudo", "systemctl", "stop", "contributoor.service")
@@ -145,7 +165,7 @@ func (s *systemdSidecar) reloadSystemd() error {
 
 func (s *systemdSidecar) startLaunchd() error {
 	if err := s.checkDaemonExists(); err != nil {
-		return fmt.Errorf("service not found: %w", err)
+		return wrapNotInstalledError(err, "launchd")
 	}
 
 	// Mac's launchd is a bit different from systemd. We need to load the service first.
@@ -167,7 +187,7 @@ func (s *systemdSidecar) startLaunchd() error {
 
 func (s *systemdSidecar) stopLaunchd() error {
 	if err := s.checkDaemonExists(); err != nil {
-		return fmt.Errorf("service not found: %w", err)
+		return wrapNotInstalledError(err, "launchd")
 	}
 
 	// First stop the service.
@@ -224,6 +244,7 @@ func (s *systemdSidecar) reloadLaunchd() error {
 	return nil
 }
 
+// checkDaemonExists checks if the daemon exists.
 func (s *systemdSidecar) checkDaemonExists() error {
 	if runtime.GOOS == ArchDarwin {
 		// Check if plist file exists
@@ -249,14 +270,20 @@ func (s *systemdSidecar) checkDaemonExists() error {
 	return nil
 }
 
-// Logs shows the logs from the log files (systemd/launchd is configured to punch out logs to
-// the path as the binary sidecar).
-func (s *systemdSidecar) Logs(tailLines int, follow bool) error {
-	// Create a binary sidecar just for log viewing.
-	binarySidecar, err := NewBinarySidecar(s.logger, s.sidecarCfg, s.installerCfg)
+// checkBinaryExists checks if the binary exists and has the correct version.
+func (s *systemdSidecar) checkBinaryExists() error {
+	// Create a binary sidecar to check version
+	bs, err := NewBinarySidecar(s.logger, s.sidecarCfg, s.installerCfg)
 	if err != nil {
-		return fmt.Errorf("failed to create binary sidecar for logs: %w", err)
+		return fmt.Errorf("failed to create binary sidecar: %w", err)
 	}
 
-	return binarySidecar.Logs(tailLines, follow)
+	// Check binary version
+	if impl, ok := bs.(*binarySidecar); ok {
+		if err := impl.checkBinaryVersion(); err != nil {
+			return fmt.Errorf("version check failed: %w", err)
+		}
+	}
+
+	return nil
 }
