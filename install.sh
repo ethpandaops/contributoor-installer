@@ -235,8 +235,6 @@ setup_installer() {
 }
 
 setup_docker_contributoor() {
-    docker system prune -f >/dev/null 2>&1 || true
-
     # Map architecture to Docker image suffix
     local arch_suffix
     case "$ARCH" in
