@@ -238,11 +238,19 @@ setup_installer() {
 setup_docker_contributoor() {
     docker system prune -f >/dev/null 2>&1 || true
 
-    docker pull "ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}" >/dev/null 2>&1 &
+    # Map architecture to Docker image suffix
+    local arch_suffix
+    case "$ARCH" in
+        amd64) arch_suffix="amd64" ;;
+        arm64) arch_suffix="arm64v8" ;;
+        *) fail "Unsupported architecture for Docker: $ARCH" ;;
+    esac
+
+    docker pull "ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}-${arch_suffix}" >/dev/null 2>&1 &
     spinner $!
     wait $!
     [ $? -ne 0 ] && fail "Failed to pull docker image"
-    success "Pulled docker image: ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}"
+    success "Pulled docker image: ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}-${arch_suffix}"
 }
 
 setup_binary_contributoor() {

@@ -17,6 +17,10 @@ import (
 
 type DockerSidecar interface {
 	SidecarRunner
+	// GetArchSuffix returns the architecture suffix for the docker image.
+	GetArchSuffix() (string, error)
+	// GetComposeEnv returns the environment variables for docker-compose.
+	GetComposeEnv() []string
 }
 
 // dockerSidecar is a basic service for interacting with the docker container.
@@ -81,7 +85,7 @@ func (s *dockerSidecar) Start() error {
 	args := append(s.getComposeArgs(), "up", "-d", "--pull", "always")
 
 	cmd := exec.Command("docker", args...)
-	cmd.Env = s.getComposeEnv()
+	cmd.Env = s.GetComposeEnv()
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to start containers: %w\nOutput: %s", err, string(output))
@@ -103,7 +107,7 @@ func (s *dockerSidecar) Stop() error {
 		"--timeout", "30")
 
 	cmd := exec.Command("docker", args...)
-	cmd.Env = s.getComposeEnv()
+	cmd.Env = s.GetComposeEnv()
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		// Don't return error here, try our fallback.
@@ -128,7 +132,7 @@ func (s *dockerSidecar) IsRunning() (bool, error) {
 	// versions, then this will return a non running state.
 	args := append(s.getComposeArgs(), "ps", "--format", "{{.State}}")
 	cmd := exec.Command("docker", args...)
-	cmd.Env = s.getComposeEnv()
+	cmd.Env = s.GetComposeEnv()
 
 	output, err := cmd.Output()
 	if err == nil {
@@ -172,7 +176,12 @@ func (s *dockerSidecar) Update() error {
 func (s *dockerSidecar) updateSidecar() error {
 	cfg := s.sidecarCfg.Get()
 
-	image := fmt.Sprintf("%s:%s", s.installerCfg.DockerImage, cfg.Version)
+	archSuffix, err := s.GetArchSuffix()
+	if err != nil {
+		return err
+	}
+
+	image := fmt.Sprintf("%s:%s%s", s.installerCfg.DockerImage, cfg.Version, archSuffix)
 
 	cmd := exec.Command("docker", "pull", image)
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -215,13 +224,41 @@ func validateComposePath(path string) error {
 	return nil
 }
 
-func (s *dockerSidecar) getComposeEnv() []string {
+// GetArchSuffix determines the Docker image architecture suffix based on system architecture.
+func (s *dockerSidecar) GetArchSuffix() (string, error) {
+	cmd := exec.Command("uname", "-m")
+
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to determine system architecture: %w", err)
+	}
+
+	switch strings.TrimSpace(string(output)) {
+	case "x86_64", "amd64":
+		return "amd64", nil
+	case "arm64", "aarch64", "arm64e":
+		return "arm64v8", nil
+	default:
+		return "", fmt.Errorf("unsupported architecture: %s", string(output))
+	}
+}
+
+// GetComposeEnv returns the environment variables for docker-compose.
+func (s *dockerSidecar) GetComposeEnv() []string {
 	cfg := s.sidecarCfg.Get()
+
+	archSuffix, err := s.GetArchSuffix()
+	if err != nil {
+		s.logger.Errorf("%v", err)
+
+		return nil
+	}
 
 	env := append(
 		os.Environ(),
 		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", filepath.Dir(s.configPath)),
 		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", cfg.Version),
+		fmt.Sprintf("CONTRIBUTOOR_ARCH_SUFFIX=%s", archSuffix),
 	)
 
 	// Add docker network if using docker
@@ -263,7 +300,7 @@ func (s *dockerSidecar) Logs(tailLines int, follow bool) error {
 	}
 
 	cmd := exec.Command("docker", args...)
-	cmd.Env = s.getComposeEnv()
+	cmd.Env = s.GetComposeEnv()
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = filepath.Dir(s.composePath)
@@ -282,6 +319,9 @@ func (s *dockerSidecar) getComposeArgs() []string {
 	if s.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER && s.sidecarCfg.Get().DockerNetwork != "" {
 		additionalArgs = append(additionalArgs, "-f", s.composeNetworkPath)
 	}
+
+	fmt.Printf("additionalArgs: %v\n", additionalArgs)
+	fmt.Printf("composePath: %s\n", s.composePath)
 
 	return append([]string{"compose", "-f", s.composePath}, additionalArgs...)
 }
