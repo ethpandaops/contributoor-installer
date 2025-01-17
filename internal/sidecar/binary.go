@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strings"
 
 	"github.com/ethpandaops/contributoor-installer/internal/installer"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
@@ -64,6 +65,14 @@ func NewBinarySidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installer
 
 // Start starts the binary service.
 func (s *binarySidecar) Start() error {
+	if err := s.checkBinaryExists(); err != nil {
+		return wrapNotInstalledError(err, "binary")
+	}
+
+	if err := s.checkBinaryVersion(); err != nil {
+		return fmt.Errorf("version check failed: %w", err)
+	}
+
 	cfg := s.sidecarCfg.Get()
 
 	// Use symlink path instead of direct binary path
@@ -113,6 +122,10 @@ func (s *binarySidecar) Start() error {
 
 // Stop stops the binary service.
 func (s *binarySidecar) Stop() error {
+	if err := s.checkBinaryExists(); err != nil {
+		return wrapNotInstalledError(err, "binary")
+	}
+
 	cfg := s.sidecarCfg.Get()
 
 	pidFile := filepath.Join(cfg.ContributoorDirectory, "contributoor.pid")
@@ -185,6 +198,10 @@ func (s *binarySidecar) IsRunning() (bool, error) {
 
 // Update updates the binary service.
 func (s *binarySidecar) Update() error {
+	if err := s.checkBinaryExists(); err != nil {
+		return wrapNotInstalledError(err, "binary")
+	}
+
 	cfg := s.sidecarCfg.Get()
 
 	// Update installer first
@@ -198,6 +215,40 @@ func (s *binarySidecar) Update() error {
 	}
 
 	return nil
+}
+
+// Logs shows the logs from the binary sidecar.
+func (s *binarySidecar) Logs(tailLines int, follow bool) error {
+	if err := s.checkBinaryExists(); err != nil {
+		return wrapNotInstalledError(err, "binary")
+	}
+
+	cfg := s.sidecarCfg.Get()
+
+	expandedDir, err := homedir.Expand(cfg.ContributoorDirectory)
+	if err != nil {
+		return fmt.Errorf("failed to expand config path: %w", err)
+	}
+
+	logFile := filepath.Join(expandedDir, "logs", "debug.log")
+
+	args := []string{}
+
+	if follow {
+		args = append(args, "-f")
+	}
+
+	if tailLines > 0 {
+		args = append(args, "-n", fmt.Sprintf("%d", tailLines))
+	}
+
+	args = append(args, logFile)
+
+	cmd := exec.Command("tail", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
 }
 
 // updateSidecar updates the sidecar binary to the specified version.
@@ -314,8 +365,8 @@ func (s *binarySidecar) updateSidecar() error {
 	return nil
 }
 
-// Logs shows the logs from the binary sidecar.
-func (s *binarySidecar) Logs(tailLines int, follow bool) error {
+// checkBinaryExists checks if the binary exists.
+func (s *binarySidecar) checkBinaryExists() error {
 	cfg := s.sidecarCfg.Get()
 
 	expandedDir, err := homedir.Expand(cfg.ContributoorDirectory)
@@ -323,23 +374,53 @@ func (s *binarySidecar) Logs(tailLines int, follow bool) error {
 		return fmt.Errorf("failed to expand config path: %w", err)
 	}
 
-	logFile := filepath.Join(expandedDir, "logs", "debug.log")
+	binaryPath := filepath.Join(expandedDir, "bin", "sentry")
 
-	args := []string{}
-
-	if follow {
-		args = append(args, "-f")
+	if _, err := os.Stat(binaryPath); err != nil {
+		return fmt.Errorf("binary not found: %w", err)
 	}
 
-	if tailLines > 0 {
-		args = append(args, "-n", fmt.Sprintf("%d", tailLines))
+	return nil
+}
+
+// checkBinaryVersion checks if the binary version matches the config version.
+func (s *binarySidecar) checkBinaryVersion() error {
+	version, err := s.getBinaryVersion()
+	if err != nil {
+		return fmt.Errorf("failed to check binary version: %w", err)
 	}
 
-	args = append(args, logFile)
+	cfg := s.sidecarCfg.Get()
+	if version != cfg.Version {
+		fmt.Printf(
+			"%sVersion mismatch detected: binary is %s but config expects %s. Auto-updating...%s\n",
+			tui.TerminalColorYellow,
+			version,
+			cfg.Version,
+			tui.TerminalColorReset,
+		)
 
-	cmd := exec.Command("tail", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+		if err := s.Update(); err != nil {
+			return fmt.Errorf("failed to auto-update binary: %w", err)
+		}
+	}
 
-	return cmd.Run()
+	return nil
+}
+
+// getBinaryVersion gets the version of the binary by running it with --release flag.
+func (s *binarySidecar) getBinaryVersion() (string, error) {
+	var (
+		cfg        = s.sidecarCfg.Get()
+		binaryPath = filepath.Join(cfg.ContributoorDirectory, "bin", "sentry")
+		cmd        = exec.Command(binaryPath, "--release")
+	)
+
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get binary version: %w", err)
+	}
+
+	// Output will be in format vx.y.z, we want to strip the v prefix.
+	return strings.TrimPrefix(strings.TrimSpace(string(output)), "v"), nil
 }

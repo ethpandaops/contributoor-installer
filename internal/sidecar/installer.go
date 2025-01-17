@@ -71,3 +71,15 @@ func updateInstaller(cfg *config.Config, installerCfg *installer.Config) error {
 
 	return nil
 }
+
+// wrapNotInstalledError wraps an error with a user-friendly message.
+func wrapNotInstalledError(err error, mode string) error {
+	return fmt.Errorf("error:\n\n"+
+		"Contributoor is not installed under %s mode. Please run 'contributoor install' first, selecting the %s mode as your preferred run mode.\n\n"+
+		"This can occur if you switch between run modes and haven't completed installation for the new mode.\n\n"+
+		"Debug details: %w",
+		mode,
+		mode,
+		err,
+	)
+}
