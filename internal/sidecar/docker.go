@@ -320,9 +320,6 @@ func (s *dockerSidecar) getComposeArgs() []string {
 		additionalArgs = append(additionalArgs, "-f", s.composeNetworkPath)
 	}
 
-	fmt.Printf("additionalArgs: %v\n", additionalArgs)
-	fmt.Printf("composePath: %s\n", s.composePath)
-
 	return append([]string{"compose", "-f", s.composePath}, additionalArgs...)
 }
 
