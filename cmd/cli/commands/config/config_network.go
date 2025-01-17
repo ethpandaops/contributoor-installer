@@ -2,6 +2,7 @@ package config
 
 import (
 	"os/exec"
+	"sort"
 	"strings"
 
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
@@ -91,18 +92,35 @@ func (p *NetworkConfigPage) initPage() {
 
 	// Add Docker network dropdown if using Docker.
 	if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
+		var (
+			networks               = []string{"<no network selected>"}
+			commonNetworks         = []string{"host", "bridge", "default"}
+			customNetworks         = make([]string, 0)
+			existingCommonNetworks = make([]string, 0)
+		)
+
 		// Get list of existing Docker networks.
-		networks := []string{"<Please Select>"}
 		cmd := exec.Command("docker", "network", "ls", "--format", "{{.Name}}")
 
 		output, err := cmd.Output()
 		if err == nil {
 			for _, network := range strings.Split(strings.TrimSpace(string(output)), "\n") {
-				if network != "" && !strings.Contains(network, "contributoor") {
-					networks = append(networks, network)
+				if network != "" && !strings.Contains(network, "contributoor") && network != "none" {
+					if contains(commonNetworks, network) {
+						existingCommonNetworks = append(existingCommonNetworks, network)
+					} else {
+						customNetworks = append(customNetworks, network)
+					}
 				}
 			}
 		}
+
+		// Add custom networks first and then common networks.
+		sort.Strings(customNetworks)
+		sort.Strings(existingCommonNetworks)
+
+		networks = append(networks, customNetworks...)
+		networks = append(networks, existingCommonNetworks...)
 
 		// Add network dropdown.
 		networkDropdown := tview.NewDropDown().
@@ -129,7 +147,7 @@ func (p *NetworkConfigPage) initPage() {
 		form.AddFormItem(networkDropdown)
 	}
 
-	form.AddInputField("Metrics Address", p.display.sidecarCfg.Get().MetricsAddress, 0, nil, nil)
+	form.AddInputField("Optional Metrics Address", p.display.sidecarCfg.Get().MetricsAddress, 0, nil, nil)
 
 	// Add a save button and ensure we validate the input.
 	saveButton := tview.NewButton(tui.ButtonSaveSettings)
@@ -226,7 +244,7 @@ func validateAndUpdateNetwork(p *NetworkConfigPage) {
 		dockerDropdown, ok := p.form.GetFormItem(2).(*tview.DropDown)
 		if ok {
 			_, dockerNetwork = dockerDropdown.GetCurrentOption()
-			if dockerNetwork == "<Please Select>" {
+			if dockerNetwork == "<no network selected>" {
 				dockerNetwork = ""
 			}
 		}
@@ -277,4 +295,15 @@ func (p *NetworkConfigPage) openErrorModal(err error) {
 			p.display.app.SetFocus(p.form)
 		},
 	), true)
+}
+
+// contains checks if a string is present in a slice.
+func contains(slice []string, str string) bool {
+	for _, v := range slice {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
 }
