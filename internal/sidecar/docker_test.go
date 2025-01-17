@@ -331,10 +331,6 @@ func TestGetComposeEnv(t *testing.T) {
 				}
 			}
 
-			// Check arch suffix is present and valid
-			archSuffix := envMap["CONTRIBUTOOR_ARCH_SUFFIX"]
-			require.Contains(t, []string{"amd64", "arm64v8"}, archSuffix, "Architecture suffix should be either amd64 or arm64v8")
-
 			// Check config path is set and points to correct directory
 			configPath := envMap["CONTRIBUTOOR_CONFIG_PATH"]
 			require.Equal(t, filepath.Dir(filepath.Join(tt.config.ContributoorDirectory, "config.yaml")), configPath)

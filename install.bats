@@ -491,10 +491,8 @@ EOF
     echo "$output" | grep -q "Checksum mismatch"
 }
 
-@test "setup_docker_contributoor pulls amd64 image" {
+@test "setup_docker_contributoor pulls image" {
     # Set required variables
-    ARCH="amd64"
-    PLATFORM="linux"
     CONTRIBUTOOR_VERSION="1.0.0"
 
     # Mock docker commands
@@ -504,37 +502,7 @@ EOF
                 return 0
                 ;;
             "pull")
-                if [[ "$2" != "ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}-amd64" ]]; then
-                    echo "Invalid image tag: $2"
-                    return 1
-                fi
-                return 0
-                ;;
-        esac
-    }
-    
-    export -f docker
-    
-    run setup_docker_contributoor
-    echo "Status: $status"
-    echo "Output: $output"
-    [ "$status" -eq 0 ]
-}
-
-@test "setup_docker_contributoor pulls arm64 image" {
-    # Set required variables
-    ARCH="arm64"
-    PLATFORM="linux"
-    CONTRIBUTOOR_VERSION="1.0.0"
-
-    # Mock docker commands
-    function docker() {
-        case "$1" in
-            "system")
-                return 0
-                ;;
-            "pull")
-                if [[ "$2" != "ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}-arm64v8" ]]; then
+                if [[ "$2" != "ethpandaops/contributoor:${CONTRIBUTOOR_VERSION}" ]]; then
                     echo "Invalid image tag: $2"
                     return 1
                 fi

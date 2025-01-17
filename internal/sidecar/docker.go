@@ -17,9 +17,6 @@ import (
 
 type DockerSidecar interface {
 	SidecarRunner
-	// GetArchSuffix returns the architecture suffix for the docker image.
-	GetArchSuffix() (string, error)
-	// GetComposeEnv returns the environment variables for docker-compose.
 	GetComposeEnv() []string
 }
 
@@ -174,14 +171,10 @@ func (s *dockerSidecar) Update() error {
 
 // updateSidecar updates the docker image to the specified version.
 func (s *dockerSidecar) updateSidecar() error {
-	cfg := s.sidecarCfg.Get()
-
-	archSuffix, err := s.GetArchSuffix()
-	if err != nil {
-		return err
-	}
-
-	image := fmt.Sprintf("%s:%s%s", s.installerCfg.DockerImage, cfg.Version, archSuffix)
+	var (
+		cfg   = s.sidecarCfg.Get()
+		image = fmt.Sprintf("%s:%s", s.installerCfg.DockerImage, cfg.Version)
+	)
 
 	cmd := exec.Command("docker", "pull", image)
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -224,41 +217,14 @@ func validateComposePath(path string) error {
 	return nil
 }
 
-// GetArchSuffix determines the Docker image architecture suffix based on system architecture.
-func (s *dockerSidecar) GetArchSuffix() (string, error) {
-	cmd := exec.Command("uname", "-m")
-
-	output, err := cmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("failed to determine system architecture: %w", err)
-	}
-
-	switch strings.TrimSpace(string(output)) {
-	case "x86_64", "amd64":
-		return "amd64", nil
-	case "arm64", "aarch64", "arm64e":
-		return "arm64v8", nil
-	default:
-		return "", fmt.Errorf("unsupported architecture: %s", string(output))
-	}
-}
-
 // GetComposeEnv returns the environment variables for docker-compose.
 func (s *dockerSidecar) GetComposeEnv() []string {
 	cfg := s.sidecarCfg.Get()
-
-	archSuffix, err := s.GetArchSuffix()
-	if err != nil {
-		s.logger.Errorf("%v", err)
-
-		return nil
-	}
 
 	env := append(
 		os.Environ(),
 		fmt.Sprintf("CONTRIBUTOOR_CONFIG_PATH=%s", filepath.Dir(s.configPath)),
 		fmt.Sprintf("CONTRIBUTOOR_VERSION=%s", cfg.Version),
-		fmt.Sprintf("CONTRIBUTOOR_ARCH_SUFFIX=%s", archSuffix),
 	)
 
 	// Add docker network if using docker
