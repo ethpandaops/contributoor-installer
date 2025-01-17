@@ -1123,34 +1123,35 @@ EOF
 @test "uninstall handles darwin platform correctly" {
     # Create test environment
     mkdir -p "$TEST_DIR/.contributoor"
-    
-    # Setup mock functions
-    function detect_platform() { echo "darwin"; }
-    function sudo() { 
-        case "$1" in
-            "launchctl")
-                case "$2" in
-                    "list") echo "123 0 io.ethpandaops.contributoor" ;;
-                    "stop") printf "\n${COLOR_GREEN}✓ Stopped launchd service${COLOR_RESET}" ;;
-                    "unload") printf "\n${COLOR_GREEN}✓ Removed launchd service files${COLOR_RESET}" ;;
-                    *) return 0 ;;
-                esac
-                ;;
-            "rm") 
-                "${@:1}"
-                ;;
-            *)
-                "${@:2}"
-                return 0 
-                ;;
-        esac
-    }
-    export -f detect_platform sudo
     export HOME="$TEST_DIR"
     
     # Run uninstall with 'yes' response
     run bash -c '
         source ./install.sh
+        
+        # Setup mock functions
+        detect_platform() { echo "darwin"; }
+        sudo() { 
+            case "$1" in
+                "launchctl")
+                    case "$2" in
+                        "list") echo "123 0 io.ethpandaops.contributoor" ;;
+                        "stop") printf "\n${COLOR_GREEN}✓ Stopped launchd service${COLOR_RESET}" ;;
+                        "unload") printf "\n${COLOR_GREEN}✓ Removed launchd service files${COLOR_RESET}" ;;
+                        *) return 0 ;;
+                    esac
+                    ;;
+                "rm") 
+                    "${@:1}"
+                    ;;
+                *)
+                    "${@:2}"
+                    return 0 
+                    ;;
+            esac
+        }
+        export -f detect_platform sudo
+        
         printf "y\n" | uninstall
     '
     
