@@ -129,17 +129,43 @@ func (p *OutputServerConfigPage) initPage() {
 				}
 
 				// Add the server address field.
-				form.AddInputField("Server Address", defaultAddress, 0, nil, nil)
+				serverInput := tview.NewInputField().
+					SetLabel("Server Address").
+					SetText(defaultAddress)
+				serverInput.SetFocusFunc(func() {
+					p.description.SetText("The address of your custom output server (e.g., myserver.com:443)")
+				})
+				form.AddFormItem(serverInput)
 
 				// Add the username and password fields.
 				username, password := getCredentialsFromConfig(p.display.sidecarCfg.Get())
-				form.AddInputField("Username", username, 0, nil, nil)
-				form.AddPasswordField("Password", password, 0, '*', nil)
+				usernameInput := tview.NewInputField().
+					SetLabel("Username").
+					SetText(username)
+				usernameInput.SetFocusFunc(func() {
+					p.description.SetText("Your output server username for authentication")
+				})
+				form.AddFormItem(usernameInput)
+
+				form.AddPasswordField("Password", password, 0, '*', nil).
+					SetFocusFunc(func() {
+						p.description.SetText("Your output server password for authentication")
+					})
 			} else {
 				// Otherwise, it's an ethPandaOps server.
 				username, password := getCredentialsFromConfig(p.display.sidecarCfg.Get())
-				form.AddInputField("Username", username, 0, nil, nil)
-				form.AddPasswordField("Password", password, 0, '*', nil)
+				usernameInput := tview.NewInputField().
+					SetLabel("Username").
+					SetText(username)
+				usernameInput.SetFocusFunc(func() {
+					p.description.SetText("Your ethPandaOps platform username for authentication")
+				})
+				form.AddFormItem(usernameInput)
+
+				form.AddPasswordField("Password", password, 0, '*', nil).
+					SetFocusFunc(func() {
+						p.description.SetText("Your ethPandaOps platform password for authentication")
+					})
 			}
 
 			p.display.app.SetFocus(form)
@@ -160,7 +186,15 @@ func (p *OutputServerConfigPage) initPage() {
 	// Define key bindings for the save button.
 	saveButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyTab, tcell.KeyBacktab:
+		case tcell.KeyTab:
+			// When tabbing from save button, go back to first form item.
+			form.SetFocus(0)
+			p.display.app.SetFocus(form)
+
+			return nil
+		case tcell.KeyBacktab:
+			// When back-tabbing from save button, go to last form item.
+			form.SetFocus(form.GetFormItemCount() - 1)
 			p.display.app.SetFocus(form)
 
 			return nil
@@ -171,32 +205,32 @@ func (p *OutputServerConfigPage) initPage() {
 
 	// Define key bindings for the form.
 	form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		// Get the currently focused item
+		// Get the currently focused item.
 		formIndex, _ := form.GetFocusedItemIndex()
 
 		switch event.Key() {
 		case tcell.KeyTab:
-			// If we're on the last form item, move to save button
+			// If we're on the last form item, move to save button.
 			if formIndex == form.GetFormItemCount()-1 {
 				p.display.app.SetFocus(saveButton)
 
 				return nil
 			}
-
-			return event
 		case tcell.KeyBacktab:
-			// If we're on the first form item, move to save button
+			// If we're on the first form item, move to save button.
 			if formIndex == 0 {
 				p.display.app.SetFocus(saveButton)
 
 				return nil
 			}
-
-			return event
-		default:
-			return event
 		}
+
+		return event
 	})
+
+	// Set initial focus to first form item
+	form.SetFocus(0)
+	p.display.app.SetFocus(form)
 
 	// We wrap the form in a frame to add a border and title.
 	formFrame := tview.NewFrame(form)

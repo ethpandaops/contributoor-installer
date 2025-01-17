@@ -88,7 +88,14 @@ func (p *NetworkConfigPage) initPage() {
 	form.AddDropDown("Network", networks, currentNetworkIndex, func(option string, index int) {
 		p.description.SetText(networkDescriptions[option])
 	})
-	form.AddInputField("Beacon Node Address", p.display.sidecarCfg.Get().BeaconNodeAddress, 0, nil, nil)
+
+	beaconInput := tview.NewInputField().
+		SetLabel("Beacon Node Address: ").
+		SetText(p.display.sidecarCfg.Get().BeaconNodeAddress)
+	beaconInput.SetFocusFunc(func() {
+		p.description.SetText("The address of your beacon node (e.g., http://127.0.0.1:5052)")
+	})
+	form.AddFormItem(beaconInput)
 
 	// Add Docker network dropdown if using Docker.
 	if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
@@ -144,10 +151,20 @@ func (p *NetworkConfigPage) initPage() {
 			}
 		}
 
+		networkDropdown.SetFocusFunc(func() {
+			p.description.SetText("You can optionally attach the Contributoor container to one of your existing Docker networks.")
+		})
+
 		form.AddFormItem(networkDropdown)
 	}
 
-	form.AddInputField("Optional Metrics Address", p.display.sidecarCfg.Get().MetricsAddress, 0, nil, nil)
+	metricsInput := tview.NewInputField().
+		SetLabel("Optional Metrics Address: ").
+		SetText(p.display.sidecarCfg.Get().MetricsAddress)
+	metricsInput.SetFocusFunc(func() {
+		p.description.SetText("The optional address to expose contributoor metrics on (e.g., :9090). This is NOT the address of your Beacon Node prometheus metrics. If you don't know what this is - leave it empty.")
+	})
+	form.AddFormItem(metricsInput)
 
 	// Add a save button and ensure we validate the input.
 	saveButton := tview.NewButton(tui.ButtonSaveSettings)
@@ -160,8 +177,16 @@ func (p *NetworkConfigPage) initPage() {
 	// Define key bindings for the save button.
 	saveButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyTab, tcell.KeyBacktab:
-			p.display.app.SetFocus(form)
+		case tcell.KeyTab:
+			// When tabbing from save button, go back to first form item.
+			p.form.SetFocus(0)
+			p.display.app.SetFocus(p.form)
+
+			return nil
+		case tcell.KeyBacktab:
+			// When back-tabbing from save button, go to last form item.
+			p.form.SetFocus(p.form.GetFormItemCount() - 1)
+			p.display.app.SetFocus(p.form)
 
 			return nil
 		}
@@ -182,8 +207,6 @@ func (p *NetworkConfigPage) initPage() {
 
 				return nil
 			}
-
-			return event
 		case tcell.KeyBacktab:
 			// If we're on the first form item, move to save button.
 			if formIndex == 0 {
@@ -191,12 +214,14 @@ func (p *NetworkConfigPage) initPage() {
 
 				return nil
 			}
-
-			return event
-		default:
-			return event
 		}
+
+		return event
 	})
+
+	// Set initial focus to first form item
+	form.SetFocus(0)
+	p.display.app.SetFocus(form)
 
 	// We wrap the form in a frame to add a border and title.
 	formFrame := tview.NewFrame(form)
