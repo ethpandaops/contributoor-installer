@@ -2,6 +2,7 @@ package install
 
 import (
 	"os/exec"
+	"sort"
 	"strings"
 
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
@@ -76,18 +77,35 @@ func (p *BeaconNodePage) initPage() {
 
 	// Only show docker network options if runMethod is Docker.
 	if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
+		var (
+			networks               = []string{"<no network selected>"}
+			commonNetworks         = []string{"host", "bridge", "default"}
+			customNetworks         = make([]string, 0)
+			existingCommonNetworks = make([]string, 0)
+		)
+
 		// Get list of existing Docker networks the user has.
-		networks := []string{"<Please Select>"}
 		cmd := exec.Command("docker", "network", "ls", "--format", "{{.Name}}")
 
 		output, err := cmd.Output()
 		if err == nil {
 			for _, network := range strings.Split(strings.TrimSpace(string(output)), "\n") {
-				if network != "" && !strings.Contains(network, "contributoor") {
-					networks = append(networks, network)
+				if network != "" && !strings.Contains(network, "contributoor") && network != "none" {
+					if contains(commonNetworks, network) {
+						existingCommonNetworks = append(existingCommonNetworks, network)
+					} else {
+						customNetworks = append(customNetworks, network)
+					}
 				}
 			}
 		}
+
+		// Add custom networks first and then common networks.
+		sort.Strings(customNetworks)
+		sort.Strings(existingCommonNetworks)
+
+		networks = append(networks, customNetworks...)
+		networks = append(networks, existingCommonNetworks...)
 
 		// Add network dropdown.
 		networkDropdown := tview.NewDropDown().
@@ -214,7 +232,7 @@ func validateAndUpdate(p *BeaconNodePage, input *tview.InputField) {
 		if item := p.form.GetFormItem(1); item != nil {
 			if dropdown, ok := item.(*tview.DropDown); ok {
 				_, networkName = dropdown.GetCurrentOption()
-				if networkName == "<Please Select>" {
+				if networkName == "<no network selected>" {
 					networkName = ""
 				}
 			}
@@ -247,4 +265,15 @@ func (p *BeaconNodePage) openErrorModal(err error) {
 			p.display.app.SetRoot(p.display.frame, true)
 		},
 	), true)
+}
+
+// contains checks if a string is present in a slice.
+func contains(slice []string, str string) bool {
+	for _, v := range slice {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
 }

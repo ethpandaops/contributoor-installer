@@ -92,12 +92,14 @@ func (p *NetworkConfigPage) initPage() {
 
 	// Add Docker network dropdown if using Docker.
 	if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
-		// Get list of existing Docker networks.
-		networks := []string{"<no network selected>"}
-		commonNetworks := []string{"host", "bridge", "default"}
-		customNetworks := []string{}
-		existingCommonNetworks := []string{}
+		var (
+			networks               = []string{"<no network selected>"}
+			commonNetworks         = []string{"host", "bridge", "default"}
+			customNetworks         = make([]string, 0)
+			existingCommonNetworks = make([]string, 0)
+		)
 
+		// Get list of existing Docker networks.
 		cmd := exec.Command("docker", "network", "ls", "--format", "{{.Name}}")
 
 		output, err := cmd.Output()
