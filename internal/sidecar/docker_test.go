@@ -304,6 +304,14 @@ func TestGetComposeEnv(t *testing.T) {
 			mockSidecarConfig := mock.NewMockConfigManager(mockCtrl)
 			mockInstallerConfig := installer.NewConfig()
 
+			// Write out compose files first
+			require.NoError(t, os.WriteFile(filepath.Join(tt.config.ContributoorDirectory, "docker-compose.yml"), []byte(composeFile), 0644))
+			require.NoError(t, os.WriteFile(filepath.Join(tt.config.ContributoorDirectory, "docker-compose.ports.yml"), []byte(composePortsFile), 0644))
+			require.NoError(t, os.WriteFile(filepath.Join(tt.config.ContributoorDirectory, "docker-compose.network.yml"), []byte(composeNetworkFile), 0644))
+
+			// Change working directory to test directory
+			require.NoError(t, os.Chdir(tt.config.ContributoorDirectory))
+
 			// Set up mock expectations before creating DockerSidecar
 			mockSidecarConfig.EXPECT().Get().Return(tt.config).AnyTimes()
 			mockSidecarConfig.EXPECT().GetConfigPath().Return(filepath.Join(tt.config.ContributoorDirectory, "config.yaml")).AnyTimes()
