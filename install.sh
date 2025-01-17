@@ -28,7 +28,6 @@ TOTAL_STEPS="9"
 CONTRIBUTOOR_PATH=${CONTRIBUTOOR_PATH:-"$HOME/.contributoor"}
 CONTRIBUTOOR_BIN="$CONTRIBUTOOR_PATH/bin"
 CONTRIBUTOOR_VERSION="latest"
-INSTALLER_VERSION="latest"
 ADDED_TO_PATH=false
 
 ###############################################################################
@@ -159,9 +158,9 @@ add_to_path() {
 
 setup_installer() {
     local temp_archive=$(mktemp)
-    local checksums_url="https://github.com/ethpandaops/contributoor-installer/releases/download/v${INSTALLER_VERSION}/contributoor-installer_${INSTALLER_VERSION}_checksums.txt"
+    local checksums_url="https://github.com/ethpandaops/contributoor-installer/releases/download/v${CONTRIBUTOOR_VERSION}/contributoor-installer_${CONTRIBUTOOR_VERSION}_checksums.txt"
     local checksums_file=$(mktemp)
-    local release_dir="$CONTRIBUTOOR_PATH/releases/installer-${INSTALLER_VERSION}"
+    local release_dir="$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}"
     
     # Create version-specific release directory
     mkdir -p "$release_dir"
@@ -631,8 +630,6 @@ main() {
 
     # Version management
     progress 2 "Determining version"
-    INSTALLER_VERSION=$(get_latest_installer_version)
-
     if [ "$CONTRIBUTOOR_VERSION" = "latest" ]; then
         CONTRIBUTOOR_VERSION=$(get_latest_contributoor_version)
         success "Latest contributoor version: $CONTRIBUTOOR_VERSION"
@@ -659,8 +656,8 @@ main() {
     success "logs directory: $CONTRIBUTOOR_PATH/logs"
 
     # Setup URLs
-    INSTALLER_BINARY_NAME="contributoor-installer_${INSTALLER_VERSION}_${PLATFORM}_${ARCH}"
-    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/download/v${INSTALLER_VERSION}/${INSTALLER_BINARY_NAME}.tar.gz"
+    INSTALLER_BINARY_NAME="contributoor-installer_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}"
+    INSTALLER_URL="https://github.com/ethpandaops/contributoor-installer/releases/download/v${CONTRIBUTOOR_VERSION}/${INSTALLER_BINARY_NAME}.tar.gz"
     CONTRIBUTOOR_URL="https://github.com/ethpandaops/contributoor/releases/download/v${CONTRIBUTOOR_VERSION}/contributoor_${CONTRIBUTOOR_VERSION}_${PLATFORM}_${ARCH}.tar.gz"
 
     # Installation mode selection
