@@ -67,6 +67,10 @@ func main() {
 			Value: "~/.contributoor",
 		},
 		cli.BoolFlag{
+			Name:  "non-interactive",
+			Usage: "Skip all interactive prompts and use default values",
+		},
+		cli.BoolFlag{
 			Name:  "release, r",
 			Usage: "Print release and exit",
 		},

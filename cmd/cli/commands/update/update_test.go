@@ -33,17 +33,19 @@ func TestUpdateContributoor(t *testing.T) {
 	confirmResponse = true
 
 	tests := []struct {
-		name          string
-		runMethod     config.RunMethod
-		version       string
-		confirmPrompt bool
-		setupMocks    func(*mock.MockConfigManager, *mock.MockDockerSidecar, *mock.MockSystemdSidecar, *mock.MockBinarySidecar, *smock.MockGitHubService)
-		expectedError string
+		name           string
+		runMethod      config.RunMethod
+		version        string
+		confirmPrompt  bool
+		nonInteractive bool
+		setupMocks     func(*mock.MockConfigManager, *mock.MockDockerSidecar, *mock.MockSystemdSidecar, *mock.MockBinarySidecar, *smock.MockGitHubService)
+		expectedError  string
 	}{
 		{
-			name:          "docker - updates service successfully",
-			runMethod:     config.RunMethod_RUN_METHOD_DOCKER,
-			confirmPrompt: true,
+			name:           "docker - updates service successfully",
+			runMethod:      config.RunMethod_RUN_METHOD_DOCKER,
+			confirmPrompt:  true,
+			nonInteractive: false,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
@@ -65,8 +67,9 @@ func TestUpdateContributoor(t *testing.T) {
 			},
 		},
 		{
-			name:      "docker - already at latest version",
-			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
+			name:           "docker - already at latest version",
+			runMethod:      config.RunMethod_RUN_METHOD_DOCKER,
+			nonInteractive: false,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
@@ -76,8 +79,10 @@ func TestUpdateContributoor(t *testing.T) {
 			},
 		},
 		{
-			name:      "docker - update fails",
-			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
+			name:           "docker - update fails",
+			runMethod:      config.RunMethod_RUN_METHOD_DOCKER,
+			confirmPrompt:  true,
+			nonInteractive: false,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
@@ -97,10 +102,11 @@ func TestUpdateContributoor(t *testing.T) {
 			expectedError: "update failed",
 		},
 		{
-			name:          "specific version - exists",
-			version:       "v1.1.0",
-			confirmPrompt: true,
-			runMethod:     config.RunMethod_RUN_METHOD_DOCKER,
+			name:           "specific version - exists",
+			version:        "v1.1.0",
+			confirmPrompt:  true,
+			runMethod:      config.RunMethod_RUN_METHOD_DOCKER,
+			nonInteractive: false,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
@@ -122,9 +128,10 @@ func TestUpdateContributoor(t *testing.T) {
 			},
 		},
 		{
-			name:      "specific version - does not exist",
-			version:   "v999.0.0",
-			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
+			name:           "specific version - does not exist",
+			version:        "v999.0.0",
+			runMethod:      config.RunMethod_RUN_METHOD_DOCKER,
+			nonInteractive: false,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
@@ -134,9 +141,10 @@ func TestUpdateContributoor(t *testing.T) {
 			},
 		},
 		{
-			name:          "binary - updates service successfully",
-			runMethod:     config.RunMethod_RUN_METHOD_BINARY,
-			confirmPrompt: true,
+			name:           "binary - updates service successfully",
+			runMethod:      config.RunMethod_RUN_METHOD_BINARY,
+			confirmPrompt:  true,
+			nonInteractive: false,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
@@ -158,8 +166,9 @@ func TestUpdateContributoor(t *testing.T) {
 			},
 		},
 		{
-			name:      "binary - already at latest version",
-			runMethod: config.RunMethod_RUN_METHOD_BINARY,
+			name:           "binary - already at latest version",
+			runMethod:      config.RunMethod_RUN_METHOD_BINARY,
+			nonInteractive: false,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
@@ -169,9 +178,10 @@ func TestUpdateContributoor(t *testing.T) {
 			},
 		},
 		{
-			name:          "binary - update fails",
-			runMethod:     config.RunMethod_RUN_METHOD_BINARY,
-			confirmPrompt: true,
+			name:           "binary - update fails",
+			runMethod:      config.RunMethod_RUN_METHOD_BINARY,
+			confirmPrompt:  true,
+			nonInteractive: false,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
@@ -193,6 +203,80 @@ func TestUpdateContributoor(t *testing.T) {
 			},
 			expectedError: "update failed",
 		},
+		{
+			name:           "docker - non-interactive mode auto-restarts",
+			runMethod:      config.RunMethod_RUN_METHOD_DOCKER,
+			nonInteractive: true,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
+					Version:   "v1.0.0",
+				}).Times(2)
+				g.EXPECT().GetLatestVersion().Return("v1.1.0", nil)
+				d.EXPECT().Update().Return(nil)
+				cfg.EXPECT().Update(gomock.Any()).Return(nil)
+				cfg.EXPECT().Save().Return(nil)
+
+				// Check if service is running.
+				d.EXPECT().IsRunning().Return(true, nil)
+
+				// In non-interactive mode, should auto-restart.
+				d.EXPECT().Stop().Return(nil)
+				d.EXPECT().Start().Return(nil)
+			},
+		},
+		{
+			name:           "systemd - non-interactive mode auto-restarts",
+			runMethod:      config.RunMethod_RUN_METHOD_SYSTEMD,
+			nonInteractive: true,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod: config.RunMethod_RUN_METHOD_SYSTEMD,
+					Version:   "v1.0.0",
+				}).Times(2)
+				g.EXPECT().GetLatestVersion().Return("v1.1.0", nil)
+
+				// Check if service is running.
+				s.EXPECT().IsRunning().Return(true, nil)
+
+				// Should stop before update.
+				s.EXPECT().Stop().Return(nil)
+
+				// Expect update.
+				s.EXPECT().Update().Return(nil)
+				cfg.EXPECT().Update(gomock.Any()).Return(nil)
+				cfg.EXPECT().Save().Return(nil)
+
+				// In non-interactive mode, should auto-restart.
+				s.EXPECT().Start().Return(nil)
+			},
+		},
+		{
+			name:           "binary - non-interactive mode auto-restarts",
+			runMethod:      config.RunMethod_RUN_METHOD_BINARY,
+			nonInteractive: true,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
+					Version:   "v1.0.0",
+				}).Times(2)
+				g.EXPECT().GetLatestVersion().Return("v1.1.0", nil)
+
+				// Check if service is running.
+				b.EXPECT().IsRunning().Return(true, nil)
+
+				// Should stop before update.
+				b.EXPECT().Stop().Return(nil)
+
+				// Expect update.
+				b.EXPECT().Update().Return(nil)
+				cfg.EXPECT().Update(gomock.Any()).Return(nil)
+				cfg.EXPECT().Save().Return(nil)
+
+				// In non-interactive mode, should auto-restart.
+				b.EXPECT().Start().Return(nil)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -212,9 +296,13 @@ func TestUpdateContributoor(t *testing.T) {
 				cli.StringFlag{
 					Name: "version, v",
 				},
+				cli.BoolFlag{
+					Name: "non-interactive",
+				},
 			}
 			set := flag.NewFlagSet("test", 0)
 			set.String("version", "", "")
+			set.Bool("non-interactive", tt.nonInteractive, "")
 			if tt.version != "" {
 				err := set.Set("version", tt.version)
 				require.NoError(t, err)
