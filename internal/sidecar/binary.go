@@ -230,9 +230,11 @@ func (s *binarySidecar) Logs(tailLines int, follow bool) error {
 		return fmt.Errorf("failed to expand config path: %w", err)
 	}
 
-	logFile := filepath.Join(expandedDir, "logs", "debug.log")
-
-	args := []string{}
+	var (
+		debugLog   = filepath.Join(expandedDir, "logs", "debug.log")
+		serviceLog = filepath.Join(expandedDir, "logs", "service.log")
+		args       = make([]string, 0)
+	)
 
 	if follow {
 		args = append(args, "-f")
@@ -242,7 +244,7 @@ func (s *binarySidecar) Logs(tailLines int, follow bool) error {
 		args = append(args, "-n", fmt.Sprintf("%d", tailLines))
 	}
 
-	args = append(args, logFile)
+	args = append(args, debugLog, serviceLog)
 
 	cmd := exec.Command("tail", args...)
 	cmd.Stdout = os.Stdout
