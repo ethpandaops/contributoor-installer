@@ -117,7 +117,7 @@ func updateContributoor(
 	cfg = sidecarCfg.Get()
 
 	// Update the sidecar.
-	success, err = updateSidecar(log, cfg, docker, systemd, binary)
+	success, err = updateSidecar(c, log, cfg, docker, systemd, binary)
 	if err != nil {
 		return err
 	}
@@ -125,25 +125,30 @@ func updateContributoor(
 	return nil
 }
 
-func updateSidecar(log *logrus.Logger, cfg *config.Config, docker sidecar.DockerSidecar, systemd sidecar.SystemdSidecar, binary sidecar.BinarySidecar) (bool, error) {
+func updateSidecar(
+	c *cli.Context,
+	log *logrus.Logger,
+	cfg *config.Config,
+	docker sidecar.DockerSidecar,
+	systemd sidecar.SystemdSidecar,
+	binary sidecar.BinarySidecar,
+) (bool, error) {
 	switch cfg.RunMethod {
 	case config.RunMethod_RUN_METHOD_DOCKER:
-		return updateDocker(log, cfg, docker)
+		return updateDocker(c, log, cfg, docker)
 	case config.RunMethod_RUN_METHOD_SYSTEMD:
-		return updateSystemd(log, cfg, systemd)
+		return updateSystemd(c, log, cfg, systemd)
 	case config.RunMethod_RUN_METHOD_BINARY:
-		return updateBinary(log, cfg, binary)
+		return updateBinary(c, log, cfg, binary)
 	default:
 		return false, fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
 	}
 }
 
-func updateSystemd(log *logrus.Logger, cfg *config.Config, systemd sidecar.SystemdSidecar) (bool, error) {
+func updateSystemd(c *cli.Context, log *logrus.Logger, cfg *config.Config, systemd sidecar.SystemdSidecar) (bool, error) {
 	// Check if sidecar is currently running.
 	running, err := systemd.IsRunning()
 	if err != nil {
-		log.Errorf("could not check sidecar status: %v", err)
-
 		return false, err
 	}
 
@@ -155,8 +160,6 @@ func updateSystemd(log *logrus.Logger, cfg *config.Config, systemd sidecar.Syste
 	}
 
 	if err := systemd.Update(); err != nil {
-		log.Errorf("could not update sidecar: %v", err)
-
 		return false, err
 	}
 
@@ -164,15 +167,19 @@ func updateSystemd(log *logrus.Logger, cfg *config.Config, systemd sidecar.Syste
 
 	// If it was running, start it again for them.
 	if running {
-		if err := systemd.Start(); err != nil {
-			return true, fmt.Errorf("failed to start sidecar: %w", err)
+		if c.GlobalBool("non-interactive") || tui.Confirm("Would you like to restart Contributoor with the new version?") {
+			if err := systemd.Start(); err != nil {
+				return true, fmt.Errorf("failed to start sidecar: %w", err)
+			}
+		} else {
+			fmt.Printf("%sContributoor will remain stopped until manually started%s\n", tui.TerminalColorYellow, tui.TerminalColorReset)
 		}
 	}
 
 	return true, nil
 }
 
-func updateBinary(log *logrus.Logger, cfg *config.Config, binary sidecar.BinarySidecar) (bool, error) {
+func updateBinary(c *cli.Context, log *logrus.Logger, cfg *config.Config, binary sidecar.BinarySidecar) (bool, error) {
 	// Check if sidecar is currently running.
 	running, err := binary.IsRunning()
 	if err != nil {
@@ -183,9 +190,7 @@ func updateBinary(log *logrus.Logger, cfg *config.Config, binary sidecar.BinaryS
 
 	// If the sidecar is running, we need to stop it before we can update the binary.
 	if running {
-		fmt.Printf("\n")
-
-		if tui.Confirm("Contributoor is running. In order to update, it must be stopped. Would you like to stop it?") {
+		if c.GlobalBool("non-interactive") || tui.Confirm("Contributoor is running. In order to update, it must be stopped. Would you like to stop it?") {
 			if err := binary.Stop(); err != nil {
 				return false, fmt.Errorf("failed to stop sidecar: %w", err)
 			}
@@ -214,14 +219,14 @@ func updateBinary(log *logrus.Logger, cfg *config.Config, binary sidecar.BinaryS
 	return true, nil
 }
 
-func updateDocker(log *logrus.Logger, cfg *config.Config, docker sidecar.DockerSidecar) (bool, error) {
+func updateDocker(c *cli.Context, log *logrus.Logger, cfg *config.Config, docker sidecar.DockerSidecar) (bool, error) {
 	if err := docker.Update(); err != nil {
 		log.Errorf("could not update service: %v", err)
 
 		return false, err
 	}
 
-	fmt.Printf("%sContributoor updated successfully to version %s%s\n", tui.TerminalColorGreen, cfg.Version, tui.TerminalColorReset)
+	fmt.Printf("%sContributoor updated successfully to version %s%s", tui.TerminalColorGreen, cfg.Version, tui.TerminalColorReset)
 
 	// Check if service is currently running.
 	running, err := docker.IsRunning()
@@ -235,7 +240,7 @@ func updateDocker(log *logrus.Logger, cfg *config.Config, docker sidecar.DockerS
 
 	// If the service is running, we need to restart it with the new version.
 	if running {
-		if tui.Confirm("Contributoor is running. Would you like to restart it with the new version?") {
+		if c.GlobalBool("non-interactive") || tui.Confirm("Contributoor is running. Would you like to restart it with the new version?") {
 			if err := docker.Stop(); err != nil {
 				return true, fmt.Errorf("failed to stop sidecar: %w", err)
 			}
@@ -247,7 +252,7 @@ func updateDocker(log *logrus.Logger, cfg *config.Config, docker sidecar.DockerS
 			fmt.Printf("%sContributoor will continue running with the previous version until next restart%s\n", tui.TerminalColorYellow, tui.TerminalColorReset)
 		}
 	} else {
-		if tui.Confirm("Contributoor is not running. Would you like to start it?") {
+		if c.GlobalBool("non-interactive") || tui.Confirm("Contributoor is not running. Would you like to start it?") {
 			if err := docker.Start(); err != nil {
 				return true, fmt.Errorf("failed to start service: %w", err)
 			}
