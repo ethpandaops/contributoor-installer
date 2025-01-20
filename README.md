@@ -28,6 +28,21 @@ This repository contains the installer for the [contributoor](https://github.com
 </details>
 
 <details>
+  <summary>🐳 ethdocker</summary>
+
+  If you're using [eth-docker](https://ethdocker.com), setup is as follows:
+
+- In your .env file:
+  - add `:contributoor.yml` to `COMPOSE_FILE`
+  - set `CONTRIBUTOOR_USERNAME` to your username
+  - set `CONTRIBUTOOR_PASSWORD` to your password
+- Run `./ethd update`
+- Run `./ethd up`
+
+You can read more about configuring eth-docker [here](https://ethdocker.com/Usage/Advanced#specialty-yml-files).
+</details>
+
+<details>
   <summary>😔 Uninstall</summary>
 
   Uninstalling contributoor can be done by running the installer with the `-u` flag:
