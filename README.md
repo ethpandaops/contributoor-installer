@@ -43,7 +43,7 @@ This repository contains the installer for the [contributoor](https://github.com
 
   ### 🚀 With Rocketpool Smart Node
   
-  - Install `contributoor` via the [Install Script](#installation)
+  - Install `contributoor` via the [Install Script](#-installation)
   - During the Contributoor setup:
     - Set `Beacon Node Address` to `http://eth2:5052`
     - Set `Optional Docker Network` to `rocketpool_net`
