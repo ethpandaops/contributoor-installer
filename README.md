@@ -5,7 +5,6 @@ This repository contains the installer for the [contributoor](https://github.com
 ## Getting Started
 
   ### 🔒 Installation
-
   Download and inspect the installation script before running:
   ```bash
   # Download the script.
@@ -19,7 +18,7 @@ This repository contains the installer for the [contributoor](https://github.com
   ```
 
 <details>
-  <summary>🚀 Quick Installation</summary>
+  <summary>⚡ Quick Installation</summary>
 
   If you trust the source, you can run this one-liner:
   ```bash
@@ -27,29 +26,38 @@ This repository contains the installer for the [contributoor](https://github.com
   ```
 </details>
 
-<details>
-  <summary>🐳 ethdocker</summary>
+-------------------------
+
+  ### 🐳 With Eth-Docker
 
   If you're using [eth-docker](https://ethdocker.com), setup is as follows:
 
-- In your .env file:
-  - add `:contributoor.yml` to `COMPOSE_FILE`
-  - set `CONTRIBUTOOR_USERNAME` to your username
-  - set `CONTRIBUTOOR_PASSWORD` to your password
-- Run `./ethd update`
-- Run `./ethd up`
+  - In your .env file:
+    - add `:contributoor.yml` to `COMPOSE_FILE`
+    - set `CONTRIBUTOOR_USERNAME` to your username
+    - set `CONTRIBUTOOR_PASSWORD` to your password
+  - Run `./ethd update`
+  - Run `./ethd up`
+  
+  You can read more about configuring eth-docker [here](https://ethdocker.com/Usage/Advanced#specialty-yml-files).
 
-You can read more about configuring eth-docker [here](https://ethdocker.com/Usage/Advanced#specialty-yml-files).
-</details>
+  ### 🚀 With Rocketpool Smart Node
+  
+  - Install `contributoor` via the [Install Script](#installation)
+  - During the Contributoor setup:
+    - Set `Beacon Node Address` to `http://eth2:5052`
+    - Set `Optional Docker Network` to `rocketpool_net`
+   
 
-<details>
-  <summary>😔 Uninstall</summary>
+    Note: These can also be set later `contributoor config`
+  - Run `contributoor start`
 
-  Uninstalling contributoor can be done by running the installer with the `-u` flag:
-  ```bash
-  curl -O https://raw.githubusercontent.com/ethpandaops/contributoor-installer/refs/heads/master/install.sh && chmod +x install.sh && ./install.sh -u
-  ```
-</details>
+### 😔 Uninstall
+
+Uninstalling contributoor can be done by running the installer with the `-u` flag:
+```bash
+curl -O https://raw.githubusercontent.com/ethpandaops/contributoor-installer/refs/heads/master/install.sh && chmod +x install.sh && ./install.sh -u
+```
 
 ## ⚙️ Post-Installation
 
