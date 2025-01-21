@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/docker/go-connections v0.5.0
-	github.com/ethpandaops/contributoor v0.0.46
+	github.com/ethpandaops/contributoor v0.0.47
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rivo/tview v0.0.0-20241103174730-c76f7879f592
@@ -13,6 +13,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.34.0
 	github.com/urfave/cli v1.22.16
 	go.uber.org/mock v0.5.0
+	golang.org/x/text v0.21.0
 	google.golang.org/protobuf v1.36.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -76,7 +77,6 @@ require (
 	golang.org/x/net v0.32.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/term v0.27.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241118233622-e639e219e697 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241206012308-a4fef0638583 // indirect
