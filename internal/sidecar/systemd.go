@@ -109,7 +109,7 @@ func (s *systemdSidecar) Logs(tailLines int, follow bool) error {
 	}
 
 	// For Linux/systemd, use journalctl.
-	args := []string{"-u", "contributoor.service"}
+	args := []string{"-u", "contributoor.service", "-e"}
 
 	if follow {
 		args = append(args, "-f")
