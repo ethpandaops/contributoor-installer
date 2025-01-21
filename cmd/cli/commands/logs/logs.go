@@ -83,19 +83,5 @@ func showLogs(
 		return fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
 	}
 
-	// Check if service is running.
-	running, err := runner.IsRunning()
-	if err != nil {
-		log.Errorf("could not check sidecar status: %v", err)
-
-		return err
-	}
-
-	if !running {
-		fmt.Printf("%sContributoor is not running%s\n", tui.TerminalColorYellow, tui.TerminalColorReset)
-
-		return nil
-	}
-
 	return runner.Logs(c.Int("tail"), c.Bool("follow"))
 }

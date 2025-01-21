@@ -36,20 +36,7 @@ func TestShowLogs(t *testing.T) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 				}).Times(1)
-				d.EXPECT().IsRunning().Return(true, nil)
 				d.EXPECT().Logs(100, false).Return(nil)
-			},
-		},
-		{
-			name:      "docker - service not running",
-			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
-			tailLines: 100,
-			follow:    false,
-			setupMocks: func(cfg *sidecarmock.MockConfigManager, d *sidecarmock.MockDockerSidecar, b *sidecarmock.MockBinarySidecar, s *sidecarmock.MockSystemdSidecar) {
-				cfg.EXPECT().Get().Return(&config.Config{
-					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
-				}).Times(1)
-				d.EXPECT().IsRunning().Return(false, nil)
 			},
 		},
 		{
@@ -61,7 +48,6 @@ func TestShowLogs(t *testing.T) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 				}).Times(1)
-				d.EXPECT().IsRunning().Return(true, nil)
 				d.EXPECT().Logs(100, false).Return(errors.New("logs failed"))
 			},
 			expectedError: "logs failed",
@@ -75,7 +61,6 @@ func TestShowLogs(t *testing.T) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
 				}).Times(1)
-				b.EXPECT().IsRunning().Return(true, nil)
 				b.EXPECT().Logs(50, true).Return(nil)
 			},
 		},
@@ -88,7 +73,6 @@ func TestShowLogs(t *testing.T) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_SYSTEMD,
 				}).Times(1)
-				s.EXPECT().IsRunning().Return(true, nil)
 				s.EXPECT().Logs(200, false).Return(nil)
 			},
 		},
