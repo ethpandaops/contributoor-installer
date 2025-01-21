@@ -136,9 +136,19 @@ func (s *dockerSidecar) Stop() error {
 
 // Status returns the current state of the docker container.
 func (s *dockerSidecar) Status() (string, error) {
-	cmd := exec.Command("docker", "inspect", "-f", "{{.State.Status}}", "contributoor")
+	// First check if container exists.
+	cmd := exec.Command("docker", "ps", "-a", "--filter", "name=contributoor", "--format", "{{.ID}}")
 
 	output, err := cmd.Output()
+	if err != nil || len(strings.TrimSpace(string(output))) == 0 {
+		//nolint:nilerr // We don't care about the error here.
+		return "not running", nil
+	}
+
+	// Container exists, get its status.
+	cmd = exec.Command("docker", "inspect", "-f", "{{.State.Status}}", "contributoor")
+
+	output, err = cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to get container status: %w", err)
 	}

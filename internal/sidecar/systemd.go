@@ -311,6 +311,10 @@ func (s *systemdSidecar) checkBinaryExists() error {
 // Status returns the current state of the service.
 func (s *systemdSidecar) Status() (string, error) {
 	if runtime.GOOS == ArchDarwin {
+		if err := s.checkDaemonExists(); err != nil {
+			return "", wrapNotInstalledError(err, "launchd")
+		}
+
 		// For macOS, check launchd status.
 		cmd := exec.Command("sudo", "launchctl", "list", "io.ethpandaops.contributoor")
 
@@ -330,6 +334,10 @@ func (s *systemdSidecar) Status() (string, error) {
 		}
 
 		return "inactive", nil
+	}
+
+	if err := s.checkDaemonExists(); err != nil {
+		return "", wrapNotInstalledError(err, "systemd")
 	}
 
 	// For Linux/systemd, get service state.
