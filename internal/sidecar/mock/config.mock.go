@@ -20,6 +20,7 @@ import (
 type MockConfigManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockConfigManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockConfigManagerMockRecorder is the mock recorder for MockConfigManager.
@@ -82,15 +83,15 @@ func (mr *MockConfigManagerMockRecorder) Save() *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockConfigManager) Update(arg0 func(*config.Config)) error {
+func (m *MockConfigManager) Update(updates func(*config.Config)) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", arg0)
+	ret := m.ctrl.Call(m, "Update", updates)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockConfigManagerMockRecorder) Update(arg0 any) *gomock.Call {
+func (mr *MockConfigManagerMockRecorder) Update(updates any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockConfigManager)(nil).Update), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockConfigManager)(nil).Update), updates)
 }

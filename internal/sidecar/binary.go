@@ -164,6 +164,39 @@ func (s *binarySidecar) Stop() error {
 	return nil
 }
 
+// Status returns the current state of the binary process.
+func (s *binarySidecar) Status() (string, error) {
+	cfg := s.sidecarCfg.Get()
+	pidFile := filepath.Join(cfg.ContributoorDirectory, "contributoor.pid")
+
+	// If no PID file, process is not running.
+	pidBytes, err := os.ReadFile(pidFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "stopped", nil
+		}
+
+		return "", fmt.Errorf("failed to read pid file: %w", err)
+	}
+
+	pidStr := string(pidBytes)
+	if !regexp.MustCompile(`^\d+$`).MatchString(pidStr) {
+		return "unknown", fmt.Errorf("invalid PID format")
+	}
+
+	// kill -0 just checks if process exists. It doesn't actually send a
+	// signal that affects the process.
+	cmd := exec.Command("kill", "-0", pidStr)
+	if err := cmd.Run(); err != nil {
+		os.Remove(pidFile)
+
+		//nolint:nilerr // We don't care about the error here.
+		return "stopped", nil
+	}
+
+	return "running", nil
+}
+
 // IsRunning checks if the binary service is running.
 func (s *binarySidecar) IsRunning() (bool, error) {
 	cfg := s.sidecarCfg.Get()
@@ -230,9 +263,11 @@ func (s *binarySidecar) Logs(tailLines int, follow bool) error {
 		return fmt.Errorf("failed to expand config path: %w", err)
 	}
 
-	logFile := filepath.Join(expandedDir, "logs", "debug.log")
-
-	args := []string{}
+	var (
+		debugLog   = filepath.Join(expandedDir, "logs", "debug.log")
+		serviceLog = filepath.Join(expandedDir, "logs", "service.log")
+		args       = make([]string, 0)
+	)
 
 	if follow {
 		args = append(args, "-f")
@@ -242,7 +277,7 @@ func (s *binarySidecar) Logs(tailLines int, follow bool) error {
 		args = append(args, "-n", fmt.Sprintf("%d", tailLines))
 	}
 
-	args = append(args, logFile)
+	args = append(args, debugLog, serviceLog)
 
 	cmd := exec.Command("tail", args...)
 	cmd.Stdout = os.Stdout

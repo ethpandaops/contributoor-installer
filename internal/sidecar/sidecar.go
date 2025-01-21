@@ -23,6 +23,9 @@ type SidecarRunner interface {
 	// Update updates the service.
 	Update() error
 
+	// Status returns the status of the service.
+	Status() (string, error)
+
 	// IsRunning checks if the service is running.
 	IsRunning() (bool, error)
 

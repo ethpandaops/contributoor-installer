@@ -2,6 +2,7 @@ package sidecar
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -95,16 +96,35 @@ func (s *systemdSidecar) Update() error {
 	return s.reloadSystemd()
 }
 
-// Logs shows the logs from the log files (systemd/launchd is configured to punch out logs to
-// the path as the binary sidecar).
+// Logs shows the logs from the service.
 func (s *systemdSidecar) Logs(tailLines int, follow bool) error {
-	// Create a binary sidecar just for log viewing.
-	binarySidecar, err := NewBinarySidecar(s.logger, s.sidecarCfg, s.installerCfg)
-	if err != nil {
-		return fmt.Errorf("failed to create binary sidecar for logs: %w", err)
+	// For macOS, use binary logs.
+	if runtime.GOOS == ArchDarwin {
+		binarySidecar, err := NewBinarySidecar(s.logger, s.sidecarCfg, s.installerCfg)
+		if err != nil {
+			return fmt.Errorf("failed to create binary sidecar for logs: %w", err)
+		}
+
+		return binarySidecar.Logs(tailLines, follow)
 	}
 
-	return binarySidecar.Logs(tailLines, follow)
+	// For Linux/systemd, use journalctl.
+	args := []string{"-u", "contributoor.service", "-e"}
+
+	if follow {
+		args = append(args, "-f")
+	}
+
+	if tailLines > 0 {
+		args = append(args, "-n", fmt.Sprintf("%d", tailLines))
+	}
+
+	//nolint:gosec // controlled input.
+	cmd := exec.Command("sudo", append([]string{"journalctl"}, args...)...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
 }
 
 func (s *systemdSidecar) startSystemd() error {
@@ -286,4 +306,47 @@ func (s *systemdSidecar) checkBinaryExists() error {
 	}
 
 	return nil
+}
+
+// Status returns the current state of the service.
+func (s *systemdSidecar) Status() (string, error) {
+	if runtime.GOOS == ArchDarwin {
+		if err := s.checkDaemonExists(); err != nil {
+			return "", wrapNotInstalledError(err, "launchd")
+		}
+
+		// For macOS, check launchd status.
+		cmd := exec.Command("sudo", "launchctl", "list", "io.ethpandaops.contributoor")
+
+		output, err := cmd.Output()
+		if err != nil {
+			//nolint:nilerr // We don't care about the error here.
+			return "inactive", nil
+		}
+
+		// If service is running, output will contain a PID.
+		lines := strings.Split(string(output), "\n")
+		if len(lines) > 0 {
+			fields := strings.Fields(lines[0])
+			if len(fields) > 0 && fields[0] != "-" {
+				return "active", nil
+			}
+		}
+
+		return "inactive", nil
+	}
+
+	if err := s.checkDaemonExists(); err != nil {
+		return "", wrapNotInstalledError(err, "systemd")
+	}
+
+	// For Linux/systemd, get service state.
+	cmd := exec.Command("sudo", "systemctl", "show", "-p", "ActiveState", "--value", "contributoor.service")
+
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get service status: %w", err)
+	}
+
+	return strings.TrimSpace(string(output)), nil
 }

@@ -79,9 +79,20 @@ func NewDockerSidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installer
 
 // Start starts the docker container using docker-compose.
 func (s *dockerSidecar) Start() error {
+	// Check if container exists and remove it first, if it does.
+	cmd := exec.Command("docker", "ps", "-aq", "-f", "name=contributoor")
+
+	output, err := cmd.Output()
+	if err == nil && len(strings.TrimSpace(string(output))) > 0 {
+		removeCmd := exec.Command("docker", "rm", "-f", "contributoor")
+		if output, err := removeCmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("failed to remove existing container: %w\nOutput: %s", err, string(output))
+		}
+	}
+
 	args := append(s.getComposeArgs(), "up", "-d", "--pull", "always")
 
-	cmd := exec.Command("docker", args...)
+	cmd = exec.Command("docker", args...)
 	cmd.Env = s.GetComposeEnv()
 
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -123,33 +134,39 @@ func (s *dockerSidecar) Stop() error {
 	return nil
 }
 
-// IsRunning checks if the docker container is running.
-func (s *dockerSidecar) IsRunning() (bool, error) {
-	// Check via compose first. If there has been any sort of configuration change between
-	// versions, then this will return a non running state.
-	args := append(s.getComposeArgs(), "ps", "--format", "{{.State}}")
-	cmd := exec.Command("docker", args...)
-	cmd.Env = s.GetComposeEnv()
+// Status returns the current state of the docker container.
+func (s *dockerSidecar) Status() (string, error) {
+	// First check if container exists.
+	cmd := exec.Command("docker", "ps", "-a", "--filter", "name=contributoor", "--format", "{{.ID}}")
 
 	output, err := cmd.Output()
-	if err == nil {
-		states := strings.Split(strings.TrimSpace(string(output)), "\n")
-		for _, state := range states {
-			if strings.Contains(strings.ToLower(state), "running") {
-				return true, nil
-			}
-		}
+	if err != nil || len(strings.TrimSpace(string(output))) == 0 {
+		//nolint:nilerr // We don't care about the error here.
+		return "not running", nil
 	}
 
-	// In that case, we will fallback to checking for any container with the name 'contributoor'.
-	cmd = exec.Command("docker", "ps", "-q", "-f", "name=contributoor")
+	// Container exists, get its status.
+	cmd = exec.Command("docker", "inspect", "-f", "{{.State.Status}}", "contributoor")
 
 	output, err = cmd.Output()
 	if err != nil {
-		return false, fmt.Errorf("failed to check container status: %w", err)
+		return "", fmt.Errorf("failed to get container status: %w", err)
 	}
 
-	return len(strings.TrimSpace(string(output))) > 0, nil
+	return strings.TrimSpace(string(output)), nil
+}
+
+// IsRunning checks if the docker container is running.
+func (s *dockerSidecar) IsRunning() (bool, error) {
+	cmd := exec.Command("docker", "inspect", "-f", "{{.State.Status}}", "contributoor")
+
+	output, err := cmd.Output()
+	if err != nil {
+		//nolint:nilerr // We don't care about the error here.
+		return false, nil
+	}
+
+	return strings.TrimSpace(string(output)) == "running", nil
 }
 
 // Update pulls the latest image and restarts the container.

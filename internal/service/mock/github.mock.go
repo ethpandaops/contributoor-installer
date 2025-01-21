@@ -19,6 +19,7 @@ import (
 type MockGitHubService struct {
 	ctrl     *gomock.Controller
 	recorder *MockGitHubServiceMockRecorder
+	isgomock struct{}
 }
 
 // MockGitHubServiceMockRecorder is the mock recorder for MockGitHubService.
@@ -54,16 +55,16 @@ func (mr *MockGitHubServiceMockRecorder) GetLatestVersion() *gomock.Call {
 }
 
 // VersionExists mocks base method.
-func (m *MockGitHubService) VersionExists(arg0 string) (bool, error) {
+func (m *MockGitHubService) VersionExists(version string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VersionExists", arg0)
+	ret := m.ctrl.Call(m, "VersionExists", version)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // VersionExists indicates an expected call of VersionExists.
-func (mr *MockGitHubServiceMockRecorder) VersionExists(arg0 any) *gomock.Call {
+func (mr *MockGitHubServiceMockRecorder) VersionExists(version any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VersionExists", reflect.TypeOf((*MockGitHubService)(nil).VersionExists), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VersionExists", reflect.TypeOf((*MockGitHubService)(nil).VersionExists), version)
 }

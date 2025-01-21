@@ -27,26 +27,14 @@ func TestStopContributoor(t *testing.T) {
 		expectedError string
 	}{
 		{
-			name:      "docker - stops running service successfully",
+			name:      "docker - stops service successfully",
 			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 					Version:   "latest",
 				}).Times(1)
-				d.EXPECT().IsRunning().Return(true, nil)
 				d.EXPECT().Stop().Return(nil)
-				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
-			},
-		},
-		{
-			name:      "docker - service not running",
-			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&config.Config{
-					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
-				}).Times(1)
-				d.EXPECT().IsRunning().Return(false, nil)
 				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
 			},
 		},
@@ -57,32 +45,19 @@ func TestStopContributoor(t *testing.T) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 				}).Times(1)
-				d.EXPECT().IsRunning().Return(true, nil)
 				d.EXPECT().Stop().Return(errors.New("stop failed"))
 				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
 			},
 			expectedError: "stop failed",
 		},
 		{
-			name:      "binary - stops running service successfully",
+			name:      "binary - stops service successfully",
 			runMethod: config.RunMethod_RUN_METHOD_BINARY,
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
 				}).Times(1)
-				b.EXPECT().IsRunning().Return(true, nil)
 				b.EXPECT().Stop().Return(nil)
-				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
-			},
-		},
-		{
-			name:      "binary - service not running",
-			runMethod: config.RunMethod_RUN_METHOD_BINARY,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&config.Config{
-					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
-				}).Times(1)
-				b.EXPECT().IsRunning().Return(false, nil)
 				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
 			},
 		},
@@ -104,7 +79,6 @@ func TestStopContributoor(t *testing.T) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 				}).Times(1)
-				d.EXPECT().IsRunning().Return(true, nil)
 				d.EXPECT().Stop().Return(nil)
 				g.EXPECT().GetLatestVersion().Return("", errors.New("github error"))
 			},

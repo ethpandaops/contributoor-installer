@@ -87,21 +87,6 @@ func stopContributoor(
 		return fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
 	}
 
-	// Check if running before attempting to stop.
-	running, err := runner.IsRunning()
-	if err != nil {
-		log.Errorf("could not check sidecar status: %v", err)
-
-		return err
-	}
-
-	// If the service is not running, we can just return.
-	if !running {
-		fmt.Printf("%sContributoor is not running. Use 'contributoor start' to start it%s\n", tui.TerminalColorYellow, tui.TerminalColorReset)
-
-		return nil
-	}
-
 	if err := runner.Stop(); err != nil {
 		return err
 	}
