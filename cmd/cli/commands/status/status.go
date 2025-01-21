@@ -10,6 +10,8 @@ import (
 	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
@@ -91,6 +93,12 @@ func showStatus(
 		return fmt.Errorf("failed to check status: %w", err)
 	}
 
+	// Get the underlying status from the sidecar.
+	status, err := runner.Status()
+	if err != nil {
+		return fmt.Errorf("failed to get status: %w", err)
+	}
+
 	// Print status information.
 	fmt.Printf("%sContributoor Status%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
 	fmt.Printf("%-20s: %s\n", "Version", cfg.Version)
@@ -103,13 +111,12 @@ func showStatus(
 		fmt.Printf("%-20s: %s\n", "Output Server", cfg.OutputServer.Address)
 	}
 
-	// Print running status with color
+	// Print running status with color.
 	statusColor := tui.TerminalColorRed
-	statusText := "Stopped"
+	statusText := cases.Title(language.English).String(status)
 
 	if running {
 		statusColor = tui.TerminalColorGreen
-		statusText = "Running"
 	}
 
 	fmt.Printf("%-20s: %s%s%s\n", "Status", statusColor, statusText, tui.TerminalColorReset)

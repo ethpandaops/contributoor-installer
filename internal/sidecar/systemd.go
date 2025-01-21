@@ -307,3 +307,38 @@ func (s *systemdSidecar) checkBinaryExists() error {
 
 	return nil
 }
+
+// Status returns the current state of the service.
+func (s *systemdSidecar) Status() (string, error) {
+	if runtime.GOOS == ArchDarwin {
+		// For macOS, check launchd status.
+		cmd := exec.Command("sudo", "launchctl", "list", "io.ethpandaops.contributoor")
+
+		output, err := cmd.Output()
+		if err != nil {
+			//nolint:nilerr // We don't care about the error here.
+			return "inactive", nil
+		}
+
+		// If service is running, output will contain a PID.
+		lines := strings.Split(string(output), "\n")
+		if len(lines) > 0 {
+			fields := strings.Fields(lines[0])
+			if len(fields) > 0 && fields[0] != "-" {
+				return "active", nil
+			}
+		}
+
+		return "inactive", nil
+	}
+
+	// For Linux/systemd, get service state.
+	cmd := exec.Command("sudo", "systemctl", "show", "-p", "ActiveState", "--value", "contributoor.service")
+
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get service status: %w", err)
+	}
+
+	return strings.TrimSpace(string(output)), nil
+}

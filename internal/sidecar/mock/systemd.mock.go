@@ -19,6 +19,7 @@ import (
 type MockSystemdSidecar struct {
 	ctrl     *gomock.Controller
 	recorder *MockSystemdSidecarMockRecorder
+	isgomock struct{}
 }
 
 // MockSystemdSidecarMockRecorder is the mock recorder for MockSystemdSidecar.
@@ -54,17 +55,17 @@ func (mr *MockSystemdSidecarMockRecorder) IsRunning() *gomock.Call {
 }
 
 // Logs mocks base method.
-func (m *MockSystemdSidecar) Logs(arg0 int, arg1 bool) error {
+func (m *MockSystemdSidecar) Logs(tailLines int, follow bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Logs", arg0, arg1)
+	ret := m.ctrl.Call(m, "Logs", tailLines, follow)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Logs indicates an expected call of Logs.
-func (mr *MockSystemdSidecarMockRecorder) Logs(arg0, arg1 any) *gomock.Call {
+func (mr *MockSystemdSidecarMockRecorder) Logs(tailLines, follow any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Logs", reflect.TypeOf((*MockSystemdSidecar)(nil).Logs), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Logs", reflect.TypeOf((*MockSystemdSidecar)(nil).Logs), tailLines, follow)
 }
 
 // Start mocks base method.
@@ -79,6 +80,21 @@ func (m *MockSystemdSidecar) Start() error {
 func (mr *MockSystemdSidecarMockRecorder) Start() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockSystemdSidecar)(nil).Start))
+}
+
+// Status mocks base method.
+func (m *MockSystemdSidecar) Status() (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Status")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Status indicates an expected call of Status.
+func (mr *MockSystemdSidecarMockRecorder) Status() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Status", reflect.TypeOf((*MockSystemdSidecar)(nil).Status))
 }
 
 // Stop mocks base method.

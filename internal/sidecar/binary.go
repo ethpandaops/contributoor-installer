@@ -164,6 +164,39 @@ func (s *binarySidecar) Stop() error {
 	return nil
 }
 
+// Status returns the current state of the binary process.
+func (s *binarySidecar) Status() (string, error) {
+	cfg := s.sidecarCfg.Get()
+	pidFile := filepath.Join(cfg.ContributoorDirectory, "contributoor.pid")
+
+	// If no PID file, process is not running.
+	pidBytes, err := os.ReadFile(pidFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "stopped", nil
+		}
+
+		return "", fmt.Errorf("failed to read pid file: %w", err)
+	}
+
+	pidStr := string(pidBytes)
+	if !regexp.MustCompile(`^\d+$`).MatchString(pidStr) {
+		return "unknown", fmt.Errorf("invalid PID format")
+	}
+
+	// kill -0 just checks if process exists. It doesn't actually send a
+	// signal that affects the process.
+	cmd := exec.Command("kill", "-0", pidStr)
+	if err := cmd.Run(); err != nil {
+		os.Remove(pidFile)
+
+		//nolint:nilerr // We don't care about the error here.
+		return "stopped", nil
+	}
+
+	return "running", nil
+}
+
 // IsRunning checks if the binary service is running.
 func (s *binarySidecar) IsRunning() (bool, error) {
 	cfg := s.sidecarCfg.Get()
