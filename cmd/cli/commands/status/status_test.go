@@ -34,6 +34,7 @@ func TestShowStatus(t *testing.T) {
 		// Create mock docker sidecar that's running
 		mockDocker := mock.NewMockDockerSidecar(ctrl)
 		mockDocker.EXPECT().IsRunning().Return(true, nil)
+		mockDocker.EXPECT().Status().Return("running", nil)
 
 		// Create mock binary sidecar (shouldn't be used)
 		mockBinary := mock.NewMockBinarySidecar(ctrl)
@@ -78,11 +79,49 @@ func TestShowStatus(t *testing.T) {
 		// Create mock binary sidecar that's stopped
 		mockBinary := mock.NewMockBinarySidecar(ctrl)
 		mockBinary.EXPECT().IsRunning().Return(false, nil)
+		mockBinary.EXPECT().Status().Return("stopped", nil)
 
 		// Create mock systemd sidecar (shouldn't be used)
 		mockSystemd := mock.NewMockSystemdSidecar(ctrl)
 
 		// Create mock GitHub service with same version (shouldn't show update)
+		mockGithub := servicemock.NewMockGitHubService(ctrl)
+		mockGithub.EXPECT().GetLatestVersion().Return("1.0.0", nil)
+
+		err := showStatus(
+			cli.NewContext(nil, nil, nil),
+			logrus.New(),
+			mockConfig,
+			mockDocker,
+			mockSystemd,
+			mockBinary,
+			mockGithub,
+		)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("shows status for systemd service", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockConfig := mock.NewMockConfigManager(ctrl)
+		mockConfig.EXPECT().Get().Return(&config.Config{
+			Version:           "1.0.0",
+			RunMethod:         config.RunMethod_RUN_METHOD_SYSTEMD,
+			NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
+			BeaconNodeAddress: "http://localhost:5052",
+		}).AnyTimes()
+		mockConfig.EXPECT().GetConfigPath().Return("/path/to/config.yaml")
+
+		mockDocker := mock.NewMockDockerSidecar(ctrl)
+		mockBinary := mock.NewMockBinarySidecar(ctrl)
+
+		// Create mock systemd sidecar that's active
+		mockSystemd := mock.NewMockSystemdSidecar(ctrl)
+		mockSystemd.EXPECT().IsRunning().Return(true, nil)
+		mockSystemd.EXPECT().Status().Return("active", nil)
+
 		mockGithub := servicemock.NewMockGitHubService(ctrl)
 		mockGithub.EXPECT().GetLatestVersion().Return("1.0.0", nil)
 
@@ -113,6 +152,7 @@ func TestShowStatus(t *testing.T) {
 
 		mockDocker := mock.NewMockDockerSidecar(ctrl)
 		mockDocker.EXPECT().IsRunning().Return(true, nil)
+		mockDocker.EXPECT().Status().Return("running", nil)
 		mockSystemd := mock.NewMockSystemdSidecar(ctrl)
 
 		// Create mock GitHub service that returns an error
