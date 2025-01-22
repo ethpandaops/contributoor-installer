@@ -215,10 +215,15 @@ setup_installer() {
         chmod 755 "$release_dir"
     } || fail "docker-compose.yml not found after extraction"
 
-    [ -f "$release_dir/docker-compose.ports.yml" ] && {
-        chmod 644 "$release_dir/docker-compose.ports.yml"
+    [ -f "$release_dir/docker-compose.metrics.yml" ] && {
+        chmod 644 "$release_dir/docker-compose.metrics.yml"
         chmod 755 "$release_dir"
-    } || fail "docker-compose.ports.yml not found after extraction"
+    } || fail "docker-compose.metrics.yml not found after extraction"
+
+    [ -f "$release_dir/docker-compose.health.yml" ] && {
+        chmod 644 "$release_dir/docker-compose.health.yml"
+        chmod 755 "$release_dir"
+    } || fail "docker-compose.health.yml not found after extraction"
 
     [ -f "$release_dir/docker-compose.network.yml" ] && {
         chmod 644 "$release_dir/docker-compose.network.yml"

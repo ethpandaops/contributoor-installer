@@ -88,7 +88,8 @@ func TestDockerService_Integration(t *testing.T) {
 
 	// Write out compose files first.
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.yml"), []byte(composeFile), 0644))
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.ports.yml"), []byte(composePortsFile), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.metrics.yml"), []byte(composePortsFile), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.health.yml"), []byte(composePortsFile), 0644))
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker-compose.network.yml"), []byte(composeNetworkFile), 0644))
 
 	// Change working directory to our test directory before creating DockerSidecar.
@@ -306,7 +307,8 @@ func TestGetComposeEnv(t *testing.T) {
 
 			// Write out compose files first
 			require.NoError(t, os.WriteFile(filepath.Join(tt.config.ContributoorDirectory, "docker-compose.yml"), []byte(composeFile), 0644))
-			require.NoError(t, os.WriteFile(filepath.Join(tt.config.ContributoorDirectory, "docker-compose.ports.yml"), []byte(composePortsFile), 0644))
+			require.NoError(t, os.WriteFile(filepath.Join(tt.config.ContributoorDirectory, "docker-compose.metrics.yml"), []byte(composePortsFile), 0644))
+			require.NoError(t, os.WriteFile(filepath.Join(tt.config.ContributoorDirectory, "docker-compose.health.yml"), []byte(composePortsFile), 0644))
 			require.NoError(t, os.WriteFile(filepath.Join(tt.config.ContributoorDirectory, "docker-compose.network.yml"), []byte(composeNetworkFile), 0644))
 
 			// Change working directory to test directory

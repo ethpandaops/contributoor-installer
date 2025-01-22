@@ -33,7 +33,8 @@ archives:
       - LICENSE*
       - install.sh
       - docker-compose.yml
-      - docker-compose.ports.yml
+      - docker-compose.metrics.yml
+      - docker-compose.health.yml
       - docker-compose.network.yml
 
 changelog:

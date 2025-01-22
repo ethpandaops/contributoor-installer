@@ -24,7 +24,8 @@ type DockerSidecar interface {
 type dockerSidecar struct {
 	logger             *logrus.Logger
 	composePath        string
-	composePortsPath   string
+	composeMetricsPath string
+	composeHealthPath  string
 	composeNetworkPath string
 	configPath         string
 	sidecarCfg         ConfigManager
@@ -35,7 +36,8 @@ type dockerSidecar struct {
 func NewDockerSidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installerCfg *installer.Config) (DockerSidecar, error) {
 	var (
 		composeFilename        = "docker-compose.yml"
-		composePortsFilename   = "docker-compose.ports.yml"
+		composeMetricsFilename = "docker-compose.metrics.yml"
+		composeHealthFilename  = "docker-compose.health.yml"
 		composeNetworkFilename = "docker-compose.network.yml"
 	)
 
@@ -44,9 +46,14 @@ func NewDockerSidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installer
 		return nil, fmt.Errorf("failed to find %s: %w", composeFilename, err)
 	}
 
-	composePortsPath, err := findComposeFile(composePortsFilename)
+	composeMetricsPath, err := findComposeFile(composeMetricsFilename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find %s: %w", composePortsFilename, err)
+		return nil, fmt.Errorf("failed to find %s: %w", composeMetricsFilename, err)
+	}
+
+	composeHealthPath, err := findComposeFile(composeHealthFilename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find %s: %w", composeHealthFilename, err)
 	}
 
 	composeNetworkPath, err := findComposeFile(composeNetworkFilename)
@@ -58,8 +65,12 @@ func NewDockerSidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installer
 		return nil, fmt.Errorf("invalid %s file: %w", composeFilename, err)
 	}
 
-	if err := validateComposePath(composePortsPath); err != nil {
-		return nil, fmt.Errorf("invalid %s file: %w", composePortsFilename, err)
+	if err := validateComposePath(composeMetricsPath); err != nil {
+		return nil, fmt.Errorf("invalid %s file: %w", composeMetricsPath, err)
+	}
+
+	if err := validateComposePath(composeHealthPath); err != nil {
+		return nil, fmt.Errorf("invalid %s file: %w", composeHealthPath, err)
 	}
 
 	if err := validateComposePath(composeNetworkPath); err != nil {
@@ -69,8 +80,9 @@ func NewDockerSidecar(logger *logrus.Logger, sidecarCfg ConfigManager, installer
 	return &dockerSidecar{
 		logger:             logger,
 		composePath:        filepath.Clean(composePath),
-		composePortsPath:   filepath.Clean(composePortsPath),
+		composeMetricsPath: filepath.Clean(composeMetricsPath),
 		composeNetworkPath: filepath.Clean(composeNetworkPath),
+		composeHealthPath:  filepath.Clean(composeHealthPath),
 		configPath:         sidecarCfg.GetConfigPath(),
 		sidecarCfg:         sidecarCfg,
 		installerCfg:       installerCfg,
@@ -258,6 +270,15 @@ func (s *dockerSidecar) GetComposeEnv() []string {
 		)
 	}
 
+	// Handle health address (only added if set).
+	if healthHost, healthPort := cfg.GetHealthCheckHostPort(); healthHost != "" {
+		env = append(
+			env,
+			fmt.Sprintf("CONTRIBUTOOR_HEALTH_ADDRESS=%s", healthHost),
+			fmt.Sprintf("CONTRIBUTOOR_HEALTH_PORT=%s", healthPort),
+		)
+	}
+
 	// Handle pprof address (only added if set).
 	if pprofHost, pprofPort := cfg.GetPprofHostPort(); pprofHost != "" {
 		env = append(
@@ -296,7 +317,11 @@ func (s *dockerSidecar) getComposeArgs() []string {
 	var additionalArgs []string
 
 	if metricsHost, _ := s.sidecarCfg.Get().GetMetricsHostPort(); metricsHost != "" {
-		additionalArgs = append(additionalArgs, "-f", s.composePortsPath)
+		additionalArgs = append(additionalArgs, "-f", s.composeMetricsPath)
+	}
+
+	if healthHost, _ := s.sidecarCfg.Get().GetHealthCheckHostPort(); healthHost != "" {
+		additionalArgs = append(additionalArgs, "-f", s.composeHealthPath)
 	}
 
 	if s.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER && s.sidecarCfg.Get().DockerNetwork != "" {
