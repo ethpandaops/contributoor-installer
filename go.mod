@@ -2,6 +2,8 @@ module github.com/ethpandaops/contributoor-installer
 
 go 1.23
 
+replace github.com/ethpandaops/contributoor => /Users/matty/go/src/github.com/ethpandaops/contributoor
+
 require (
 	github.com/docker/go-connections v0.5.0
 	github.com/ethpandaops/contributoor v0.0.48

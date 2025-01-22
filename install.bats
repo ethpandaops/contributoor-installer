@@ -396,7 +396,8 @@ EOF
         
         # Create compose files
         touch "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.yml"
-        touch "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.ports.yml"
+        touch "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.metrics.yml"
+        touch "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.health.yml"
         touch "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.network.yml"
         
         return 0
@@ -412,7 +413,8 @@ EOF
             # Also create compose files in the same directory if it's the binary symlink
             if [[ "$3" == *"/bin/contributoor" ]]; then
                 cp "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.yml" "$(dirname "$3")/docker-compose.yml"
-                cp "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.ports.yml" "$(dirname "$3")/docker-compose.ports.yml"
+                cp "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.metrics.yml" "$(dirname "$3")/docker-compose.metrics.yml"
+                cp "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.health.yml" "$(dirname "$3")/docker-compose.health.yml"
                 cp "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.network.yml" "$(dirname "$3")/docker-compose.network.yml"
             fi
         fi
@@ -432,7 +434,8 @@ EOF
     [ -f "$CONTRIBUTOOR_PATH/bin/contributoor" ]
     [ -x "$CONTRIBUTOOR_PATH/bin/contributoor" ]
     [ -f "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.yml" ]
-    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.ports.yml" ]
+    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.metrics.yml" ]
+    [ -f "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.health.yml" ]
     [ -f "$CONTRIBUTOOR_PATH/releases/installer-${CONTRIBUTOOR_VERSION}/docker-compose.network.yml" ]
 }
 
