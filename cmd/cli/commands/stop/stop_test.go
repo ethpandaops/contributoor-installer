@@ -8,6 +8,7 @@ import (
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
 	servicemock "github.com/ethpandaops/contributoor-installer/internal/service/mock"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
+	"github.com/ethpandaops/contributoor-installer/internal/test"
 	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -34,8 +35,9 @@ func TestStopContributoor(t *testing.T) {
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
 					Version:   "latest",
 				}).Times(1)
-				d.EXPECT().Stop().Return(nil)
 				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+				d.EXPECT().Version().Return("1.0.0", nil)
+				d.EXPECT().Stop().Return(nil)
 			},
 		},
 		{
@@ -44,9 +46,11 @@ func TestStopContributoor(t *testing.T) {
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
+					Version:   "latest",
 				}).Times(1)
-				d.EXPECT().Stop().Return(errors.New("stop failed"))
 				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+				d.EXPECT().Version().Return("1.0.0", nil)
+				d.EXPECT().Stop().Return(errors.New("stop failed"))
 			},
 			expectedError: "stop failed",
 		},
@@ -56,9 +60,11 @@ func TestStopContributoor(t *testing.T) {
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
+					Version:   "latest",
 				}).Times(1)
-				b.EXPECT().Stop().Return(nil)
 				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+				b.EXPECT().Version().Return("1.0.0", nil)
+				b.EXPECT().Stop().Return(nil)
 			},
 		},
 		{
@@ -67,8 +73,8 @@ func TestStopContributoor(t *testing.T) {
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_UNSPECIFIED,
+					Version:   "latest",
 				}).Times(1)
-				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
 			},
 			expectedError: "invalid sidecar run method",
 		},
@@ -78,15 +84,19 @@ func TestStopContributoor(t *testing.T) {
 			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
+					Version:   "latest",
 				}).Times(1)
-				d.EXPECT().Stop().Return(nil)
 				g.EXPECT().GetLatestVersion().Return("", errors.New("github error"))
+				d.EXPECT().Stop().Return(nil)
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			cleanup := test.SuppressOutput(t)
+			defer cleanup()
+
 			mockConfig := mock.NewMockConfigManager(ctrl)
 			mockDocker := mock.NewMockDockerSidecar(ctrl)
 			mockBinary := mock.NewMockBinarySidecar(ctrl)
@@ -133,6 +143,9 @@ func TestRegisterCommands(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			cleanup := test.SuppressOutput(t)
+			defer cleanup()
+
 			// Create CLI app, with the config flag.
 			app := cli.NewApp()
 			app.Flags = []cli.Flag{

@@ -70,11 +70,6 @@ func showStatus(
 		cfg    = sidecarCfg.Get()
 	)
 
-	latestVersion, err := github.GetLatestVersion()
-	if err == nil && cfg.Version != latestVersion {
-		tui.UpgradeWarning(latestVersion)
-	}
-
 	// Determine which runner to use.
 	switch cfg.RunMethod {
 	case config.RunMethod_RUN_METHOD_DOCKER:
@@ -85,6 +80,12 @@ func showStatus(
 		runner = binary
 	default:
 		return fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
+	}
+
+	// Check version and show upgrade warning if needed.
+	current, latest, needsUpdate, err := sidecar.CheckVersion(runner, github, cfg.Version)
+	if err == nil && needsUpdate {
+		tui.UpgradeWarning(current, latest)
 	}
 
 	// Check if running.
@@ -101,7 +102,7 @@ func showStatus(
 
 	// Print status information.
 	fmt.Printf("%sContributoor Status%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
-	fmt.Printf("%-20s: %s\n", "Version", cfg.Version)
+	fmt.Printf("%-20s: %s\n", "Version", current)
 	fmt.Printf("%-20s: %s\n", "Run Method", cfg.RunMethod)
 	fmt.Printf("%-20s: %s\n", "Network", cfg.NetworkName)
 	fmt.Printf("%-20s: %s\n", "Beacon Node", cfg.BeaconNodeAddress)

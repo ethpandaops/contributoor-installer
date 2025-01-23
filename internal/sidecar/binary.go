@@ -286,6 +286,11 @@ func (s *binarySidecar) Logs(tailLines int, follow bool) error {
 	return cmd.Run()
 }
 
+// Version returns the version of the currently running binary.
+func (s *binarySidecar) Version() (string, error) {
+	return s.getBinaryVersion()
+}
+
 // updateSidecar updates the sidecar binary to the specified version.
 func (s *binarySidecar) updateSidecar() error {
 	cfg := s.sidecarCfg.Get()

@@ -18,13 +18,6 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 		Aliases:   opts.Aliases(),
 		Usage:     "Update Contributoor to the latest version",
 		UsageText: "contributoor update [options]",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  "version, v",
-				Usage: "The contributoor version to update to",
-				Value: "latest",
-			},
-		},
 		Action: func(c *cli.Context) error {
 			var (
 				log          = opts.Logger()
@@ -71,45 +64,57 @@ func updateContributoor(
 	github service.GitHubService,
 ) error {
 	var (
-		success        bool
-		targetVersion  string
-		cfg            = sidecarCfg.Get()
-		currentVersion = cfg.Version
-		err            error
+		success bool
+		cfg     = sidecarCfg.Get()
+		err     error
+		runner  sidecar.SidecarRunner
 	)
 
 	fmt.Printf("%sUpdating Contributoor Version%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
-	fmt.Printf("%-20s: %s\n", "Current Version", cfg.Version)
+
+	switch cfg.RunMethod {
+	case config.RunMethod_RUN_METHOD_DOCKER:
+		runner = docker
+	case config.RunMethod_RUN_METHOD_SYSTEMD:
+		runner = systemd
+	case config.RunMethod_RUN_METHOD_BINARY:
+		runner = binary
+	default:
+		return fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
+	}
+
+	current, latest, needsUpdate, err := sidecar.CheckVersion(runner, github, cfg.Version)
+	if err != nil {
+		return err
+	}
 
 	defer func() {
 		if !success {
-			if rollbackErr := rollbackVersion(sidecarCfg, currentVersion); rollbackErr != nil {
+			if rollbackErr := rollbackVersion(sidecarCfg, current); rollbackErr != nil {
 				log.Error(rollbackErr)
 			}
 		}
 	}()
 
-	// Determine target version first.
-	targetVersion, err = determineTargetVersion(c, github)
-	if err != nil || targetVersion == "" {
-		success = true
-
-		return err
-	}
-
-	fmt.Printf("%-20s: %s\n", "Latest Version", targetVersion)
+	fmt.Printf("%-20s: %s\n", "Current Version", current)
+	fmt.Printf("%-20s: %s\n", "Latest Version", latest)
 
 	// Check if update is needed.
-	if targetVersion == currentVersion {
+	if !needsUpdate {
 		success = true
 
-		printUpdateStatus(c.IsSet("version"), targetVersion)
+		fmt.Printf(
+			"%sContributoor is up to date at version %s%s\n",
+			tui.TerminalColorGreen,
+			latest,
+			tui.TerminalColorReset,
+		)
 
 		return nil
 	}
 
 	// Update config version.
-	if configErr := updateConfigVersion(sidecarCfg, targetVersion); configErr != nil {
+	if configErr := updateConfigVersion(sidecarCfg, latest); configErr != nil {
 		return configErr
 	}
 
@@ -262,37 +267,6 @@ func updateDocker(c *cli.Context, log *logrus.Logger, cfg *config.Config, docker
 	return true, nil
 }
 
-func determineTargetVersion(c *cli.Context, github service.GitHubService) (string, error) {
-	if c.IsSet("version") {
-		version := c.String("version")
-
-		exists, err := github.VersionExists(version)
-		if err != nil {
-			return "", fmt.Errorf("failed to check version: %w", err)
-		}
-
-		if !exists {
-			fmt.Printf(
-				"%sVersion %s not found. Use 'contributoor update' without --version to get the latest version%s\n",
-				tui.TerminalColorRed,
-				version,
-				tui.TerminalColorReset,
-			)
-
-			return "", nil
-		}
-
-		return version, nil
-	}
-
-	version, err := github.GetLatestVersion()
-	if err != nil {
-		return "", fmt.Errorf("failed to get latest version: %w", err)
-	}
-
-	return version, nil
-}
-
 func updateConfigVersion(sidecarCfg sidecar.ConfigManager, version string) error {
 	if err := sidecarCfg.Update(func(cfg *config.Config) {
 		cfg.Version = version
@@ -319,22 +293,4 @@ func rollbackVersion(sidecarCfg sidecar.ConfigManager, version string) error {
 	}
 
 	return nil
-}
-
-func printUpdateStatus(isVersionSet bool, version string) {
-	if isVersionSet {
-		fmt.Printf(
-			"%sContributoor is already running version %s%s\n",
-			tui.TerminalColorGreen,
-			version,
-			tui.TerminalColorReset,
-		)
-	} else {
-		fmt.Printf(
-			"%sContributoor is up to date at version %s%s\n",
-			tui.TerminalColorGreen,
-			version,
-			tui.TerminalColorReset,
-		)
-	}
 }

@@ -102,7 +102,7 @@ func (s *dockerSidecar) Start() error {
 		}
 	}
 
-	args := append(s.getComposeArgs(), "up", "-d", "--pull", "always")
+	args := append(s.getComposeArgs(), "up", "-d")
 
 	cmd = exec.Command("docker", args...)
 	cmd.Env = s.GetComposeEnv()
@@ -310,6 +310,32 @@ func (s *dockerSidecar) Logs(tailLines int, follow bool) error {
 	cmd.Dir = filepath.Dir(s.composePath)
 
 	return cmd.Run()
+}
+
+// Version returns the version of the currently running container or local image.
+func (s *dockerSidecar) Version() (string, error) {
+	// First try to get version from running container.
+	cmd := exec.Command("docker", "inspect", "-f", "{{index .Config.Labels \"org.opencontainers.image.version\"}}", "contributoor")
+
+	output, err := cmd.Output()
+	if err == nil {
+		return strings.TrimPrefix(strings.TrimSpace(string(output)), "v"), nil
+	}
+
+	// If container not running, check local image version.
+	var (
+		cfg   = s.sidecarCfg.Get()
+		image = fmt.Sprintf("%s:%s", s.installerCfg.DockerImage, cfg.Version)
+	)
+
+	cmd = exec.Command("docker", "inspect", "-f", "{{index .Config.Labels \"org.opencontainers.image.version\"}}", image)
+
+	output, err = cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get image version: %w", err)
+	}
+
+	return strings.TrimPrefix(strings.TrimSpace(string(output)), "v"), nil
 }
 
 // getComposeArgs returns the consistent set of compose arguments including file paths.

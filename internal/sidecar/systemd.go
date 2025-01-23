@@ -350,3 +350,14 @@ func (s *systemdSidecar) Status() (string, error) {
 
 	return strings.TrimSpace(string(output)), nil
 }
+
+// Version returns the version of the currently running service.
+func (s *systemdSidecar) Version() (string, error) {
+	// Create a binary sidecar to check version since systemd/launchd uses the binary
+	bs, err := NewBinarySidecar(s.logger, s.sidecarCfg, s.installerCfg)
+	if err != nil {
+		return "", fmt.Errorf("failed to create binary sidecar: %w", err)
+	}
+
+	return bs.Version()
+}
