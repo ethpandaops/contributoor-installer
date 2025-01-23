@@ -8,6 +8,7 @@ import (
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
 	servicemock "github.com/ethpandaops/contributoor-installer/internal/service/mock"
 	sidecarmock "github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
+	"github.com/ethpandaops/contributoor-installer/internal/test"
 	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -35,6 +36,7 @@ func TestStartContributoor(t *testing.T) {
 					Version:   "latest",
 				}).Times(1)
 				gh.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+				d.EXPECT().Version().Return("1.0.0", nil)
 				d.EXPECT().IsRunning().Return(false, nil)
 				d.EXPECT().Start().Return(nil)
 			},
@@ -48,6 +50,7 @@ func TestStartContributoor(t *testing.T) {
 					Version:   "latest",
 				}).Times(1)
 				gh.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+				d.EXPECT().Version().Return("1.0.0", nil)
 				d.EXPECT().IsRunning().Return(true, nil)
 			},
 		},
@@ -60,6 +63,7 @@ func TestStartContributoor(t *testing.T) {
 					Version:   "latest",
 				}).Times(1)
 				gh.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+				d.EXPECT().Version().Return("1.0.0", nil)
 				d.EXPECT().IsRunning().Return(false, nil)
 				d.EXPECT().Start().Return(errors.New("start failed"))
 			},
@@ -74,6 +78,7 @@ func TestStartContributoor(t *testing.T) {
 					Version:   "latest",
 				}).Times(1)
 				gh.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+				b.EXPECT().Version().Return("1.0.0", nil)
 				b.EXPECT().IsRunning().Return(false, nil)
 				b.EXPECT().Start().Return(nil)
 			},
@@ -87,6 +92,7 @@ func TestStartContributoor(t *testing.T) {
 					Version:   "latest",
 				}).Times(1)
 				gh.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+				b.EXPECT().Version().Return("1.0.0", nil)
 				b.EXPECT().IsRunning().Return(true, nil)
 			},
 		},
@@ -98,7 +104,6 @@ func TestStartContributoor(t *testing.T) {
 					RunMethod: config.RunMethod_RUN_METHOD_UNSPECIFIED,
 					Version:   "latest",
 				}).Times(1)
-				gh.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
 			},
 			expectedError: "invalid sidecar run method",
 		},
@@ -106,6 +111,9 @@ func TestStartContributoor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			cleanup := test.SuppressOutput(t)
+			defer cleanup()
+
 			mockConfig := sidecarmock.NewMockConfigManager(ctrl)
 			mockDocker := sidecarmock.NewMockDockerSidecar(ctrl)
 			mockBinary := sidecarmock.NewMockBinarySidecar(ctrl)
@@ -131,6 +139,9 @@ func TestStartContributoor(t *testing.T) {
 }
 
 func TestRegisterCommands(t *testing.T) {
+	cleanup := test.SuppressOutput(t)
+	defer cleanup()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

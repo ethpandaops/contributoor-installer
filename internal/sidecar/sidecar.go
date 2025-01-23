@@ -31,4 +31,7 @@ type SidecarRunner interface {
 
 	// Logs returns the logs from the service.
 	Logs(tailLines int, follow bool) error
+
+	// Version returns the current version the underlying sidecar is running.
+	Version() (string, error)
 }

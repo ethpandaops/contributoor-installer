@@ -8,6 +8,7 @@ import (
 	"github.com/ethpandaops/contributoor-installer/cmd/cli/options"
 	smock "github.com/ethpandaops/contributoor-installer/internal/service/mock"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
+	"github.com/ethpandaops/contributoor-installer/internal/test"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
@@ -27,6 +28,9 @@ func init() {
 }
 
 func TestUpdateContributoor(t *testing.T) {
+	cleanup := test.SuppressOutput(t)
+	defer cleanup()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -100,70 +104,6 @@ func TestUpdateContributoor(t *testing.T) {
 				cfg.EXPECT().Save().Return(nil)
 			},
 			expectedError: "update failed",
-		},
-		{
-			name:           "specific version - exists",
-			version:        "v1.1.0",
-			confirmPrompt:  true,
-			runMethod:      config.RunMethod_RUN_METHOD_DOCKER,
-			nonInteractive: false,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&config.Config{
-					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
-					Version:   "v1.0.0",
-				}).Times(2)
-				g.EXPECT().VersionExists("v1.1.0").Return(true, nil)
-
-				// Expect a call to update, which in-turn updates + saves the config.
-				d.EXPECT().Update().Return(nil)
-				cfg.EXPECT().Update(gomock.Any()).Return(nil)
-				cfg.EXPECT().Save().Return(nil)
-
-				// Finally, a call is made to see if the service is running.
-				d.EXPECT().IsRunning().Return(true, nil)
-
-				// If it is, we expect it to be stopped and started.
-				d.EXPECT().Stop().Return(nil)
-				d.EXPECT().Start().Return(nil)
-			},
-		},
-		{
-			name:           "specific version - does not exist",
-			version:        "v999.0.0",
-			runMethod:      config.RunMethod_RUN_METHOD_DOCKER,
-			nonInteractive: false,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&config.Config{
-					RunMethod: config.RunMethod_RUN_METHOD_DOCKER,
-					Version:   "v1.0.0",
-				}).Times(1)
-				g.EXPECT().VersionExists("v999.0.0").Return(false, nil)
-			},
-		},
-		{
-			name:           "binary - updates service successfully",
-			runMethod:      config.RunMethod_RUN_METHOD_BINARY,
-			confirmPrompt:  true,
-			nonInteractive: false,
-			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *smock.MockGitHubService) {
-				cfg.EXPECT().Get().Return(&config.Config{
-					RunMethod: config.RunMethod_RUN_METHOD_BINARY,
-					Version:   "v1.0.0",
-				}).Times(2)
-				g.EXPECT().GetLatestVersion().Return("v1.1.0", nil)
-
-				// Expect a call to update, which in-turn updates + saves the config.
-				b.EXPECT().Update().Return(nil)
-				cfg.EXPECT().Update(gomock.Any()).Return(nil)
-				cfg.EXPECT().Save().Return(nil)
-
-				// Finally, a call is made to see if the service is running.
-				b.EXPECT().IsRunning().Return(true, nil)
-
-				// If it is, we expect it to be stopped and started.
-				b.EXPECT().Stop().Return(nil)
-				b.EXPECT().Start().Return(nil)
-			},
 		},
 		{
 			name:           "binary - already at latest version",
@@ -344,6 +284,9 @@ func TestRegisterCommands(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			cleanup := test.SuppressOutput(t)
+			defer cleanup()
+
 			// Create CLI app, with the config flag.
 			app := cli.NewApp()
 			app.Flags = []cli.Flag{

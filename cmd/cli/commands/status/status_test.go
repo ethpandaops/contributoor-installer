@@ -1,11 +1,12 @@
 package status
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	servicemock "github.com/ethpandaops/contributoor-installer/internal/service/mock"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
+	"github.com/ethpandaops/contributoor-installer/internal/test"
 	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -14,190 +15,119 @@ import (
 )
 
 func TestShowStatus(t *testing.T) {
-	t.Run("shows status for running docker sidecar", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-		// Create mock config with docker setup
-		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&config.Config{
-			Version:           "1.0.0",
-			RunMethod:         config.RunMethod_RUN_METHOD_DOCKER,
-			NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
-			BeaconNodeAddress: "http://localhost:5052",
-			OutputServer: &config.OutputServer{
-				Address: "https://output.server",
+	tests := []struct {
+		name          string
+		runMethod     config.RunMethod
+		setupMocks    func(*mock.MockConfigManager, *mock.MockDockerSidecar, *mock.MockSystemdSidecar, *mock.MockBinarySidecar, *servicemock.MockGitHubService)
+		expectedError string
+	}{
+		{
+			name:      "docker - shows status successfully",
+			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod:         config.RunMethod_RUN_METHOD_DOCKER,
+					Version:           "latest",
+					NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
+					BeaconNodeAddress: "http://test:4444",
+				}).AnyTimes()
+				cfg.EXPECT().GetConfigPath().Return("/test/config.yaml")
+				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+				d.EXPECT().Version().Return("1.0.0", nil)
+				d.EXPECT().IsRunning().Return(true, nil)
+				d.EXPECT().Status().Return("running", nil)
 			},
-		}).AnyTimes()
-		mockConfig.EXPECT().GetConfigPath().Return("/path/to/config.yaml")
+		},
+		{
+			name:      "binary - shows status successfully",
+			runMethod: config.RunMethod_RUN_METHOD_BINARY,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod:         config.RunMethod_RUN_METHOD_BINARY,
+					Version:           "latest",
+					NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
+					BeaconNodeAddress: "http://test:4444",
+				}).AnyTimes()
+				cfg.EXPECT().GetConfigPath().Return("/test/config.yaml")
+				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+				b.EXPECT().Version().Return("1.0.0", nil)
+				b.EXPECT().IsRunning().Return(true, nil)
+				b.EXPECT().Status().Return("running", nil)
+			},
+		},
+		{
+			name:      "systemd - shows status successfully",
+			runMethod: config.RunMethod_RUN_METHOD_SYSTEMD,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod:         config.RunMethod_RUN_METHOD_SYSTEMD,
+					Version:           "latest",
+					NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
+					BeaconNodeAddress: "http://test:4444",
+				}).AnyTimes()
+				cfg.EXPECT().GetConfigPath().Return("/test/config.yaml")
+				g.EXPECT().GetLatestVersion().Return("v1.0.0", nil)
+				s.EXPECT().Version().Return("1.0.0", nil)
+				s.EXPECT().IsRunning().Return(true, nil)
+				s.EXPECT().Status().Return("active", nil)
+			},
+		},
+		{
+			name:      "handles invalid run method",
+			runMethod: config.RunMethod_RUN_METHOD_UNSPECIFIED,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod: config.RunMethod_RUN_METHOD_UNSPECIFIED,
+					Version:   "latest",
+				}).AnyTimes()
+			},
+			expectedError: "invalid sidecar run method",
+		},
+		{
+			name:      "handles github error gracefully",
+			runMethod: config.RunMethod_RUN_METHOD_DOCKER,
+			setupMocks: func(cfg *mock.MockConfigManager, d *mock.MockDockerSidecar, s *mock.MockSystemdSidecar, b *mock.MockBinarySidecar, g *servicemock.MockGitHubService) {
+				cfg.EXPECT().Get().Return(&config.Config{
+					RunMethod:         config.RunMethod_RUN_METHOD_DOCKER,
+					Version:           "latest",
+					NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
+					BeaconNodeAddress: "http://test:4444",
+				}).AnyTimes()
+				cfg.EXPECT().GetConfigPath().Return("/test/config.yaml")
+				g.EXPECT().GetLatestVersion().Return("", errors.New("github error"))
+				d.EXPECT().IsRunning().Return(true, nil)
+				d.EXPECT().Status().Return("running", nil)
+			},
+		},
+	}
 
-		// Create mock docker sidecar that's running
-		mockDocker := mock.NewMockDockerSidecar(ctrl)
-		mockDocker.EXPECT().IsRunning().Return(true, nil)
-		mockDocker.EXPECT().Status().Return("running", nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanup := test.SuppressOutput(t)
+			defer cleanup()
 
-		// Create mock binary sidecar (shouldn't be used)
-		mockBinary := mock.NewMockBinarySidecar(ctrl)
+			mockConfig := mock.NewMockConfigManager(ctrl)
+			mockDocker := mock.NewMockDockerSidecar(ctrl)
+			mockSystemd := mock.NewMockSystemdSidecar(ctrl)
+			mockBinary := mock.NewMockBinarySidecar(ctrl)
+			mockGitHub := servicemock.NewMockGitHubService(ctrl)
 
-		// Create mock systemd sidecar (shouldn't be used)
-		mockSystemd := mock.NewMockSystemdSidecar(ctrl)
+			tt.setupMocks(mockConfig, mockDocker, mockSystemd, mockBinary, mockGitHub)
 
-		// Create mock GitHub service
-		mockGithub := servicemock.NewMockGitHubService(ctrl)
-		mockGithub.EXPECT().GetLatestVersion().Return("1.0.1", nil)
+			app := cli.NewApp()
+			ctx := cli.NewContext(app, nil, nil)
 
-		err := showStatus(
-			cli.NewContext(nil, nil, nil),
-			logrus.New(),
-			mockConfig,
-			mockDocker,
-			mockSystemd,
-			mockBinary,
-			mockGithub,
-		)
+			err := showStatus(ctx, logrus.New(), mockConfig, mockDocker, mockSystemd, mockBinary, mockGitHub)
 
-		assert.NoError(t, err)
-	})
+			if tt.expectedError != "" {
+				assert.ErrorContains(t, err, tt.expectedError)
+				return
+			}
 
-	t.Run("shows status for stopped binary sidecar", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		// Create mock config with binary setup
-		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&config.Config{
-			Version:           "1.0.0",
-			RunMethod:         config.RunMethod_RUN_METHOD_BINARY,
-			NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
-			BeaconNodeAddress: "http://localhost:5052",
-		}).AnyTimes()
-		mockConfig.EXPECT().GetConfigPath().Return("/path/to/config.yaml")
-
-		// Create mock docker sidecar (shouldn't be used)
-		mockDocker := mock.NewMockDockerSidecar(ctrl)
-
-		// Create mock binary sidecar that's stopped
-		mockBinary := mock.NewMockBinarySidecar(ctrl)
-		mockBinary.EXPECT().IsRunning().Return(false, nil)
-		mockBinary.EXPECT().Status().Return("stopped", nil)
-
-		// Create mock systemd sidecar (shouldn't be used)
-		mockSystemd := mock.NewMockSystemdSidecar(ctrl)
-
-		// Create mock GitHub service with same version (shouldn't show update)
-		mockGithub := servicemock.NewMockGitHubService(ctrl)
-		mockGithub.EXPECT().GetLatestVersion().Return("1.0.0", nil)
-
-		err := showStatus(
-			cli.NewContext(nil, nil, nil),
-			logrus.New(),
-			mockConfig,
-			mockDocker,
-			mockSystemd,
-			mockBinary,
-			mockGithub,
-		)
-
-		assert.NoError(t, err)
-	})
-
-	t.Run("shows status for systemd service", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&config.Config{
-			Version:           "1.0.0",
-			RunMethod:         config.RunMethod_RUN_METHOD_SYSTEMD,
-			NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
-			BeaconNodeAddress: "http://localhost:5052",
-		}).AnyTimes()
-		mockConfig.EXPECT().GetConfigPath().Return("/path/to/config.yaml")
-
-		mockDocker := mock.NewMockDockerSidecar(ctrl)
-		mockBinary := mock.NewMockBinarySidecar(ctrl)
-
-		// Create mock systemd sidecar that's active
-		mockSystemd := mock.NewMockSystemdSidecar(ctrl)
-		mockSystemd.EXPECT().IsRunning().Return(true, nil)
-		mockSystemd.EXPECT().Status().Return("active", nil)
-
-		mockGithub := servicemock.NewMockGitHubService(ctrl)
-		mockGithub.EXPECT().GetLatestVersion().Return("1.0.0", nil)
-
-		err := showStatus(
-			cli.NewContext(nil, nil, nil),
-			logrus.New(),
-			mockConfig,
-			mockDocker,
-			mockSystemd,
-			mockBinary,
-			mockGithub,
-		)
-
-		assert.NoError(t, err)
-	})
-
-	t.Run("handles github service error gracefully", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&config.Config{
-			Version:     "1.0.0",
-			RunMethod:   config.RunMethod_RUN_METHOD_DOCKER,
-			NetworkName: config.NetworkName_NETWORK_NAME_MAINNET,
-		}).AnyTimes()
-		mockConfig.EXPECT().GetConfigPath().Return("/path/to/config.yaml")
-
-		mockDocker := mock.NewMockDockerSidecar(ctrl)
-		mockDocker.EXPECT().IsRunning().Return(true, nil)
-		mockDocker.EXPECT().Status().Return("running", nil)
-		mockSystemd := mock.NewMockSystemdSidecar(ctrl)
-
-		// Create mock GitHub service that returns an error
-		mockGithub := servicemock.NewMockGitHubService(ctrl)
-		mockGithub.EXPECT().GetLatestVersion().Return("", fmt.Errorf("github error"))
-
-		err := showStatus(
-			cli.NewContext(nil, nil, nil),
-			logrus.New(),
-			mockConfig,
-			mockDocker,
-			mockSystemd,
-			mock.NewMockBinarySidecar(ctrl),
-			mockGithub,
-		)
-
-		assert.NoError(t, err) // Should still succeed even with GitHub error
-	})
-
-	t.Run("handles invalid run method", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		// Create mock config with invalid run method
-		mockConfig := mock.NewMockConfigManager(ctrl)
-		mockConfig.EXPECT().Get().Return(&config.Config{
-			RunMethod: config.RunMethod_RUN_METHOD_UNSPECIFIED,
-		}).AnyTimes()
-		mockConfig.EXPECT().GetConfigPath().Return("/path/to/config.yaml").AnyTimes()
-
-		// Create mock GitHub service
-		mockGithub := servicemock.NewMockGitHubService(ctrl)
-		mockGithub.EXPECT().GetLatestVersion().Return("1.0.0", nil)
-
-		err := showStatus(
-			cli.NewContext(nil, nil, nil),
-			logrus.New(),
-			mockConfig,
-			mock.NewMockDockerSidecar(ctrl),
-			mock.NewMockSystemdSidecar(ctrl),
-			mock.NewMockBinarySidecar(ctrl),
-			mockGithub,
-		)
-
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid sidecar run method")
-	})
+			assert.NoError(t, err)
+		})
+	}
 }

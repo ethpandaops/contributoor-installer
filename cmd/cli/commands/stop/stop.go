@@ -68,13 +68,6 @@ func stopContributoor(
 		cfg    = sidecarCfg.Get()
 	)
 
-	latestVersion, err := github.GetLatestVersion()
-	if err == nil && cfg.Version != latestVersion {
-		tui.UpgradeWarning(latestVersion)
-	}
-
-	fmt.Printf("%sStopping Contributoor%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
-
 	// Stop the sidecar via whatever method the user has configured (docker or binary).
 	switch cfg.RunMethod {
 	case config.RunMethod_RUN_METHOD_DOCKER:
@@ -86,6 +79,14 @@ func stopContributoor(
 	default:
 		return fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
 	}
+
+	// Check version and show upgrade warning if needed.
+	current, latest, needsUpdate, err := sidecar.CheckVersion(runner, github, cfg.Version)
+	if err == nil && needsUpdate {
+		tui.UpgradeWarning(current, latest)
+	}
+
+	fmt.Printf("%sStopping Contributoor%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
 
 	if err := runner.Stop(); err != nil {
 		return err

@@ -68,13 +68,6 @@ func restartContributoor(
 		cfg    = sidecarCfg.Get()
 	)
 
-	latestVersion, err := github.GetLatestVersion()
-	if err == nil && cfg.Version != latestVersion {
-		tui.UpgradeWarning(latestVersion)
-	}
-
-	fmt.Printf("%sRestarting Contributoor%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
-
 	// Determine which runner to use
 	switch cfg.RunMethod {
 	case config.RunMethod_RUN_METHOD_DOCKER:
@@ -86,6 +79,14 @@ func restartContributoor(
 	default:
 		return fmt.Errorf("invalid sidecar run method: %s", cfg.RunMethod)
 	}
+
+	// Check version and show upgrade warning if needed.
+	current, latest, needsUpdate, err := sidecar.CheckVersion(runner, github, cfg.Version)
+	if err == nil && needsUpdate {
+		tui.UpgradeWarning(current, latest)
+	}
+
+	fmt.Printf("%sRestarting Contributoor%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
 
 	// Check if running
 	running, err := runner.IsRunning()
