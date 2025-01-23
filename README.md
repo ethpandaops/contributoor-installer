@@ -48,9 +48,25 @@ This repository contains the installer for the [contributoor](https://github.com
     - Set `Beacon Node Address` to `http://eth2:5052`
     - Set `Optional Docker Network` to `rocketpool_net`
    
-
     Note: These can also be set later `contributoor config`
   - Run `contributoor start`
+
+  ### ⎈ With Kubernetes (Helm)
+
+  Contributoor can be deployed on Kubernetes using the Helm chart from the [ethereum-helm-charts](https://github.com/ethpandaops/ethereum-helm-charts) repository.
+
+  ```bash
+  # Add the Helm repository
+  helm repo add ethereum-helm-charts https://ethpandaops.github.io/ethereum-helm-charts
+
+  # Update your repositories
+  helm repo update
+
+  # Install contributoor
+  helm install contributoor ethereum-helm-charts/contributoor
+  ```
+
+  For more details and configuration options, see the [contributoor chart documentation](https://github.com/ethpandaops/ethereum-helm-charts/tree/master/charts/contributoor).
 
 ### 😔 Uninstall
 
