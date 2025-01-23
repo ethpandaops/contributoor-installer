@@ -124,6 +124,7 @@ func TestShowStatus(t *testing.T) {
 
 			if tt.expectedError != "" {
 				assert.ErrorContains(t, err, tt.expectedError)
+
 				return
 			}
 
