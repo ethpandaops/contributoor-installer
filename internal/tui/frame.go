@@ -30,17 +30,23 @@ type PageFrameOptions struct {
 func CreatePageFrame(opts PageFrameOptions) *tview.Frame {
 	frame := tview.NewFrame(opts.Content)
 	frame.SetBorders(2, 2, 2, 2, 4, 4)
-	frame.AddText("Contributoor Configuration", true, tview.AlignCenter, ColorHeading)
 
 	// Set navigation text based on context
 	switch opts.HelpType {
 	case HelpSettings:
-		frame.AddText("Tab: Go to the Buttons   Ctrl+C: Quit without Saving", false, tview.AlignCenter, tcell.ColorWhite)
-		frame.AddText("Arrow keys: Navigate             Space/Enter: Select", false, tview.AlignCenter, tcell.ColorWhite)
+		frame.AddText("Contributoor Configuration", true, tview.AlignCenter, ColorHeading)
+		frame.AddText("Tab: Go to the Buttons", false, tview.AlignLeft, tcell.ColorWhite)
+		frame.AddText("Ctrl+C: Quit without Saving", false, tview.AlignLeft, tcell.ColorWhite)
+		frame.AddText("Arrow keys: Navigate", false, tview.AlignRight, tcell.ColorWhite)
+		frame.AddText("Space/Enter: Select", false, tview.AlignRight, tcell.ColorWhite)
 	default: // HelpWizard
+		frame.AddText("Contributoor Installation", true, tview.AlignRight, ColorHeading)
 		frame.AddText(fmt.Sprintf("Navigation: Install Wizard > [%d/%d] %s", opts.Step, opts.Total, opts.Title), true, tview.AlignLeft, tcell.ColorWhite)
-		frame.AddText("Esc: Go Back    Ctrl+C: Quit without Saving", false, tview.AlignCenter, tcell.ColorWhite)
-		frame.AddText("Arrow keys: Navigate    Space/Enter: Select", false, tview.AlignCenter, tcell.ColorWhite)
+
+		frame.AddText("Esc: Go Back", false, tview.AlignLeft, tcell.ColorWhite)
+		frame.AddText("Ctrl+C: Quit without Saving", false, tview.AlignLeft, tcell.ColorWhite)
+		frame.AddText("Arrow keys: Navigate", false, tview.AlignRight, tcell.ColorWhite)
+		frame.AddText("Space/Enter: Select", false, tview.AlignRight, tcell.ColorWhite)
 	}
 
 	frame.SetBorderColor(ColorHeading)

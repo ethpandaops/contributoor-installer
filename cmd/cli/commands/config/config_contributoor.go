@@ -243,10 +243,10 @@ func (p *ContributoorSettingsPage) openErrorModal(err error) {
 		p.display.app,
 		err.Error(),
 		func() {
-			p.display.app.SetRoot(p.display.frame, true)
+			p.display.app.SetRoot(p.display.frame, true).EnableMouse(true)
 			p.display.app.SetFocus(p.form)
 		},
-	), true)
+	), true).EnableMouse(true)
 }
 
 // getServiceManagerLabel returns the appropriate label based on platform.

@@ -63,7 +63,7 @@ func NewInstallDisplay(log *logrus.Logger, app *tview.Application, sidecarCfg si
 		Total:    len(display.installPages),
 	})
 	display.frame = frame
-	display.app.SetRoot(frame, true)
+	display.app.SetRoot(frame, true).EnableMouse(true)
 
 	return display
 }
@@ -122,7 +122,7 @@ func (d *InstallDisplay) setPage(page *tui.Page) {
 	})
 
 	d.frame = frame
-	d.app.SetRoot(frame, true)
+	d.app.SetRoot(frame, true).EnableMouse(true)
 }
 
 // OnComplete is called when the install wizard is complete.

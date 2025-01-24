@@ -76,7 +76,7 @@ func (p *FinishedPage) initPage() {
 
 	// Create text view.
 	textView := tview.NewTextView()
-	textView.SetText("Nice work, you're all done!\nContributoor has been configured successfully.")
+	textView.SetText("🎉 Nice work, you're all done!\nContributoor has been configured successfully.")
 	textView.SetTextAlign(tview.AlignCenter)
 	textView.SetWordWrap(true)
 	textView.SetTextColor(tview.Styles.PrimaryTextColor)
@@ -90,7 +90,7 @@ func (p *FinishedPage) initPage() {
 	contentGrid.AddItem(form, 3, 0, 1, 3, 0, 0, true)
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 5, 0, 1, 3, 0, 0, false)
 	contentGrid.SetBorder(true)
-	contentGrid.SetTitle(" Installation Complete ")
+	contentGrid.SetTitle(" 🤝 Installation Complete ")
 	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 
 	// Create border grid.

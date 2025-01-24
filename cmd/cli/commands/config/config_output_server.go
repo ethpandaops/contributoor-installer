@@ -373,9 +373,9 @@ func (p *OutputServerConfigPage) openErrorModal(err error) {
 		p.display.app,
 		err.Error(),
 		func() {
-			p.display.app.SetRoot(p.display.frame, true)
+			p.display.app.SetRoot(p.display.frame, true).EnableMouse(true)
 		},
-	), true)
+	), true).EnableMouse(true)
 }
 
 // Update getCredentialsFromConfig to use the validation package.

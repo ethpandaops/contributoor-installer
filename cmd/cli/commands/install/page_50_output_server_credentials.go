@@ -102,7 +102,7 @@ func (p *OutputServerCredentialsPage) initPage() {
 	// Create content grid.
 	contentGrid := tview.NewGrid()
 	contentGrid.SetRows(2, 3, 1, 6, 1, 2)
-	contentGrid.SetColumns(1, -4, 1)
+	contentGrid.SetColumns(-1, -6, -1)
 	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 
 	// Create text view.
@@ -118,10 +118,12 @@ func (p *OutputServerCredentialsPage) initPage() {
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 0, 0, 1, 3, 0, 0, false)
 	contentGrid.AddItem(textView, 1, 0, 1, 3, 0, 0, false)
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 2, 0, 1, 3, 0, 0, false)
-	contentGrid.AddItem(form, 3, 0, 1, 3, 0, 0, true)
+	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 3, 0, 1, 1, 0, 0, false)
+	contentGrid.AddItem(form, 3, 1, 1, 1, 0, 0, true)
+	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 3, 2, 1, 1, 0, 0, false)
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 5, 0, 1, 3, 0, 0, false)
 	contentGrid.SetBorder(true)
-	contentGrid.SetTitle(" Output Server Credentials ")
+	contentGrid.SetTitle(" 🔐 Output Server Credentials ")
 	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 
 	// Create border grid.
@@ -182,6 +184,8 @@ func validateAndSaveCredentials(p *OutputServerCredentialsPage) {
 		return
 	}
 
+	// Set initial focus on the Next button.
+	p.display.app.SetFocus(p.form.GetButton(0))
 	p.display.setPage(p.display.finishedPage.GetPage())
 }
 
@@ -190,7 +194,7 @@ func (p *OutputServerCredentialsPage) openErrorModal(err error) {
 		p.display.app,
 		err.Error(),
 		func() {
-			p.display.app.SetRoot(p.display.frame, true)
+			p.display.app.SetRoot(p.display.frame, true).EnableMouse(true)
 		},
-	), true)
+	), true).EnableMouse(true)
 }
