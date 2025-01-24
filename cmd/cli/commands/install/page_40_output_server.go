@@ -247,7 +247,7 @@ func (p *OutputServerPage) initPage() {
 	contentGrid.AddItem(form, 3, 0, 1, 3, 0, 0, true)
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 5, 0, 1, 3, 0, 0, false)
 	contentGrid.SetBorder(true)
-	contentGrid.SetTitle(" Output Server ")
+	contentGrid.SetTitle(" 🌎 Output Server ")
 	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 
 	// Create border grid.
@@ -265,7 +265,7 @@ func (p *OutputServerPage) openErrorModal(err error) {
 		p.display.app,
 		err.Error(),
 		func() {
-			p.display.app.SetRoot(p.display.frame, true)
+			p.display.app.SetRoot(p.display.frame, true).EnableMouse(true)
 		},
-	), true)
+	), true).EnableMouse(true)
 }

@@ -140,6 +140,15 @@ func (p *BeaconNodePage) initPage() {
 	formFrame.SetBorderPadding(0, 0, 0, 0) // Reset padding
 	formFrame.SetBackgroundColor(tui.ColorFormBackground)
 
+	// Create a grid to control form width.
+	formGrid := tview.NewGrid().
+		SetColumns(-1, -6, -1).
+		SetRows(0)
+	formGrid.SetBackgroundColor(tui.ColorFormBackground)
+	formGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 0, 0, 1, 1, 0, 0, false)
+	formGrid.AddItem(formFrame, 0, 1, 1, 1, 0, 0, true)
+	formGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 0, 2, 1, 1, 0, 0, false)
+
 	// Add 'Next' button to our form.
 	form.AddButton(tui.ButtonNext, func() {
 		validateAndUpdate(p, inputField)
@@ -165,22 +174,11 @@ func (p *BeaconNodePage) initPage() {
 				}
 			}
 		}
-
-		// Set up dropdown callback now that we have the button
-		if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
-			if item := p.form.GetFormItem(1); item != nil {
-				if dropdown, ok := item.(*tview.DropDown); ok && dropdown != nil {
-					dropdown.SetSelectedFunc(func(text string, index int) {
-						p.display.app.SetFocus(button)
-					})
-				}
-			}
-		}
 	}
 
 	// Create the header text view
 	headerView := tview.NewTextView()
-	headerView.SetText("Please enter the address of your Beacon Node.")
+	headerView.SetText("Please enter the address of your Beacon Node. For example:")
 	headerView.SetTextAlign(tview.AlignCenter)
 	headerView.SetTextColor(tview.Styles.PrimaryTextColor)
 	headerView.SetBackgroundColor(tui.ColorFormBackground)
@@ -191,32 +189,31 @@ func (p *BeaconNodePage) initPage() {
 
 	var optionsText string
 	if p.display.sidecarCfg.Get().RunMethod == config.RunMethod_RUN_METHOD_DOCKER {
-		optionsText = "\nExamples:\n1. Local beacon node (e.g., http://127.0.0.1:5052)\n2. Docker container (e.g., http://beacon:5052)\n   - Optionally specify an existing Docker network to join"
+		optionsText = "\n1. Local beacon node (e.g., http://127.0.0.1:5052)\n2. Docker container (e.g., http://beacon:5052)\n   - Optionally specify an existing Docker network to join"
 	} else {
-		optionsText = "\nExample: http://127.0.0.1:5052"
+		optionsText = "\nhttp://127.0.0.1:5052"
 	}
 
 	optionsView.SetText(optionsText)
-	optionsView.SetTextAlign(tview.AlignLeft)
+	optionsView.SetTextAlign(tview.AlignCenter)
 	optionsView.SetWordWrap(true)
 	optionsView.SetTextColor(tview.Styles.PrimaryTextColor)
 	optionsView.SetBackgroundColor(tui.ColorFormBackground)
 	optionsView.SetBorderPadding(0, 0, 0, 0)
 
-	// Set up the content grid.
-	contentGrid.SetRows(1, 1, 5, 1, 6, 1)
+	// Set up the content gri.
+	contentGrid.SetRows(2, 1, 4, 1, 3, 0)
 	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 	contentGrid.SetBorder(true)
-	contentGrid.SetTitle(" Beacon Node ")
+	contentGrid.SetTitle(" 📡 Beacon Node ")
 
 	// Add items to content grid using spacers.
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 0, 0, 1, 1, 0, 0, false)
 	contentGrid.AddItem(headerView, 1, 0, 1, 1, 0, 0, false)
 	contentGrid.AddItem(optionsView, 2, 0, 1, 1, 0, 0, false)
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 3, 0, 1, 1, 0, 0, false)
-	contentGrid.AddItem(formFrame, 4, 0, 2, 1, 0, 0, true)
+	contentGrid.AddItem(formGrid, 4, 0, 2, 1, 0, 0, true)
 
-	// Border grid.
 	borderGrid.SetRows(0, textViewHeight+formHeight+1, 0, 2)
 	borderGrid.AddItem(contentGrid, 1, 1, 1, 1, 0, 0, true)
 
@@ -262,9 +259,9 @@ func (p *BeaconNodePage) openErrorModal(err error) {
 		p.display.app,
 		err.Error(),
 		func() {
-			p.display.app.SetRoot(p.display.frame, true)
+			p.display.app.SetRoot(p.display.frame, true).EnableMouse(true)
 		},
-	), true)
+	), true).EnableMouse(true)
 }
 
 // contains checks if a string is present in a slice.

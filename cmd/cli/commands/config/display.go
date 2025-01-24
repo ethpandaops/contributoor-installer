@@ -94,12 +94,12 @@ func (d *ConfigDisplay) setupGrid() {
 	})
 
 	d.frame = frame
-	d.app.SetRoot(frame, true)
+	d.app.SetRoot(frame, true).EnableMouse(true)
 }
 
 // setPage sets the current page and updates the frame.
 func (d *ConfigDisplay) setPage(page *tui.Page) {
-	d.app.SetRoot(d.frame, true)
+	d.app.SetRoot(d.frame, true).EnableMouse(true)
 	d.pages.SwitchToPage(page.ID)
 }
 
