@@ -53,7 +53,7 @@ func TestWelcomePage(t *testing.T) {
 			// Verify the page was created.
 			assert.NotNil(t, page, "page should be created")
 			assert.NotNil(t, page.content, "page content should be set")
-			assert.IsType(t, &tview.Modal{}, page.content, "content should be a modal")
+			assert.IsType(t, &tview.Grid{}, page.content, "content should be a grid")
 
 			// Verify the page ID and title.
 			assert.Equal(t, "install-welcome", page.page.ID)

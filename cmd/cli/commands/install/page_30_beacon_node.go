@@ -47,9 +47,6 @@ func (p *BeaconNodePage) GetPage() *tui.Page {
 func (p *BeaconNodePage) initPage() {
 	var (
 		// Some basic dimensions for the page modal.
-		//modalWidth  = 195 // Match welcome/network page width
-		//modalHeight = 40
-
 		modalWidth     = 70
 		lines          = tview.WordWrap("Please enter the address of your Beacon Node.\nFor example: http://127.0.0.1:5052", modalWidth-4)
 		textViewHeight = len(lines) + 8
@@ -58,9 +55,6 @@ func (p *BeaconNodePage) initPage() {
 		// Main grids.
 		contentGrid = tview.NewGrid()
 		borderGrid  = tview.NewGrid().SetColumns(0, modalWidth, 0)
-		// borderGrid  = tview.NewGrid().
-		// 		SetColumns(0, modalWidth, 0).
-		// 		SetRows(0, modalHeight, 0)
 
 		// Form components.
 		form = tview.NewForm()
@@ -207,8 +201,8 @@ func (p *BeaconNodePage) initPage() {
 	optionsView.SetBackgroundColor(tui.ColorFormBackground)
 	optionsView.SetBorderPadding(0, 0, 0, 0)
 
-	// Set up the content grid with more vertical space
-	contentGrid.SetRows(2, 1, 4, 1, 3, 0) // Changed 0 to 3 for minimum form height to ensure button visibility
+	// Set up the content gri.
+	contentGrid.SetRows(2, 1, 4, 1, 3, 0)
 	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 	contentGrid.SetBorder(true)
 	contentGrid.SetTitle(" 📡 Beacon Node ")
@@ -218,7 +212,7 @@ func (p *BeaconNodePage) initPage() {
 	contentGrid.AddItem(headerView, 1, 0, 1, 1, 0, 0, false)
 	contentGrid.AddItem(optionsView, 2, 0, 1, 1, 0, 0, false)
 	contentGrid.AddItem(tview.NewBox().SetBackgroundColor(tui.ColorFormBackground), 3, 0, 1, 1, 0, 0, false)
-	contentGrid.AddItem(formGrid, 4, 0, 2, 1, 0, 0, true) // Increased span to 2 rows to include minimum height
+	contentGrid.AddItem(formGrid, 4, 0, 2, 1, 0, 0, true)
 
 	borderGrid.SetRows(0, textViewHeight+formHeight+1, 0, 2)
 	borderGrid.AddItem(contentGrid, 1, 1, 1, 1, 0, 0, true)
