@@ -40,14 +40,15 @@ func (p *WelcomePage) GetPage() *tui.Page {
 
 // initPage initializes the page.
 func (p *WelcomePage) initPage() {
-	intro := "We'll walk you through the basic setup of contributoor.\n\n"
-	helperText := fmt.Sprintf("%s\n\nWelcome to the contributoor configuration wizard!\n\n%s", tui.Logo, intro)
+	var (
+		intro          = "We'll walk you through the basic setup of contributoor.\n\n"
+		helperText     = fmt.Sprintf("%s\n\nWelcome to the contributoor configuration wizard!\n\n%s", tui.Logo, intro)
+		modalWidth     = 70
+		lines          = tview.WordWrap("Select which network you're using", modalWidth-4)
+		textViewHeight = len(lines) + 4
+	)
 
-	modalWidth := 70
-	lines := tview.WordWrap("Select which network you're using", modalWidth-4)
-	textViewHeight := len(lines) + 4
-
-	// Create the main text view
+	// Create the main text view.
 	textView := tview.NewTextView()
 	textView.SetText(helperText)
 	textView.SetTextAlign(tview.AlignCenter)
@@ -56,7 +57,7 @@ func (p *WelcomePage) initPage() {
 	textView.SetBackgroundColor(tui.ColorFormBackground)
 	textView.SetBorderPadding(0, 0, 0, 0)
 
-	// Create the button form
+	// Create the button form.
 	form := tview.NewForm()
 	form.AddButton(tui.ButtonNext, func() {
 		p.display.setPage(p.display.networkConfigPage.GetPage())
@@ -71,7 +72,7 @@ func (p *WelcomePage) initPage() {
 		Background(tui.ColorButtonActivated).
 		Foreground(tcell.ColorBlack))
 
-	// Set initial focus on the Next button
+	// Set initial focus on the Next button.
 	p.display.app.SetFocus(form.GetButton(0))
 
 	// Supporting control between mouse + keyboard.
@@ -97,7 +98,7 @@ func (p *WelcomePage) initPage() {
 		return event
 	})
 
-	// Add input capture to the text view to allow tabbing to button
+	// Add input capture to the text view to allow tabbing to button.
 	textView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyTab {
 			p.display.app.SetFocus(button)
@@ -108,7 +109,7 @@ func (p *WelcomePage) initPage() {
 		return event
 	})
 
-	// Create a flex container to stack text and button vertically
+	// Create a flex container to stack text and button vertically.
 	flex := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(textView, 0, 1, false).
@@ -117,7 +118,7 @@ func (p *WelcomePage) initPage() {
 
 	// Create content grid with more vertical space.
 	contentGrid := tview.NewGrid()
-	contentGrid.SetRows(1, 0, 1) // Minimal margins
+	contentGrid.SetRows(1, 0, 1)
 	contentGrid.SetBackgroundColor(tui.ColorFormBackground)
 	contentGrid.SetBorder(true)
 	contentGrid.SetTitle(" 👋 Welcome ")
