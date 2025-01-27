@@ -89,10 +89,11 @@ warn() {
 }
 
 usage() {
-    echo "Usage: $0 [-p path] [-v version] [-u]"
+    echo "Usage: $0 [-p path] [-v version] [-u] [-c config_path]"
     echo "  -p: Path to install contributoor (default: $HOME/.contributoor)"
     echo "  -v: Version of contributoor to install without 'v' prefix (default: latest, example: 0.0.6)"
     echo "  -u: Uninstall Contributoor"
+    echo "  -c: Path to config.yaml (only used with -u for uninstall)"
     exit 1
 }
 
@@ -599,11 +600,37 @@ EOF
 }
 
 uninstall() {
+    # Try to determine the installation directory
+    local install_dir=""
+    
+    # If config path was provided via -c, use it
+    if [ -n "${CONFIG_PATH:-}" ]; then
+        # Expand ~ to $HOME in a portable way
+        CONFIG_PATH=$(echo "$CONFIG_PATH" | sed "s|^~|$HOME|")
+        if [ ! -f "$CONFIG_PATH" ]; then
+            fail "Config file not found at: $CONFIG_PATH"
+        fi
+        install_dir=$(dirname "$CONFIG_PATH")
+    else
+        # Try using contributoor status
+        if command -v contributoor >/dev/null 2>&1; then
+            local config_path=$(contributoor status 2>/dev/null | grep "Config Path" | cut -d':' -f2 | tr -d ' ')
+            if [ -n "$config_path" ]; then
+                install_dir=$(dirname "$config_path")
+            fi
+        fi
+        
+        # If we couldn't determine the install directory, ask user to specify.
+        if [ -z "$install_dir" ]; then
+            fail "Could not determine installation directory.\nIt's likely you installed contributoor under a custom directory.\n\nPlease specify the directory when running the uninstaller:\n./install.sh -u -c /path/to/custom/config.yaml"
+        fi
+    fi
+
     printf "\n${COLOR_RED}Warning, this will:${COLOR_RESET}\n"
     printf " • Stop and remove any contributoor services (systemd/launchd)\n"
     printf " • Stop and remove any contributoor Docker containers and images\n"
     printf " • Remove contributoor from your PATH\n"
-    printf " • Delete all contributoor data from ${HOME}/.contributoor\n\n"
+    printf " • Delete all contributoor data from ${install_dir}\n\n"
     printf "Are you sure you want to uninstall? [y/N]: "
     read -r confirm
     case "$(echo "$confirm" | tr '[:upper:]' '[:lower:]')" in
@@ -663,19 +690,20 @@ uninstall() {
     fi
 
     # Remove PATH entry from shell config
+    local bin_path="$install_dir/bin"
     for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.profile"; do
         if [ -f "$rc" ]; then
             temp_file=$(mktemp)
-            grep -v "export PATH=.*contributoor.*bin" "$rc" > "$temp_file"
+            grep -v "export PATH=.*$bin_path" "$rc" > "$temp_file"
             mv "$temp_file" "$rc"
             success "Cleaned PATH from $rc"
         fi
     done
 
-    # Remove contributoor directory
-    if [ -d "$HOME/.contributoor" ]; then
-        rm -rf "$HOME/.contributoor"
-        success "Removed contributoor directory"
+    # Remove contributoor directory using detected path
+    if [ -d "$install_dir" ]; then
+        rm -rf "$install_dir"
+        success "Removed contributoor directory: $install_dir"
     fi
 
     printf "\n\n${COLOR_GREEN}Contributoor has been uninstalled successfully${COLOR_RESET}\n\n"
@@ -684,15 +712,23 @@ uninstall() {
 
 main() {
     # Parse arguments
-    while getopts "p:v:hu" FLAG; do
+    SHOULD_UNINSTALL=false
+    while getopts "p:v:c:hu" FLAG; do
         case "$FLAG" in
             p) CONTRIBUTOOR_PATH="$OPTARG" ;;
             v) CONTRIBUTOOR_VERSION="$OPTARG" ;;
-            u) uninstall ;;
+            c) CONFIG_PATH="$OPTARG" ;;
+            u) SHOULD_UNINSTALL=true ;;
             h) usage ;;
             *) usage ;;
         esac
     done
+
+    # Handle uninstall if requested
+    if [ "$SHOULD_UNINSTALL" = true ]; then
+        uninstall
+        exit 0
+    fi
 
     # Setup environment
     CONTRIBUTOOR_BIN="$CONTRIBUTOOR_PATH/bin"
@@ -726,6 +762,8 @@ main() {
         read -r CUSTOM_PATH
     fi
     if [ -n "$CUSTOM_PATH" ]; then
+        # Expand ~ to $HOME in a portable way
+        CUSTOM_PATH=$(echo "$CUSTOM_PATH" | sed "s|^~|$HOME|")
         CONTRIBUTOOR_PATH="$CUSTOM_PATH"
         CONTRIBUTOOR_BIN="$CONTRIBUTOOR_PATH/bin"
     fi

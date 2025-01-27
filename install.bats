@@ -1026,7 +1026,11 @@ EOF
             *) return 0 ;;
         esac
     }
-    export -f detect_platform sudo docker
+    function contributoor() {
+        echo "Config Path         : $TEST_DIR/.contributoor/config.yaml"
+        return 0
+    }
+    export -f detect_platform sudo docker contributoor
     export HOME="$TEST_DIR"
     
     # Test 'no' response
@@ -1064,8 +1068,13 @@ EOF
             case "$2" in
                 "systemctl") return 0 ;;
                 "docker") return 0 ;;
+                "contributoor") return 0 ;;
                 *) command "$@" ;;
             esac
+        }
+        contributoor() {
+            echo "Config Path         : $TEST_DIR/.contributoor/config.yaml"
+            return 0
         }
         sudo() { 
             case "$1" in
@@ -1098,7 +1107,7 @@ EOF
                 *) return 0 ;;
             esac
         }
-        export -f detect_platform command sudo docker
+        export -f detect_platform command sudo docker contributoor
         
         printf "y\n" | uninstall
     '
@@ -1134,6 +1143,16 @@ EOF
         
         # Setup mock functions
         detect_platform() { echo "darwin"; }
+        command() {
+            case "$2" in
+                "contributoor") return 0 ;;
+                *) return 1 ;;
+            esac
+        }
+        contributoor() {
+            echo "Config Path         : $TEST_DIR/.contributoor/config.yaml"
+            return 0
+        }
         sudo() { 
             case "$1" in
                 "launchctl")
@@ -1153,7 +1172,7 @@ EOF
                     ;;
             esac
         }
-        export -f detect_platform sudo
+        export -f detect_platform command sudo contributoor
         
         printf "y\n" | uninstall
     '
@@ -1165,32 +1184,38 @@ EOF
 }
 
 @test "uninstall handles missing components gracefully" {
-    # Create minimal test environment.
-    mkdir -p "$TEST_DIR"
+    # Create minimal test environment with config path
+    mkdir -p "$TEST_DIR/.contributoor"
+    touch "$TEST_DIR/.contributoor/config.yaml"
     
-    # Setup mock functions.
+    # Setup mock functions
     function detect_platform() { echo "linux"; }
     function command() {
         case "$2" in
             "systemctl") return 1 ;; # systemd not available
             "docker") return 1 ;; # docker not available
+            "contributoor") return 0 ;;
             *) command "$@" ;;
         esac
+    }
+    function contributoor() {
+        echo "Config Path         : $TEST_DIR/.contributoor/config.yaml"
+        return 0
     }
     function sudo() {
         "${@:2}"
         return 0
     }
-    export -f detect_platform command sudo
+    export -f detect_platform command sudo contributoor
     export HOME="$TEST_DIR"
     
-    # Run uninstall with 'yes' response.
+    # Run uninstall with 'yes' response
     run bash -c '
         source ./install.sh
         printf "y\n" | uninstall
     '
     
-    # Should complete successfully even with nothing to clean.
+    # Should complete successfully even with nothing to clean
     [ "$status" -eq 0 ]
     echo "$output" | grep -q "Contributoor has been uninstalled successfully"
 }
