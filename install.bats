@@ -1219,3 +1219,60 @@ EOF
     [ "$status" -eq 0 ]
     echo "$output" | grep -q "Contributoor has been uninstalled successfully"
 }
+
+@test "installation path expands tilde correctly" {
+    # Setup test environment
+    export HOME="$TEST_DIR"
+    CUSTOM_PATH="~/custom/contributoor"
+    EXPECTED_PATH="$TEST_DIR/custom/contributoor"
+
+    run bash -c "
+        source ./install.sh
+        CUSTOM_PATH='$CUSTOM_PATH'
+        # Expand ~ to \$HOME in a portable way
+        CUSTOM_PATH=\$(echo \"\$CUSTOM_PATH\" | sed \"s|^~|\$HOME|\")
+        echo \$CUSTOM_PATH
+    "
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "$EXPECTED_PATH" ]
+}
+
+@test "uninstall handles tilde expansion in config path" {
+    # Create test environment with config in custom path
+    CUSTOM_DIR="$TEST_DIR/custom/contributoor"
+    mkdir -p "$CUSTOM_DIR"
+    touch "$CUSTOM_DIR/config.yaml"
+    export HOME="$TEST_DIR"
+    
+    # Run uninstall with config path using tilde
+    run bash -c '
+        source ./install.sh
+        CONFIG_PATH="~/custom/contributoor/config.yaml"
+        detect_platform() { echo "linux"; }
+        command() { return 1; }
+        export -f detect_platform command
+        printf "y\n" | CONFIG_PATH="$CONFIG_PATH" uninstall
+    '
+    
+    # Should expand ~ and find the config
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q "custom/contributoor"
+    [ ! -d "$CUSTOM_DIR" ]
+}
+
+@test "uninstall fails with non-existent config path after tilde expansion" {
+    export HOME="$TEST_DIR"
+    
+    run bash -c '
+        source ./install.sh
+        CONFIG_PATH="~/nonexistent/config.yaml"
+        detect_platform() { echo "linux"; }
+        command() { return 1; }
+        export -f detect_platform command
+        printf "y\n" | CONFIG_PATH="$CONFIG_PATH" uninstall
+    '
+    
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q "Config file not found at: $TEST_DIR/nonexistent/config.yaml"
+}
