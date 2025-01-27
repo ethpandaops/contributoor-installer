@@ -1026,7 +1026,11 @@ EOF
             *) return 0 ;;
         esac
     }
-    export -f detect_platform sudo docker
+    function contributoor() {
+        echo "Config Path         : $TEST_DIR/.contributoor/config.yaml"
+        return 0
+    }
+    export -f detect_platform sudo docker contributoor
     export HOME="$TEST_DIR"
     
     # Test 'no' response
@@ -1064,8 +1068,13 @@ EOF
             case "$2" in
                 "systemctl") return 0 ;;
                 "docker") return 0 ;;
+                "contributoor") return 0 ;;
                 *) command "$@" ;;
             esac
+        }
+        contributoor() {
+            echo "Config Path         : $TEST_DIR/.contributoor/config.yaml"
+            return 0
         }
         sudo() { 
             case "$1" in
@@ -1098,7 +1107,7 @@ EOF
                 *) return 0 ;;
             esac
         }
-        export -f detect_platform command sudo docker
+        export -f detect_platform command sudo docker contributoor
         
         printf "y\n" | uninstall
     '
@@ -1134,6 +1143,16 @@ EOF
         
         # Setup mock functions
         detect_platform() { echo "darwin"; }
+        command() {
+            case "$2" in
+                "contributoor") return 0 ;;
+                *) return 1 ;;
+            esac
+        }
+        contributoor() {
+            echo "Config Path         : $TEST_DIR/.contributoor/config.yaml"
+            return 0
+        }
         sudo() { 
             case "$1" in
                 "launchctl")
@@ -1153,7 +1172,7 @@ EOF
                     ;;
             esac
         }
-        export -f detect_platform sudo
+        export -f detect_platform command sudo contributoor
         
         printf "y\n" | uninstall
     '
@@ -1165,32 +1184,95 @@ EOF
 }
 
 @test "uninstall handles missing components gracefully" {
-    # Create minimal test environment.
-    mkdir -p "$TEST_DIR"
+    # Create minimal test environment with config path
+    mkdir -p "$TEST_DIR/.contributoor"
+    touch "$TEST_DIR/.contributoor/config.yaml"
     
-    # Setup mock functions.
+    # Setup mock functions
     function detect_platform() { echo "linux"; }
     function command() {
         case "$2" in
             "systemctl") return 1 ;; # systemd not available
             "docker") return 1 ;; # docker not available
+            "contributoor") return 0 ;;
             *) command "$@" ;;
         esac
+    }
+    function contributoor() {
+        echo "Config Path         : $TEST_DIR/.contributoor/config.yaml"
+        return 0
     }
     function sudo() {
         "${@:2}"
         return 0
     }
-    export -f detect_platform command sudo
+    export -f detect_platform command sudo contributoor
     export HOME="$TEST_DIR"
     
-    # Run uninstall with 'yes' response.
+    # Run uninstall with 'yes' response
     run bash -c '
         source ./install.sh
         printf "y\n" | uninstall
     '
     
-    # Should complete successfully even with nothing to clean.
+    # Should complete successfully even with nothing to clean
     [ "$status" -eq 0 ]
     echo "$output" | grep -q "Contributoor has been uninstalled successfully"
+}
+
+@test "installation path expands tilde correctly" {
+    # Setup test environment
+    export HOME="$TEST_DIR"
+    CUSTOM_PATH="~/custom/contributoor"
+    EXPECTED_PATH="$TEST_DIR/custom/contributoor"
+
+    run bash -c "
+        source ./install.sh
+        CUSTOM_PATH='$CUSTOM_PATH'
+        # Expand ~ to \$HOME in a portable way
+        CUSTOM_PATH=\$(echo \"\$CUSTOM_PATH\" | sed \"s|^~|\$HOME|\")
+        echo \$CUSTOM_PATH
+    "
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "$EXPECTED_PATH" ]
+}
+
+@test "uninstall handles tilde expansion in config path" {
+    # Create test environment with config in custom path
+    CUSTOM_DIR="$TEST_DIR/custom/contributoor"
+    mkdir -p "$CUSTOM_DIR"
+    touch "$CUSTOM_DIR/config.yaml"
+    export HOME="$TEST_DIR"
+    
+    # Run uninstall with config path using tilde
+    run bash -c '
+        source ./install.sh
+        CONFIG_PATH="~/custom/contributoor/config.yaml"
+        detect_platform() { echo "linux"; }
+        command() { return 1; }
+        export -f detect_platform command
+        printf "y\n" | CONFIG_PATH="$CONFIG_PATH" uninstall
+    '
+    
+    # Should expand ~ and find the config
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q "custom/contributoor"
+    [ ! -d "$CUSTOM_DIR" ]
+}
+
+@test "uninstall fails with non-existent config path after tilde expansion" {
+    export HOME="$TEST_DIR"
+    
+    run bash -c '
+        source ./install.sh
+        CONFIG_PATH="~/nonexistent/config.yaml"
+        detect_platform() { echo "linux"; }
+        command() { return 1; }
+        export -f detect_platform command
+        printf "y\n" | CONFIG_PATH="$CONFIG_PATH" uninstall
+    '
+    
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q "Config file not found at: $TEST_DIR/nonexistent/config.yaml"
 }

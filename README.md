@@ -91,6 +91,12 @@ contributoor update   # Update to latest version
 contributoor logs     # Show logs
 ```
 
+If you chose to install contributoor under a custom directory, you will need to specify the directory when running the commands, for example:
+
+```bash
+contributoor --config-path /path/to/contributoor start
+```
+
 ## 🔨 Development
 
 <details>
