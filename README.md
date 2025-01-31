@@ -32,10 +32,11 @@ This repository contains the installer for the [contributoor](https://github.com
 
   If you're using [eth-docker](https://ethdocker.com), setup is as follows:
 
-  - In your .env file:
-    - add `:contributoor.yml` to `COMPOSE_FILE`
-    - set `CONTRIBUTOOR_USERNAME` to your username
-    - set `CONTRIBUTOOR_PASSWORD` to your password
+  - Run `./ethd update`
+  - Then edit your .env file:
+    - add `:contributoor.yml` to the end of `COMPOSE_FILE` variable
+    - add `CONTRIBUTOOR_USERNAME` variable and set it to your username
+    - add `CONTRIBUTOOR_PASSWORD` variable and set it to your password
   - Run `./ethd update`
   - Run `./ethd up`
   
