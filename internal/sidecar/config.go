@@ -206,7 +206,7 @@ func writeConfig(path string, cfg *config.Config) error {
 	// Now marshal to map for YAML.
 	var jsonMap map[string]interface{}
 	if jerr := json.Unmarshal(jsonData, &jsonMap); jerr != nil {
-		return fmt.Errorf("error unmarshaling json: %w", jerr)
+		return fmt.Errorf("error unmarshalling json: %w", jerr)
 	}
 
 	data, err := yaml.Marshal(jsonMap)
