@@ -10,7 +10,7 @@ require (
 	github.com/rivo/tview v0.0.0-20241103174730-c76f7879f592
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.34.0
+	github.com/testcontainers/testcontainers-go v0.35.0
 	github.com/urfave/cli v1.22.16
 	go.uber.org/mock v0.5.0
 	golang.org/x/text v0.21.0
