@@ -7,7 +7,7 @@ require (
 	github.com/ethpandaops/contributoor v0.0.55
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/rivo/tview v0.0.0-20241103174730-c76f7879f592
+	github.com/rivo/tview v0.0.0-20241227133733-17b7edb88c57
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.34.0
