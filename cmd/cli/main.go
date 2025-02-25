@@ -19,7 +19,7 @@ import (
 	"github.com/ethpandaops/contributoor-installer/internal/installer"
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 func main() {
@@ -61,16 +61,16 @@ func main() {
 	app.Usage = "Xatu Contributoor CLI"
 	app.Copyright = "(c) 2024 ethPandaOps"
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "config-path, c",
 			Usage: "Contributoor config asset `path`",
 			Value: "~/.contributoor",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "non-interactive",
 			Usage: "Skip all interactive prompts and use default values",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "release, r",
 			Usage: "Print release and exit",
 		},

@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // TerminalColor's are used to style the terminal output.

@@ -13,7 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
 
@@ -149,7 +149,7 @@ func TestRegisterCommands(t *testing.T) {
 			// Create CLI app, with the config flag.
 			app := cli.NewApp()
 			app.Flags = []cli.Flag{
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name: "config-path",
 				},
 			}
@@ -184,12 +184,8 @@ func TestRegisterCommands(t *testing.T) {
 				cmd := app.Commands[0]
 				ctx := cli.NewContext(app, nil, globalCtx)
 
-				// Assert that the action is the func we expect, mainly because the linter is having a fit otherwise.
-				action, ok := cmd.Action.(func(*cli.Context) error)
-				require.True(t, ok, "expected action to be func(*cli.Context) error")
-
 				// Execute the action and assert the error.
-				actionErr := action(ctx)
+				actionErr := cmd.Action(ctx)
 				assert.Error(t, actionErr)
 				assert.ErrorContains(t, actionErr, tt.expectedError)
 			} else {
