@@ -11,7 +11,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
-	github.com/urfave/cli v1.22.16
 	github.com/urfave/cli/v2 v2.27.5
 	go.uber.org/mock v0.5.0
 	golang.org/x/text v0.22.0
