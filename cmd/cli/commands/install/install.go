@@ -8,12 +8,12 @@ import (
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // RegisterCommands registers the install command.
 func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:      opts.Name(),
 		Aliases:   opts.Aliases(),
 		Usage:     "Install Contributoor",
@@ -21,7 +21,7 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 		Action: func(c *cli.Context) error {
 			log := opts.Logger()
 
-			sidecarCfg, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
+			sidecarCfg, err := sidecar.NewConfigService(log, c.String("config-path"))
 			if err != nil {
 				return fmt.Errorf("%s%v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 			}
@@ -29,12 +29,12 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 			return installContributoor(c, log, sidecarCfg)
 		},
 		Flags: []cli.Flag{
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "version, v",
 				Usage: "The contributoor version to install",
 				Value: "latest",
 			},
-			cli.StringFlag{
+			&cli.StringFlag{
 				Name:  "run-method, r",
 				Usage: "The method to run contributoor",
 				Value: sidecar.RunMethodDocker,

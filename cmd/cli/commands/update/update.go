@@ -9,11 +9,11 @@ import (
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
 	"github.com/ethpandaops/contributoor/pkg/config/v1"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:      opts.Name(),
 		Aliases:   opts.Aliases(),
 		Usage:     "Update Contributoor to the latest version",
@@ -24,7 +24,7 @@ func RegisterCommands(app *cli.App, opts *options.CommandOpts) {
 				installerCfg = opts.InstallerConfig()
 			)
 
-			sidecarCfg, err := sidecar.NewConfigService(log, c.GlobalString("config-path"))
+			sidecarCfg, err := sidecar.NewConfigService(log, c.String("config-path"))
 			if err != nil {
 				return fmt.Errorf("%s%v%s", tui.TerminalColorRed, err, tui.TerminalColorReset)
 			}
@@ -172,7 +172,7 @@ func updateSystemd(c *cli.Context, log *logrus.Logger, cfg *config.Config, syste
 
 	// If it was running, start it again for them.
 	if running {
-		if c.GlobalBool("non-interactive") || tui.Confirm("Would you like to restart Contributoor with the new version?") {
+		if c.Bool("non-interactive") || tui.Confirm("Would you like to restart Contributoor with the new version?") {
 			if err := systemd.Start(); err != nil {
 				return true, fmt.Errorf("failed to start sidecar: %w", err)
 			}
@@ -195,7 +195,7 @@ func updateBinary(c *cli.Context, log *logrus.Logger, cfg *config.Config, binary
 
 	// If the sidecar is running, we need to stop it before we can update the binary.
 	if running {
-		if c.GlobalBool("non-interactive") || tui.Confirm("Contributoor is running. In order to update, it must be stopped. Would you like to stop it?") {
+		if c.Bool("non-interactive") || tui.Confirm("Contributoor is running. In order to update, it must be stopped. Would you like to stop it?") {
 			if err := binary.Stop(); err != nil {
 				return false, fmt.Errorf("failed to stop sidecar: %w", err)
 			}
@@ -245,7 +245,7 @@ func updateDocker(c *cli.Context, log *logrus.Logger, cfg *config.Config, docker
 
 	// If the service is running, we need to restart it with the new version.
 	if running {
-		if c.GlobalBool("non-interactive") || tui.Confirm("Contributoor is running. Would you like to restart it with the new version?") {
+		if c.Bool("non-interactive") || tui.Confirm("Contributoor is running. Would you like to restart it with the new version?") {
 			if err := docker.Stop(); err != nil {
 				return true, fmt.Errorf("failed to stop sidecar: %w", err)
 			}
@@ -257,7 +257,7 @@ func updateDocker(c *cli.Context, log *logrus.Logger, cfg *config.Config, docker
 			fmt.Printf("%sContributoor will continue running with the previous version until next restart%s\n", tui.TerminalColorYellow, tui.TerminalColorReset)
 		}
 	} else {
-		if c.GlobalBool("non-interactive") || tui.Confirm("Contributoor is not running. Would you like to start it?") {
+		if c.Bool("non-interactive") || tui.Confirm("Contributoor is not running. Would you like to start it?") {
 			if err := docker.Start(); err != nil {
 				return true, fmt.Errorf("failed to start service: %w", err)
 			}
