@@ -52,6 +52,10 @@ This repository contains the installer for the [contributoor](https://github.com
     Note: These can also be set later `contributoor config`
   - Run `contributoor start`
 
+  ### <img src="https://avatars.githubusercontent.com/u/36789279" alt="avatar" width="20" height="20" style="vertical-align: middle;"> With Dappnode
+
+  Contributoor is available as a Dappnode package. For more information, and to install, see the [contributoor Dappnode package repository](https://github.com/ethpandaops/contributoor-dappnode).
+
   ### ⎈ With Kubernetes (Helm)
 
   Contributoor can be deployed on Kubernetes using the Helm chart from the [ethereum-helm-charts](https://github.com/ethpandaops/ethereum-helm-charts) repository.
