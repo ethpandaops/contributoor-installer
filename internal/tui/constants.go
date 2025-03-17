@@ -34,6 +34,11 @@ var AvailableNetworks = []NetworkOption{
 		Description: "The Holesky test network.",
 	},
 	{
+		Label:       "Hoodi Testnet",
+		Value:       config.NetworkName_NETWORK_NAME_HOODI,
+		Description: "The Hoodi test network.",
+	},
+	{
 		Label:       "Sepolia Testnet",
 		Value:       config.NetworkName_NETWORK_NAME_SEPOLIA,
 		Description: "The Sepolia test network.",
