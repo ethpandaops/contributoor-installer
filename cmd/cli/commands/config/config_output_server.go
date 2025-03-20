@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/ethpandaops/contributoor-installer/internal/tui"
@@ -68,6 +69,7 @@ func (p *OutputServerConfigPage) initPage() {
 		"Username":       "Your output server username for authentication.",
 		"Password":       "Your output server password for authentication.",
 		"Server Address": "The address of your custom output server.",
+		"Use TLS":        "Enable TLS for secure communication with the server.",
 	}
 
 	// Pull together a list of possible output servers and their descriptions.
@@ -151,6 +153,43 @@ func (p *OutputServerConfigPage) initPage() {
 					SetFocusFunc(func() {
 						p.description.SetText("Your output server password for authentication")
 					})
+
+				// Add TLS checkbox for custom server.
+				tlsCheckbox := tview.NewCheckbox().
+					SetLabel("Use TLS")
+
+				// Make sure we get the CURRENT TLS state from config.
+				currentConfig := p.display.sidecarCfg.Get()
+
+				// Check the actual config file to see if TLS field exists.
+				var (
+					configPath      = p.display.sidecarCfg.GetConfigPath()
+					tlsExistsInYAML = false
+				)
+
+				fileData, err := os.ReadFile(configPath)
+				if err == nil {
+					tlsExistsInYAML = strings.Contains(string(fileData), "tls:")
+				}
+
+				// Check if the current address in config is the same as we're configuring now.
+				if currentConfig.OutputServer.Address == defaultAddress {
+					// For existing custom server with matching address:
+					// Only use config value if TLS field actually exists in YAML, otherwise default to false.
+					if tlsExistsInYAML {
+						tlsCheckbox.SetChecked(currentConfig.OutputServer.Tls)
+					} else {
+						tlsCheckbox.SetChecked(false)
+					}
+				} else {
+					// For new custom servers, default to false.
+					tlsCheckbox.SetChecked(false)
+				}
+
+				tlsCheckbox.SetFocusFunc(func() {
+					p.description.SetText("Enable TLS for secure communication with the output server")
+				})
+				form.AddFormItem(tlsCheckbox)
 			} else {
 				// Otherwise, it's an ethPandaOps server.
 				username, password := getCredentialsFromConfig(p.display.sidecarCfg.Get())
@@ -166,6 +205,8 @@ func (p *OutputServerConfigPage) initPage() {
 					SetFocusFunc(func() {
 						p.description.SetText("Your ethPandaOps platform password for authentication")
 					})
+
+				// Remove TLS checkbox for platform servers - it's always TRUE
 			}
 
 			p.display.app.SetFocus(form)
@@ -328,6 +369,21 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 		}
 	}
 
+	// Get TLS setting from form. Default to false for custom servers.
+	useTLS := false
+	if !isCustom {
+		// For ethPandaOps servers, TLS should always be true.
+		useTLS = true
+	} else if formItem := p.form.GetFormItem(formStart + 2); formItem != nil {
+		if checkbox, ok := formItem.(*tview.Checkbox); ok {
+			useTLS = checkbox.IsChecked()
+		} else {
+			p.openErrorModal(fmt.Errorf("invalid TLS field type"))
+
+			return
+		}
+	}
+
 	// Validate credentials. These are optional for custom servers.
 	if err := validate.ValidateOutputServerCredentials(
 		username,
@@ -337,6 +393,12 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 		p.openErrorModal(err)
 
 		return
+	}
+
+	// Force TLS to be explicitly set in all cases.
+	customTLS := useTLS
+	if !isCustom {
+		customTLS = true // Force true for ethPandaOps servers.
 	}
 
 	// Update config with validated values.
@@ -349,9 +411,8 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 			cfg.OutputServer.Credentials = ""
 		}
 
-		if validate.IsEthPandaOpsServer(serverAddress) {
-			cfg.OutputServer.Tls = true
-		}
+		// Always set the TLS field, whether true or false, to ensure it appears in YAML.
+		cfg.OutputServer.Tls = customTLS
 	}); err != nil {
 		p.openErrorModal(err)
 
