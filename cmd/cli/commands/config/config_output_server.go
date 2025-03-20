@@ -205,8 +205,6 @@ func (p *OutputServerConfigPage) initPage() {
 					SetFocusFunc(func() {
 						p.description.SetText("Your ethPandaOps platform password for authentication")
 					})
-
-				// Remove TLS checkbox for platform servers - it's always TRUE
 			}
 
 			p.display.app.SetFocus(form)
@@ -395,12 +393,6 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 		return
 	}
 
-	// Force TLS to be explicitly set in all cases.
-	customTLS := useTLS
-	if !isCustom {
-		customTLS = true // Force true for ethPandaOps servers.
-	}
-
 	// Update config with validated values.
 	if err := p.display.sidecarCfg.Update(func(cfg *config.Config) {
 		cfg.OutputServer.Address = serverAddress
@@ -411,8 +403,7 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 			cfg.OutputServer.Credentials = ""
 		}
 
-		// Always set the TLS field, whether true or false, to ensure it appears in YAML.
-		cfg.OutputServer.Tls = customTLS
+		cfg.OutputServer.Tls = useTLS
 	}); err != nil {
 		p.openErrorModal(err)
 
