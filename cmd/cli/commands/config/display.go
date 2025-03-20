@@ -23,7 +23,6 @@ type ConfigDisplay struct {
 	descriptionBox         *tview.TextView
 	settingsPages          []tui.PageInterface
 	closeButton            *tview.Button
-	networkConfigPage      *NetworkConfigPage
 	outputServerConfigPage *OutputServerConfigPage
 	settingsPage           *ContributoorSettingsPage
 	hasChanges             bool
@@ -41,11 +40,9 @@ func NewConfigDisplay(log *logrus.Logger, app *tview.Application, sidecarCfg sid
 	display.homePage = tui.NewPage(nil, "config-home", "Categories", "", nil)
 
 	// Create all the config sub-pages.
-	display.networkConfigPage = NewNetworkConfigPage(display)
 	display.outputServerConfigPage = NewOutputServerConfigPage(display)
 	display.settingsPage = NewContributoorSettingsPage(display)
 	display.settingsPages = []tui.PageInterface{
-		display.networkConfigPage,
 		display.outputServerConfigPage,
 		display.settingsPage,
 	}

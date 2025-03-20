@@ -28,7 +28,7 @@ func NewBeaconNodePage(display *InstallDisplay) *BeaconNodePage {
 
 	beaconPage.initPage()
 	beaconPage.page = tui.NewPage(
-		display.networkConfigPage.GetPage(),
+		display.welcomePage.GetPage(),
 		"install-beacon",
 		"Beacon Node",
 		"Configure your beacon node connection",

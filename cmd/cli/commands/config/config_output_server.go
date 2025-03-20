@@ -303,12 +303,6 @@ func validateAndUpdateOutputServer(p *OutputServerConfigPage) {
 			}
 		}
 
-		if err := validate.ValidateOutputServerAddress(address); err != nil {
-			p.openErrorModal(err)
-
-			return
-		}
-
 		serverAddress = address
 		formStart++
 	}

@@ -23,8 +23,8 @@ func TestBeaconNodePage(t *testing.T) {
 			app:        tview.NewApplication(),
 			log:        logrus.New(),
 			sidecarCfg: mockConfig,
-			networkConfigPage: &NetworkConfigPage{
-				page: &tui.Page{ID: "network-config"},
+			welcomePage: &WelcomePage{
+				page: &tui.Page{ID: "welcome"},
 			},
 		}
 	}
@@ -69,6 +69,6 @@ func TestBeaconNodePage(t *testing.T) {
 		page := NewBeaconNodePage(mockDisplay)
 
 		// Verify parent page is set correctly.
-		assert.Equal(t, "network-config", page.page.Parent.ID)
+		assert.Equal(t, "welcome", page.page.Parent.ID)
 	})
 }
