@@ -128,7 +128,6 @@ func newDefaultConfig() *config.Config {
 		LogLevel:          logrus.InfoLevel.String(),
 		Version:           "latest",
 		RunMethod:         config.RunMethod_RUN_METHOD_DOCKER,
-		NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
 		BeaconNodeAddress: "",
 		OutputServer: &config.OutputServer{
 			Address: tui.OutputServerProduction,
@@ -233,10 +232,6 @@ func (s *configService) validate(cfg *config.Config) error {
 
 	if cfg.RunMethod == config.RunMethod_RUN_METHOD_UNSPECIFIED {
 		return fmt.Errorf("invalid runMethod: %s", cfg.RunMethod)
-	}
-
-	if cfg.NetworkName == config.NetworkName_NETWORK_NAME_UNSPECIFIED {
-		return fmt.Errorf("networkName is required")
 	}
 
 	return nil

@@ -11,15 +11,14 @@ import (
 
 // InstallDisplay is the display for the install wizard.
 type InstallDisplay struct {
-	app               *tview.Application
-	pages             *tview.Pages
-	frame             *tview.Frame
-	log               *logrus.Logger
-	sidecarCfg        sidecar.ConfigManager
-	installPages      []tui.PageInterface
-	welcomePage       *WelcomePage
-	networkConfigPage *NetworkConfigPage
-	beaconPage        *BeaconNodePage
+	app          *tview.Application
+	pages        *tview.Pages
+	frame        *tview.Frame
+	log          *logrus.Logger
+	sidecarCfg   sidecar.ConfigManager
+	installPages []tui.PageInterface
+	welcomePage  *WelcomePage
+	beaconPage   *BeaconNodePage
 	//nolint:unused // Disabled for now.
 	outputPage                  *OutputServerPage
 	outputServerCredentialsPage *OutputServerCredentialsPage
@@ -37,13 +36,11 @@ func NewInstallDisplay(log *logrus.Logger, app *tview.Application, sidecarCfg si
 
 	// Create all of our install wizard pages.
 	display.welcomePage = NewWelcomePage(display)
-	display.networkConfigPage = NewNetworkConfigPage(display)
 	display.beaconPage = NewBeaconNodePage(display)
 	display.outputServerCredentialsPage = NewOutputServerCredentialsPage(display)
 	display.finishedPage = NewFinishedPage(display)
 	display.installPages = []tui.PageInterface{
 		display.welcomePage,
-		display.networkConfigPage,
 		display.beaconPage,
 		display.outputServerCredentialsPage,
 		display.finishedPage,
@@ -88,9 +85,8 @@ func (d *InstallDisplay) getCurrentStep() int {
 	// Map pages to step numbers
 	stepMap := map[string]int{
 		"install-welcome":     1,
-		"install-network":     2,
-		"install-beacon":      3,
-		"install-credentials": 4,
+		"install-beacon":      2,
+		"install-credentials": 3,
 	}
 
 	currentPage, _ := d.pages.GetFrontPage()
@@ -132,7 +128,6 @@ func (d *InstallDisplay) OnComplete() error {
 	fmt.Printf("%sContributoor Status%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
 	fmt.Printf("%-20s: %s\n", "Version", cfg.Version)
 	fmt.Printf("%-20s: %s\n", "Run Method", cfg.RunMethod)
-	fmt.Printf("%-20s: %s\n", "Network", cfg.NetworkName)
 	fmt.Printf("%-20s: %s\n", "Beacon Node", cfg.BeaconNodeAddress)
 	fmt.Printf("%-20s: %s\n", "Config Path", d.sidecarCfg.GetConfigPath())
 

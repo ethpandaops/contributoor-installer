@@ -44,8 +44,8 @@ func TestWelcomePage(t *testing.T) {
 			mockDisplay := &InstallDisplay{
 				app: app,
 				log: logrus.New(),
-				networkConfigPage: &NetworkConfigPage{
-					page: &tui.Page{ID: "network-config"},
+				welcomePage: &WelcomePage{
+					page: &tui.Page{ID: "welcome"},
 				},
 			}
 			page := NewWelcomePage(mockDisplay)

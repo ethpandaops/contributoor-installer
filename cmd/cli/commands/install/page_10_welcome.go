@@ -60,7 +60,7 @@ func (p *WelcomePage) initPage() {
 	// Create the button form.
 	form := tview.NewForm()
 	form.AddButton(tui.ButtonNext, func() {
-		p.display.setPage(p.display.networkConfigPage.GetPage())
+		p.display.setPage(p.display.beaconPage.GetPage())
 	})
 	form.SetButtonsAlign(tview.AlignCenter)
 	form.SetBackgroundColor(tui.ColorFormBackground)
