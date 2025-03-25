@@ -24,8 +24,8 @@ func CreateErrorModal(app *tview.Application, msg string, onDone func()) *tview.
 		SetTextColor(tview.Styles.PrimaryTextColor)
 
 	// Border and button colors must be set using the primitive methods.
-	modal.Box.SetBorderColor(tcell.ColorWhite)
-	modal.Box.SetBackgroundColor(tcell.ColorLightSlateGray)
+	modal.SetBorderColor(tcell.ColorWhite)
+	modal.SetBackgroundColor(tcell.ColorLightSlateGray)
 
 	modal.SetButtonStyle(tcell.StyleDefault.
 		Background(tcell.ColorDefault).
@@ -46,8 +46,8 @@ func CreateLoadingModal(app *tview.Application, msg string) *tview.Modal {
 		SetTextColor(tview.Styles.PrimaryTextColor)
 
 	// Border and button colors must be set using the primitive methods.
-	modal.Box.SetBorderColor(tcell.ColorWhite)
-	modal.Box.SetBackgroundColor(tcell.ColorLightSlateGray)
+	modal.SetBorderColor(tcell.ColorWhite)
+	modal.SetBackgroundColor(tcell.ColorLightSlateGray)
 
 	return modal
 }
