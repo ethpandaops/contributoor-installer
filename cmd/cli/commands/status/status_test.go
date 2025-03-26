@@ -31,7 +31,6 @@ func TestShowStatus(t *testing.T) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod:         config.RunMethod_RUN_METHOD_DOCKER,
 					Version:           "latest",
-					NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
 					BeaconNodeAddress: "http://test:4444",
 				}).AnyTimes()
 				cfg.EXPECT().GetConfigPath().Return("/test/config.yaml")
@@ -48,7 +47,6 @@ func TestShowStatus(t *testing.T) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod:         config.RunMethod_RUN_METHOD_BINARY,
 					Version:           "latest",
-					NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
 					BeaconNodeAddress: "http://test:4444",
 				}).AnyTimes()
 				cfg.EXPECT().GetConfigPath().Return("/test/config.yaml")
@@ -65,7 +63,6 @@ func TestShowStatus(t *testing.T) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod:         config.RunMethod_RUN_METHOD_SYSTEMD,
 					Version:           "latest",
-					NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
 					BeaconNodeAddress: "http://test:4444",
 				}).AnyTimes()
 				cfg.EXPECT().GetConfigPath().Return("/test/config.yaml")
@@ -93,7 +90,6 @@ func TestShowStatus(t *testing.T) {
 				cfg.EXPECT().Get().Return(&config.Config{
 					RunMethod:         config.RunMethod_RUN_METHOD_DOCKER,
 					Version:           "latest",
-					NetworkName:       config.NetworkName_NETWORK_NAME_MAINNET,
 					BeaconNodeAddress: "http://test:4444",
 				}).AnyTimes()
 				cfg.EXPECT().GetConfigPath().Return("/test/config.yaml")
