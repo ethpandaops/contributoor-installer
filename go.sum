@@ -1,5 +1,5 @@
-buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.5-20250307204501-0409229c3780.1 h1:j+l4+E1EEo83GVIxuqinfFOTyImSQUH90WfufE86xaI=
-buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.5-20250307204501-0409229c3780.1/go.mod h1:eOqrCVUfhh7SLo00urDe/XhJHljj0dWMZirS0aX7cmc=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250307204501-0409229c3780.1 h1:zgJPqo17m28+Lf5BW4xv3PvU20BnrmTcGYrog22lLIU=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250307204501-0409229c3780.1/go.mod h1:avRlCjnFzl98VPaeCtJ24RrV/wwHFzB8sWXhj26+n/U=
 cel.dev/expr v0.22.0 h1:+hFFhLPmquBImfs1BiN2PZmkr5ASse2ZOuaxIs9e4R8=
 cel.dev/expr v0.22.0/go.mod h1:MrpN08Q+lEBs+bGYdLxxHkZoUSsCp0nSKTs0nTymJgw=
 dario.cat/mergo v1.0.0 h1:AGCNq9Evsj31mOgNPcLyXc+4PNABt905YmuqPYYpBWk=
@@ -42,8 +42,8 @@ github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/envoyproxy/protoc-gen-validate v1.2.1 h1:DEo3O99U8j4hBFwbJfrz9VtgcDfUKS7KJ7spH3d86P8=
 github.com/envoyproxy/protoc-gen-validate v1.2.1/go.mod h1:d/C80l/jxXLdfEIhX1W2TmLfsJ31lvEjwamM4DxlWXU=
-github.com/ethpandaops/contributoor v0.0.60 h1:zOdSCC1E6rDSWtBMPyrD9by03zjL6Vjee9kBNDwyaT4=
-github.com/ethpandaops/contributoor v0.0.60/go.mod h1:7SJopRAD39l+6q4YkFJGPQ/z1YZfA84NpMOy6HeOQLk=
+github.com/ethpandaops/contributoor v0.0.61 h1:uZy0+DOiYzthqCGp6dazix/ObZjpr7zyAI8pAEWlTU4=
+github.com/ethpandaops/contributoor v0.0.61/go.mod h1:yXLIt8nmK0/u3LfHCAB0fINhq59MCCj/r6ihAdB9dvI=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/gdamore/encoding v1.0.1 h1:YzKZckdBL6jVt2Gc+5p82qhrGiqMdG/eNs6Wy0u3Uhw=
