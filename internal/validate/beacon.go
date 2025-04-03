@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 )
@@ -49,7 +50,12 @@ func ValidateBeaconNodeAddress(addresses string) error {
 
 		defer resp.Body.Close()
 
-		if resp.StatusCode != http.StatusOK {
+		// Acceptable status codes are 200 and 206.
+		// 200 is the status code for a healthy beacon node.
+		// 206 is the status code for a beacon node that is syncing.
+		acceptableStatusCodes := []int{http.StatusOK, http.StatusPartialContent}
+
+		if !slices.Contains(acceptableStatusCodes, resp.StatusCode) {
 			lastErr = fmt.Errorf("beacon node %s returned status %d", address, resp.StatusCode)
 
 			continue

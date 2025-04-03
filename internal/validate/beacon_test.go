@@ -33,7 +33,7 @@ func TestValidateBeaconNodeAddress(t *testing.T) {
 					w.WriteHeader(http.StatusOK)
 				})),
 				httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusOK)
+					w.WriteHeader(http.StatusPartialContent)
 				})),
 			},
 			wantErr: false,
