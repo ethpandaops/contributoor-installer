@@ -4,7 +4,7 @@ go 1.24.1
 
 require (
 	github.com/docker/go-connections v0.5.0
-	github.com/ethpandaops/contributoor v0.0.62
+	github.com/ethpandaops/contributoor v0.0.63
 	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rivo/tview v0.0.0-20241227133733-17b7edb88c57
@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.36.0
 	github.com/urfave/cli/v2 v2.27.6
-	go.uber.org/mock v0.5.0
+	go.uber.org/mock v0.5.1
 	golang.org/x/text v0.24.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v3 v3.0.1
