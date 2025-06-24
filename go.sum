@@ -44,8 +44,8 @@ github.com/ebitengine/purego v0.8.2 h1:jPPGWs2sZ1UgOSgD2bClL0MJIqu58nOmIcBuXr62z
 github.com/ebitengine/purego v0.8.2/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
 github.com/envoyproxy/protoc-gen-validate v1.2.1 h1:DEo3O99U8j4hBFwbJfrz9VtgcDfUKS7KJ7spH3d86P8=
 github.com/envoyproxy/protoc-gen-validate v1.2.1/go.mod h1:d/C80l/jxXLdfEIhX1W2TmLfsJ31lvEjwamM4DxlWXU=
-github.com/ethpandaops/contributoor v0.0.67 h1:TYoqe653tZcXDVZT49SZ7xcJSaIkqbwtFKff9MYXO0k=
-github.com/ethpandaops/contributoor v0.0.67/go.mod h1:Axju+r+tB26KmnoODwhuxQDXiJX0qK5/1ezPXsbDqUQ=
+github.com/ethpandaops/contributoor v0.0.68 h1:6QBgUjA/0Z9y4kzTTy1j+HyhDJnPL+VYxZtOwu3NApk=
+github.com/ethpandaops/contributoor v0.0.68/go.mod h1:BLB4T7Eorozb2P+3H8wknsGvaD6UM1AvQq9dsw5XyUQ=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/gdamore/encoding v1.0.1 h1:YzKZckdBL6jVt2Gc+5p82qhrGiqMdG/eNs6Wy0u3Uhw=
