@@ -20,11 +20,12 @@ var runModes = []config.RunMethod{
 
 // ContributoorSettingsPage is a page that allows the user to configure core contributoor settings.
 type ContributoorSettingsPage struct {
-	display     *ConfigDisplay
-	page        *tui.Page
-	content     tview.Primitive
-	form        *tview.Form
-	description *tview.TextView
+	display                 *ConfigDisplay
+	page                    *tui.Page
+	content                 tview.Primitive
+	form                    *tview.Form
+	description             *tview.TextView
+	attestationOptInEnabled bool
 }
 
 // NewContributoorSettingsPage creates a new ContributoorSettingsPage.
@@ -102,6 +103,10 @@ func (p *ContributoorSettingsPage) initPage() {
 		}
 	}
 
+	// Get current attestation opt-in status
+	cfg := p.display.sidecarCfg.Get()
+	p.attestationOptInEnabled = cfg.AttestationSubnetCheck != nil && cfg.AttestationSubnetCheck.Enabled
+
 	// Create display labels that show launchd on macOS
 	runModeLabels := make([]string, len(runModes))
 
@@ -125,6 +130,16 @@ func (p *ContributoorSettingsPage) initPage() {
 			p.description.SetText(getServiceManagerDescription())
 		} else {
 			p.description.SetText("Run directly as a binary on your system")
+		}
+	})
+
+	// Add attestation opt-in checkbox
+	form.AddCheckbox("Enable attestation data contribution", p.attestationOptInEnabled, func(checked bool) {
+		p.attestationOptInEnabled = checked
+		if checked {
+			p.description.SetText("Contributing attestation data helps improve network analysis but will use a little more bandwidth.")
+		} else {
+			p.description.SetText("Attestation data contribution is disabled. Enable to help improve network analysis.")
 		}
 	})
 
@@ -228,6 +243,18 @@ func validateAndUpdateContributoor(p *ContributoorSettingsPage) {
 	if err := p.display.sidecarCfg.Update(func(cfg *config.Config) {
 		cfg.LogLevel = logLevelText
 		cfg.RunMethod = runModes[runModeIndex]
+
+		// Update attestation preference
+		if p.attestationOptInEnabled {
+			// Only create the AttestationSubnetCheck if user opts in
+			if cfg.AttestationSubnetCheck == nil {
+				cfg.AttestationSubnetCheck = &config.AttestationSubnetCheck{}
+			}
+			cfg.AttestationSubnetCheck.Enabled = true
+		} else {
+			// Remove the field entirely for opt-out
+			cfg.AttestationSubnetCheck = nil
+		}
 	}); err != nil {
 		p.openErrorModal(err)
 
