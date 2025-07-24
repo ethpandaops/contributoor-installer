@@ -59,12 +59,49 @@ func UpgradeWarning(currentVersion string, latestVersion string) {
 		return
 	}
 
-	fmt.Printf(
-		"%sYou are running an old version of contributoor; we suggest you to update it to the latest version, '%s%s%s'. You can manually upgrade by running 'contributoor update'.%s\n\n",
-		TerminalColorYellow,
+	// Fixed box width
+	boxWidth := 78
+
+	// Create the warning message parts
+	line1 := "You are running an old version of contributoor;"
+	line3 := "You can manually upgrade by running 'contributoor update'."
+
+	// Print the box
+	fmt.Printf("\n%s╔%s╗\n", TerminalColorYellow, strings.Repeat("═", boxWidth))
+	fmt.Printf("║%s║\n", strings.Repeat(" ", boxWidth))
+
+	// Center and print each line
+	fmt.Printf("║%s║\n", centerText(line1, boxWidth))
+
+	// Print the version line with color
+	versionPrefix := "we suggest you to update it to the latest version, '"
+	versionSuffix := "'."
+	totalLen := len(versionPrefix) + len(latestVersion) + len(versionSuffix)
+	leftPad := (boxWidth - totalLen) / 2
+	rightPad := boxWidth - totalLen - leftPad
+
+	fmt.Printf("║%s%s%s%s%s%s%s║\n",
+		strings.Repeat(" ", leftPad),
+		versionPrefix,
 		TerminalColorLightBlue,
 		latestVersion,
 		TerminalColorYellow,
-		TerminalColorReset,
-	)
+		versionSuffix,
+		strings.Repeat(" ", rightPad))
+
+	fmt.Printf("║%s║\n", centerText(line3, boxWidth))
+
+	fmt.Printf("║%s║\n", strings.Repeat(" ", boxWidth))
+	fmt.Printf("╚%s╝%s\n\n", strings.Repeat("═", boxWidth), TerminalColorReset)
+}
+
+// centerText centers text within a given width.
+func centerText(text string, width int) string {
+	if len(text) >= width {
+		return text[:width]
+	}
+
+	padding := (width - len(text)) / 2
+
+	return fmt.Sprintf("%s%s%s", strings.Repeat(" ", padding), text, strings.Repeat(" ", width-len(text)-padding))
 }
