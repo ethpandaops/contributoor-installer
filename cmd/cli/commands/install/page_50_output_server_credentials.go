@@ -186,7 +186,7 @@ func validateAndSaveCredentials(p *OutputServerCredentialsPage) {
 
 	// Set initial focus on the Next button.
 	p.display.app.SetFocus(p.form.GetButton(0))
-	p.display.setPage(p.display.finishedPage.GetPage())
+	p.display.setPage(p.display.attestationOptInPage.GetPage())
 }
 
 func (p *OutputServerCredentialsPage) openErrorModal(err error) {

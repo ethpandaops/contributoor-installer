@@ -22,7 +22,7 @@ func NewFinishedPage(display *InstallDisplay) *FinishedPage {
 
 	finishedPage.initPage()
 	finishedPage.page = tui.NewPage(
-		display.outputServerCredentialsPage.GetPage(),
+		display.attestationOptInPage.GetPage(),
 		"install-finished",
 		"Installation Complete",
 		"Contributoor has been configured successfully",

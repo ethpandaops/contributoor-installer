@@ -104,13 +104,17 @@ func showStatus(
 	fmt.Printf("%sContributoor Status%s\n", tui.TerminalColorLightBlue, tui.TerminalColorReset)
 	fmt.Printf("%-20s: %s\n", "Version", current)
 	fmt.Printf("%-20s: %s\n", "Run Method", cfg.RunMethod)
-	fmt.Printf("%-20s: %s\n", "Network", cfg.NetworkName)
 	fmt.Printf("%-20s: %s\n", "Beacon Node", cfg.BeaconNodeAddress)
 	fmt.Printf("%-20s: %s\n", "Config Path", sidecarCfg.GetConfigPath())
 
 	if cfg.OutputServer != nil {
 		fmt.Printf("%-20s: %s\n", "Output Server", cfg.OutputServer.Address)
 	}
+
+	fmt.Printf(
+		"%-20s: %v\n", "Opt-in Attestations",
+		cfg.AttestationSubnetCheck != nil && cfg.AttestationSubnetCheck.Enabled,
+	)
 
 	// Print running status with color.
 	statusColor := tui.TerminalColorRed

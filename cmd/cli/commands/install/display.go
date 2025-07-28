@@ -22,6 +22,7 @@ type InstallDisplay struct {
 	//nolint:unused // Disabled for now.
 	outputPage                  *OutputServerPage
 	outputServerCredentialsPage *OutputServerCredentialsPage
+	attestationOptInPage        *AttestationOptInPage
 	finishedPage                *FinishedPage
 }
 
@@ -38,11 +39,13 @@ func NewInstallDisplay(log *logrus.Logger, app *tview.Application, sidecarCfg si
 	display.welcomePage = NewWelcomePage(display)
 	display.beaconPage = NewBeaconNodePage(display)
 	display.outputServerCredentialsPage = NewOutputServerCredentialsPage(display)
+	display.attestationOptInPage = NewAttestationOptInPage(display)
 	display.finishedPage = NewFinishedPage(display)
 	display.installPages = []tui.PageInterface{
 		display.welcomePage,
 		display.beaconPage,
 		display.outputServerCredentialsPage,
+		display.attestationOptInPage,
 		display.finishedPage,
 	}
 
@@ -87,6 +90,7 @@ func (d *InstallDisplay) getCurrentStep() int {
 		"install-welcome":     1,
 		"install-beacon":      2,
 		"install-credentials": 3,
+		"install-attestation": 4,
 	}
 
 	currentPage, _ := d.pages.GetFrontPage()
