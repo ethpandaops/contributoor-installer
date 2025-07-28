@@ -33,6 +33,7 @@ func TestFinishedPage(t *testing.T) {
 		}
 
 		display.outputServerCredentialsPage = NewOutputServerCredentialsPage(display)
+		display.attestationOptInPage = NewAttestationOptInPage(display)
 
 		return display
 	}
@@ -73,6 +74,6 @@ func TestFinishedPage(t *testing.T) {
 		page := NewFinishedPage(mockDisplay)
 
 		// Verify parent page is set correctly.
-		assert.Equal(t, "install-credentials", page.page.Parent.ID)
+		assert.Equal(t, "install-attestation", page.page.Parent.ID)
 	})
 }
