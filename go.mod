@@ -3,7 +3,7 @@ module github.com/ethpandaops/contributoor-installer
 go 1.24.1
 
 require (
-	github.com/docker/go-connections v0.5.0
+	github.com/docker/go-connections v0.6.0
 	github.com/ethpandaops/contributoor v0.0.69
 	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/mitchellh/go-homedir v1.1.0
@@ -13,8 +13,8 @@ require (
 	github.com/testcontainers/testcontainers-go v0.38.0
 	github.com/urfave/cli/v2 v2.27.7
 	go.uber.org/mock v0.5.2
-	golang.org/x/text v0.27.0
-	google.golang.org/protobuf v1.36.6
+	golang.org/x/text v0.28.0
+	google.golang.org/protobuf v1.36.7
 	gopkg.in/yaml.v3 v3.0.1
 )
 
