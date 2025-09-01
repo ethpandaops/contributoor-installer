@@ -146,7 +146,9 @@ func TestDockerService_Integration(t *testing.T) {
 
 	verifyContainerNetwork := func(t *testing.T, ds sidecar.DockerSidecar, network string) {
 		t.Helper()
+
 		cmd := exec.Command("docker", "container", "inspect", "--format", "{{range $net,$v := .NetworkSettings.Networks}}{{printf \"%s\" $net}}{{end}}", "contributoor")
+
 		output, err := cmd.Output()
 		require.NoError(t, err)
 		require.Contains(t, string(output), network, "Container is connected to incorrect network")
@@ -218,8 +220,10 @@ func TestDockerService_Integration(t *testing.T) {
 	t.Run("lifecycle_with_custom_network", func(t *testing.T) {
 		// Create a custom network first.
 		customNetwork := "test_network"
+
 		cmd := exec.Command("docker", "network", "create", customNetwork)
 		require.NoError(t, cmd.Run())
+
 		defer exec.Command("docker", "network", "rm", customNetwork).Run() //nolint:errcheck // test.
 
 		cfgWithNetwork := &config.Config{
@@ -252,7 +256,9 @@ func TestDockerService_Integration(t *testing.T) {
 
 func TestGetComposeEnv(t *testing.T) {
 	logger := logrus.New()
+
 	mockCtrl := gomock.NewController(t)
+
 	defer mockCtrl.Finish()
 
 	tests := []struct {
@@ -326,6 +332,7 @@ func TestGetComposeEnv(t *testing.T) {
 
 			// Convert env slice to map for easier testing
 			envMap := make(map[string]string)
+
 			for _, e := range env {
 				parts := strings.SplitN(e, "=", 2)
 				if len(parts) == 2 {

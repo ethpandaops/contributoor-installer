@@ -243,10 +243,13 @@ func TestUpdateContributoor(t *testing.T) {
 			set := flag.NewFlagSet("test", 0)
 			set.String("version", "", "")
 			set.Bool("non-interactive", tt.nonInteractive, "")
+
 			if tt.version != "" {
 				err := set.Set("version", tt.version)
+
 				require.NoError(t, err)
 			}
+
 			context := cli.NewContext(app, set, nil)
 
 			err := updateContributoor(context, logrus.New(), mockConfig, mockDocker, mockSystemd, mockBinary, mockGithub)
