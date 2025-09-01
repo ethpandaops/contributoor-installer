@@ -95,6 +95,7 @@ func TestUpdateInstaller(t *testing.T) {
 			if tt.cfg.ContributoorDirectory != "/nonexistent/directory" {
 				tempDir, err := os.MkdirTemp("", "installer-test-*")
 				require.NoError(t, err)
+
 				defer os.RemoveAll(tempDir)
 
 				// Create bin directory.
@@ -128,12 +129,14 @@ func TestUpdateInstaller(t *testing.T) {
 					origClient: oldClient.Transport,
 				},
 			}
+
 			defer func() { http.DefaultClient = oldClient }()
 
 			err := updateInstaller(tt.cfg, tt.installerCfg)
 
 			if tt.wantErr {
 				require.Error(t, err)
+
 				if tt.errContains != "" {
 					assert.Contains(t, err.Error(), tt.errContains)
 				}

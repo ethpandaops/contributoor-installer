@@ -53,6 +53,7 @@ func TestGitHubService_GetLatestVersion(t *testing.T) {
 			// githubAPIHost and validateGitHubURL function for this test.
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
+
 				if _, err := w.Write([]byte(tt.releases)); err != nil {
 					t.Errorf("failed to write response: %v", err)
 				}
@@ -65,11 +66,13 @@ func TestGitHubService_GetLatestVersion(t *testing.T) {
 			)
 
 			githubAPIHost = strings.TrimPrefix(server.URL, "http://")
+
 			defer func() { githubAPIHost = host }()
 
 			validateGitHubURL = func(owner, repo string) (*url.URL, error) {
 				return url.Parse(fmt.Sprintf("%s/repos/%s/%s/releases", server.URL, owner, repo))
 			}
+
 			defer func() { validateGitHubURL = validate }()
 
 			svc, err := NewGitHubService(logrus.New(), installer.NewConfig())
@@ -129,6 +132,7 @@ func TestGitHubService_VersionExists(t *testing.T) {
 			// githubAPIHost and validateGitHubURL function for this test.
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
+
 				if _, err := w.Write([]byte(tt.releases)); err != nil {
 					t.Errorf("failed to write response: %v", err)
 				}
@@ -141,11 +145,13 @@ func TestGitHubService_VersionExists(t *testing.T) {
 			)
 
 			githubAPIHost = strings.TrimPrefix(server.URL, "http://")
+
 			defer func() { githubAPIHost = host }()
 
 			validateGitHubURL = func(owner, repo string) (*url.URL, error) {
 				return url.Parse(fmt.Sprintf("%s/repos/%s/%s/releases", server.URL, owner, repo))
 			}
+
 			defer func() { validateGitHubURL = validate }()
 
 			svc, err := NewGitHubService(logrus.New(), installer.NewConfig())

@@ -46,16 +46,20 @@ func TestUpgradeWarning(t *testing.T) {
 
 			// Restore stdout.
 			w.Close()
+
 			os.Stdout = old
 
 			var buf bytes.Buffer
+
 			_, _ = io.Copy(&buf, r)
+
 			output := buf.String()
 
 			if tt.wantOutput {
 				if !strings.Contains(output, "You are running an old version") {
 					t.Errorf("expected warning message, got none")
 				}
+
 				if !strings.Contains(output, tt.latestVersion) {
 					t.Errorf("expected version %s in output, not found", tt.latestVersion)
 				}
