@@ -7,13 +7,13 @@ require (
 	github.com/ethpandaops/contributoor v0.0.69
 	github.com/gdamore/tcell/v2 v2.9.0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/rivo/tview v0.0.0-20241227133733-17b7edb88c57
+	github.com/rivo/tview v0.42.0
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.38.0
 	github.com/urfave/cli/v2 v2.27.7
 	go.uber.org/mock v0.6.0
-	golang.org/x/text v0.28.0
+	golang.org/x/text v0.29.0
 	google.golang.org/protobuf v1.36.8
 	gopkg.in/yaml.v3 v3.0.1
 )
