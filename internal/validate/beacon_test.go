@@ -21,6 +21,7 @@ func TestValidateBeaconNodeAddress(t *testing.T) {
 					if r.URL.Path != "/eth/v1/node/health" {
 						t.Errorf("expected path /eth/v1/node/health, got %s", r.URL.Path)
 					}
+
 					w.WriteHeader(http.StatusOK)
 				})),
 			},
