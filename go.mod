@@ -1,6 +1,6 @@
 module github.com/ethpandaops/contributoor-installer
 
-go 1.24.1
+go 1.25.1
 
 require (
 	github.com/docker/go-connections v0.6.0
