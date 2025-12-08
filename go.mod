@@ -5,7 +5,7 @@ go 1.25.1
 require (
 	github.com/docker/go-connections v0.6.0
 	github.com/ethpandaops/contributoor v0.0.71
-	github.com/gdamore/tcell/v2 v2.13.1
+	github.com/gdamore/tcell/v2 v2.13.2
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rivo/tview v0.42.0
 	github.com/sirupsen/logrus v1.9.3
