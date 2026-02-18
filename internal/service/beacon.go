@@ -115,7 +115,7 @@ func (s *beaconService) GetHealth(ctx context.Context) (*HealthStatus, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	resp, err := s.client.Do(req)
+	resp, err := s.client.Do(req) //nolint:gosec // Address is from user config, not untrusted input.
 	if err != nil {
 		return nil, fmt.Errorf("failed to get health: %w", err)
 	}
@@ -208,7 +208,7 @@ func (s *beaconService) doGet(ctx context.Context, path string, result any) erro
 
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := s.client.Do(req)
+	resp, err := s.client.Do(req) //nolint:gosec // Address is from user config, not untrusted input.
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}

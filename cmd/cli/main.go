@@ -40,7 +40,7 @@ func main() {
 	// Set up log rotation for CLI logs.
 	// TODO(@matty): Move this to install.sh?
 	logDir := filepath.Join(os.Getenv("HOME"), ".contributoor", "logs")
-	if err := os.MkdirAll(logDir, 0755); err != nil {
+	if err := os.MkdirAll(logDir, 0755); err != nil { //nolint:gosec // Path is constructed from HOME env var, not untrusted input.
 		fmt.Printf("Failed to create log directory: %v\n", err)
 		os.Exit(1)
 	}
