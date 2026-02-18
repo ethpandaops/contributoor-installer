@@ -64,7 +64,7 @@ func (p *OutputServerConfigPage) initPage() {
 	p.description.SetBorderColor(tui.ColorBorder)
 
 	// Define our field descriptions.
-	descriptions := map[string]string{
+	descriptions := map[string]string{ //nolint:gosec // Not credentials, just UI descriptions.
 		"Output Server":  "Select the output server to send your data to.",
 		"Username":       "Your output server username for authentication.",
 		"Password":       "Your output server password for authentication.",

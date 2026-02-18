@@ -250,6 +250,7 @@ func validateAndUpdateContributoor(p *ContributoorSettingsPage) {
 			if cfg.AttestationSubnetCheck == nil {
 				cfg.AttestationSubnetCheck = &config.AttestationSubnetCheck{}
 			}
+
 			cfg.AttestationSubnetCheck.Enabled = true
 		} else {
 			// Remove the field entirely for opt-out
