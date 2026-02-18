@@ -5,15 +5,15 @@ go 1.25.1
 require (
 	github.com/docker/go-connections v0.6.0
 	github.com/ethpandaops/contributoor v0.0.71
-	github.com/gdamore/tcell/v2 v2.13.4
+	github.com/gdamore/tcell/v2 v2.13.8
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rivo/tview v0.42.0
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/urfave/cli/v2 v2.27.7
 	go.uber.org/mock v0.6.0
-	golang.org/x/text v0.32.0
+	golang.org/x/text v0.34.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
 )
