@@ -79,7 +79,7 @@ func NewConfigService(logger *logrus.Logger, configPath string) (ConfigManager, 
 	}
 
 	// First unmarshal YAML into a map
-	var yamlMap map[string]interface{}
+	var yamlMap map[string]any
 	if yerr := yaml.Unmarshal(data, &yamlMap); yerr != nil {
 		return nil, wrapInvalidConfigError(yerr)
 	}
@@ -203,7 +203,7 @@ func writeConfig(path string, cfg *config.Config) error {
 	}
 
 	// Now marshal to map for YAML.
-	var jsonMap map[string]interface{}
+	var jsonMap map[string]any
 	if jerr := json.Unmarshal(jsonData, &jsonMap); jerr != nil {
 		return fmt.Errorf("error unmarshalling json: %w", jerr)
 	}

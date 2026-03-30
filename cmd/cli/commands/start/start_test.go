@@ -179,7 +179,7 @@ func TestRegisterCommands(t *testing.T) {
 
 			// Create the cmd context.
 			globalCtx := cli.NewContext(app, globalSet, nil)
-			app.Metadata = map[string]interface{}{
+			app.Metadata = map[string]any{
 				"flagContext": globalCtx,
 			}
 

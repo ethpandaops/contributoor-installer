@@ -2,6 +2,7 @@ package config
 
 import (
 	"os/exec"
+	"slices"
 	"sort"
 	"strings"
 
@@ -84,7 +85,7 @@ func (p *NetworkConfigPage) initPage() {
 
 		output, err := cmd.Output()
 		if err == nil {
-			for _, network := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+			for network := range strings.SplitSeq(strings.TrimSpace(string(output)), "\n") {
 				if network != "" && !strings.Contains(network, "contributoor") && network != "none" {
 					if contains(commonNetworks, network) {
 						existingCommonNetworks = append(existingCommonNetworks, network)
@@ -296,11 +297,5 @@ func (p *NetworkConfigPage) openErrorModal(err error) {
 
 // contains checks if a string is present in a slice.
 func contains(slice []string, str string) bool {
-	for _, v := range slice {
-		if v == str {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(slice, str)
 }

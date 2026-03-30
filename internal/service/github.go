@@ -138,7 +138,7 @@ func (s *githubService) GetLatestVersion() (string, error) {
 			}
 
 			// Now we compare the version parts to find the highest version.
-			for i := 0; i < 3; i++ {
+			for i := range 3 {
 				if versionParts[i] > latestParts[i] {
 					latestVersion = release.TagName
 					latestParts = versionParts
