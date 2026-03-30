@@ -96,7 +96,7 @@ func (s *binarySidecar) Start() error {
 	}
 
 	pidFile := filepath.Join(cfg.ContributoorDirectory, "contributoor.pid")
-	if err := os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0600); err != nil {
+	if err := os.WriteFile(pidFile, fmt.Appendf(nil, "%d", cmd.Process.Pid), 0600); err != nil {
 		return fmt.Errorf("failed to write pid file: %w", err)
 	}
 
