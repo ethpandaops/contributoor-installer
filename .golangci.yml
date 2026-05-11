@@ -47,6 +47,7 @@ linters:
     goconst:
       min-len: 2
       min-occurrences: 3
+      ignore-tests: true
     gocritic:
       enabled-tags:
         - diagnostic
@@ -73,6 +74,7 @@ linters:
       - std-error-handling
     rules:
       - linters:
+          - goconst
           - gocritic
           - gosec
           - wsl
