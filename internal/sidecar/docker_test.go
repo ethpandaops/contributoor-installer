@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/ethpandaops/contributoor-installer/internal/installer"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar"
 	"github.com/ethpandaops/contributoor-installer/internal/sidecar/mock"
@@ -102,7 +101,7 @@ func TestDockerService_Integration(t *testing.T) {
 			Privileged:   true,
 			WaitingFor: wait.ForAll(
 				wait.ForLog("Daemon has completed initialization").WithStartupTimeout(30*time.Second),
-				wait.ForListeningPort(nat.Port(fmt.Sprintf("%d/tcp", port))).WithStartupTimeout(30*time.Second),
+				wait.ForListeningPort(fmt.Sprintf("%d/tcp", port)).WithStartupTimeout(30*time.Second),
 			),
 			Env: map[string]string{
 				"DOCKER_TLS_CERTDIR": "",
@@ -124,7 +123,7 @@ func TestDockerService_Integration(t *testing.T) {
 	}()
 
 	// Get docker daemon address.
-	containerPort, err := container.MappedPort(ctx, nat.Port(fmt.Sprintf("%d/tcp", port)))
+	containerPort, err := container.MappedPort(ctx, fmt.Sprintf("%d/tcp", port))
 	require.NoError(t, err)
 
 	// Create docker service with mock config.
