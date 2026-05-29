@@ -2,6 +2,10 @@
 
 This repository contains the installer for the [contributoor](https://github.com/ethpandaops/contributoor) service, which collects data from Ethereum consensus clients.
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/ethpandaops/contributoor-installer.svg)](https://pkg.go.dev/github.com/ethpandaops/contributoor-installer)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ethpandaops/contributoor-installer)](https://goreportcard.com/report/github.com/ethpandaops/contributoor-installer)
+[![License](https://img.shields.io/github/license/ethpandaops/contributoor-installer)](LICENSE)
+
 ## Getting Started
 
   ### 🔒 Installation
@@ -9,10 +13,10 @@ This repository contains the installer for the [contributoor](https://github.com
   ```bash
   # Download the script.
   curl -O https://raw.githubusercontent.com/ethpandaops/contributoor-installer/refs/heads/master/install.sh
-  
+
   # Inspect the script contents.
   less install.sh
-  
+
   # Make it executable and run if you're satisfied with the contents.
   chmod +x install.sh && ./install.sh
   ```
@@ -39,16 +43,16 @@ This repository contains the installer for the [contributoor](https://github.com
     - add `CONTRIBUTOOR_PASSWORD` variable and set it to your password
   - Run `./ethd update`
   - Run `./ethd up`
-  
+
   You can read more about configuring eth-docker [here](https://ethdocker.com/Usage/Advanced#specialty-yml-files).
 
   ### 🚀 With Rocketpool Smart Node
-  
+
   - Install `contributoor` via the [Install Script](#-installation)
   - During the Contributoor setup:
     - Set `Beacon Node Address` to `http://eth2:5052`
     - Set `Optional Docker Network` to `rocketpool_net`
-   
+
     Note: These can also be set later `contributoor config`
   - Run `contributoor start`
 
