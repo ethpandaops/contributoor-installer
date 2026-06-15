@@ -3,7 +3,6 @@ module github.com/ethpandaops/contributoor-installer
 go 1.26.1
 
 require (
-	github.com/docker/go-connections v0.7.0
 	github.com/ethpandaops/contributoor v0.0.72
 	github.com/gdamore/tcell/v2 v2.13.10
 	github.com/mitchellh/go-homedir v1.1.0
@@ -13,7 +12,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.42.0
 	github.com/urfave/cli/v2 v2.27.7
 	go.uber.org/mock v0.6.0
-	golang.org/x/text v0.37.0
+	golang.org/x/text v0.38.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -36,6 +35,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
+	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
