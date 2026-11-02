@@ -3,7 +3,7 @@ module github.com/ethpandaops/contributoor-installer
 go 1.26.10
 
 require (
-	github.com/ethpandaops/contributoor v0.1.0
+	github.com/ethpandaops/contributoor v0.1.1
 	github.com/gdamore/tcell/v2 v2.13.10
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rivo/tview v0.42.0

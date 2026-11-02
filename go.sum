@@ -45,8 +45,8 @@ github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/ebitengine/purego v0.10.0 h1:QIw4xfpWT6GWTzaW5XEKy3HXoqrJGx1ijYHzTF0/ISU=
 github.com/ebitengine/purego v0.10.0/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
-github.com/ethpandaops/contributoor v0.1.0 h1:8S8lYsvIgNJcSi9HWcAKUPDH526B7A267pumFWrOx6Q=
-github.com/ethpandaops/contributoor v0.1.0/go.mod h1:QSAEok3osvJZNAkhm7GyrANkbuw0e+0oqe0zxStyEsU=
+github.com/ethpandaops/contributoor v0.1.1 h1:MRLA1QaDDNnhh/SCnjtP2bdj9aCo5RQ/gSWlK1V763I=
+github.com/ethpandaops/contributoor v0.1.1/go.mod h1:fpjij5xL87BrHCHMYyuUIoix9ZdEmGEw9+AFstJSsxU=
 github.com/felixge/httpsnoop v1.1.0 h1:3YtUj32ZZkqZtt3sZZsClsymw/QDuVfpNhoA31zeORc=
 github.com/felixge/httpsnoop v1.1.0/go.mod h1:Zqxgdd+1Rkcz8euOqdr7lqgCRJztwr5hp9vDSi5UZCE=
 github.com/gdamore/encoding v1.0.1 h1:YzKZckdBL6jVt2Gc+5p82qhrGiqMdG/eNs6Wy0u3Uhw=
