@@ -1,118 +1,193 @@
-name: update-contributoor-dependency
+name: update-contributoor
 
+# Checks every 15 minutes for a new stable contributoor release. When one is
+# found, it updates go.mod, runs the repo's tests, shell tests and lint, pushes
+# the commit and a tag of the same version to master, then starts release.yml
+# on that tag. install.sh downloads the installer release matching the latest
+# contributoor release, so the gap between the two should stay short.
 on:
-  repository_dispatch:
-    types: [update-contributoor]
+  schedule:
+    - cron: '7-59/15 * * * *'
+  workflow_dispatch:
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
+
+concurrency:
+  group: update-contributoor
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_REPO: ethpandaops/contributoor
+  UPSTREAM_MODULE: github.com/ethpandaops/contributoor
 
 jobs:
-  update-pr:
+  update:
     runs-on: ubuntu-latest
-    outputs:
-      pr_number: ${{ steps.cpr.outputs.pull-request-number }}
+    permissions:
+      contents: write
+      actions: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          token: ${{ secrets.PANDA_OPS_BOT_PAT }}
-          fetch-depth: 0
           ref: master
+          persist-credentials: false
+
+      # GitHub disables scheduled workflows in public repos after 60 days
+      # without activity. Enabling the workflow resets that timer.
+      - name: Keep schedule enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/update-contributoor.yml/enable"
+
+      - name: Check for a newer contributoor release
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # Version of contributoor that master currently requires.
+          CURRENT=$(awk -v mod="$UPSTREAM_MODULE" '$1 == "require" { $1 = ""; $0 = $0 } $1 == mod { print $2; exit }' go.mod)
+          if [[ -z "$CURRENT" ]]; then
+            echo "::error::${UPSTREAM_MODULE} not found in go.mod"
+            exit 1
+          fi
+
+          # Highest published stable release: not a draft or prerelease, and a
+          # plain vX.Y.Z tag.
+          LATEST=$(gh api "repos/${UPSTREAM_REPO}/releases?per_page=100" \
+            --jq '.[] | select(.draft | not) | select(.prerelease | not) | .tag_name' \
+            | { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; } | sort -V | tail -n 1)
+          if [[ -z "$LATEST" ]]; then
+            echo "::error::No stable release found in ${UPSTREAM_REPO}"
+            exit 1
+          fi
+
+          echo "go.mod: ${CURRENT}, latest stable release: ${LATEST}"
+          {
+            echo "update=false"
+            echo "release=false"
+            echo "version=${LATEST}"
+          } >> "$GITHUB_OUTPUT"
+
+          # If this repo already has the tag, only make sure it has a release:
+          # start release.yml when there is neither a release nor a run for it.
+          TAG_REF=$(gh api "repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/${LATEST}" \
+            --jq ".[] | select(.ref == \"refs/tags/${LATEST}\") | .ref")
+          if [[ -n "$TAG_REF" ]]; then
+            if [[ "$CURRENT" != "$LATEST" ]]; then
+              echo "::warning::Tag ${LATEST} already exists in ${GITHUB_REPOSITORY} but go.mod has ${CURRENT}. Not updating."
+            fi
+            HAS_RELEASE=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+              --jq ".[] | select(.tag_name == \"${LATEST}\") | .tag_name")
+            if [[ -n "$HAS_RELEASE" ]]; then
+              echo "Tag and release ${LATEST} exist, nothing to do."
+              exit 0
+            fi
+            TAG_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/commits/refs/tags/${LATEST}" --jq .sha)
+            RELEASE_RUN=$(gh run list -R "$GITHUB_REPOSITORY" --workflow release.yml --commit "$TAG_SHA" \
+              --limit 1 --json status,conclusion \
+              --jq 'if length == 0 then "" else .[0] | "\(.status)/\(.conclusion)" end')
+            if [[ -n "$RELEASE_RUN" ]]; then
+              echo "::warning::Tag ${LATEST} has no release yet; its release.yml run is '${RELEASE_RUN}'. Re-run that run if it failed."
+              exit 0
+            fi
+            echo "Tag ${LATEST} has no release and no release.yml run, starting one."
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Semver order: compare the X.Y.Z core, and a prerelease or
+          # pseudo-version of the same core sorts below the release.
+          CURRENT_CORE=${CURRENT%%[-+]*}
+          if [[ "$CURRENT" == "$LATEST" ]]; then
+            echo "::warning::go.mod already has ${LATEST} but tag ${LATEST} does not exist. Not tagging automatically."
+            exit 0
+          fi
+          if [[ "$CURRENT_CORE" != "$LATEST" ]] && \
+             [[ "$(printf '%s\n%s\n' "$CURRENT_CORE" "$LATEST" | sort -V | tail -n 1)" != "$LATEST" ]]; then
+            echo "go.mod is ahead of the latest stable release, nothing to do."
+            exit 0
+          fi
+
+          # Wait for the upstream release workflow to finish, so its images
+          # and mirrors are published before the installer is released.
+          RUN=$(gh run list -R "$UPSTREAM_REPO" --workflow release.yml --event push --branch "$LATEST" \
+            --limit 1 --json status,conclusion \
+            --jq 'if length == 0 then "not found" else .[0] | "\(.status)/\(.conclusion)" end')
+          if [[ "$RUN" != "completed/success" ]]; then
+            echo "Release workflow for ${UPSTREAM_REPO}@${LATEST} is '${RUN}', retrying on the next run."
+            exit 0
+          fi
+
+          echo "Updating ${UPSTREAM_MODULE} from ${CURRENT} to ${LATEST}."
+          echo "update=true" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go
+        if: steps.check.outputs.update == 'true'
         uses: ./.github/workflows/go-setup
 
       - name: Update contributoor dependency
+        if: steps.check.outputs.update == 'true'
+        env:
+          VERSION: ${{ steps.check.outputs.version }}
         run: |
-          go get github.com/ethpandaops/contributoor@${{ github.event.client_payload.version }}
+          set -euo pipefail
+          go get "${UPSTREAM_MODULE}@${VERSION}"
           go mod tidy
-
-      - name: Create Pull Request
-        id: cpr
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-        with:
-          token: ${{ secrets.PANDA_OPS_BOT_PAT }}
-          commit-message: "chore: update contributoor to ${{ github.event.client_payload.version }}"
-          title: "chore: update contributoor to ${{ github.event.client_payload.version }}"
-          branch: update-contributoor-${{ github.event.client_payload.version }}
-          delete-branch: true
-          labels: dependencies
-          body: |
-            Updates contributoor to ${{ github.event.client_payload.version }}
-            
-            This PR was automatically created by the contributoor release workflow.
-
-      - name: Enable auto-merge
-        if: steps.cpr.outputs.pull-request-operation == 'created'
-        env:
-          GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
-          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
-        run: |
-          # Enable auto-merge with merge strategy and require all checks to pass
-          gh pr merge --auto --merge --delete-branch "$PR_URL"
-
-  wait-for-merge:
-    needs: update-pr
-    runs-on: ubuntu-latest
-    if: needs.update-pr.outputs.pr_number
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          token: ${{ secrets.PANDA_OPS_BOT_PAT }}
-          fetch-depth: 0
-          ref: master
-      
-      - name: Wait for PR merge
-        env:
-          GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
-          PR_NUMBER: ${{ needs.update-pr.outputs.pr_number }}
-        run: |
-          while true; do
-            STATUS=$(gh pr view $PR_NUMBER --json state,mergeStateStatus -q '[.state, .mergeStateStatus] | join(",")')
-            echo "PR status: $STATUS"
-            
-            if [[ "$STATUS" == "MERGED,"* ]]; then
-              echo "PR was merged successfully"
-              break
-            elif [[ "$STATUS" == "CLOSED,"* ]]; then
-              echo "PR was closed without merging"
-              exit 1
-            fi
-            
-            echo "Waiting for PR to be merged..."
-            sleep 30
-          done
-
-  create-release:
-    needs: [wait-for-merge]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          token: ${{ secrets.PANDA_OPS_BOT_PAT }}
-          fetch-depth: 0
-          ref: master
-
-      - name: Create Tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
-          GH_TOKEN: ${{ secrets.PANDA_OPS_BOT_PAT }}
-        run: |
-          git config --global user.email "ethpandaopsbot@ethereum.org"
-          git config --global user.name "ethpandaopsbot"
-          
-          VERSION="${{ github.event.client_payload.version }}"
-          
-          # Check if tag already exists
-          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
-            echo "Tag v${VERSION} already exists"
+          GOT=$(go list -m -f '{{.Version}}' "$UPSTREAM_MODULE")
+          if [[ "$GOT" != "$VERSION" ]]; then
+            echo "::error::go.mod has ${UPSTREAM_MODULE} ${GOT}, expected ${VERSION}"
             exit 1
           fi
-          
-          # Pull latest changes
-          git pull origin master
-          
-          # Create and push tag - this will trigger release.yml
-          git tag "${VERSION}"
-          git push origin "${VERSION}" 
+          git diff --stat
+
+      - name: Run Go tests
+        if: steps.check.outputs.update == 'true'
+        run: go test -race ./...
+
+      - name: Install bats
+        if: steps.check.outputs.update == 'true'
+        run: |
+          git clone https://github.com/bats-core/bats-core.git "$RUNNER_TEMP/bats-core"
+          sudo "$RUNNER_TEMP/bats-core/install.sh" /usr/local
+
+      - name: Run shell tests
+        if: steps.check.outputs.update == 'true'
+        run: bats ./*.bats
+
+      - name: golangci-lint
+        if: steps.check.outputs.update == 'true'
+        uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
+        with:
+          version: latest
+          args: --timeout=10m
+
+      # The commit and the tag are pushed atomically, so either both land on
+      # master or neither does. The push fails if master moved since checkout.
+      - name: Push commit and tag
+        if: steps.check.outputs.update == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add go.mod go.sum
+          git commit -m "chore: update contributoor to ${VERSION}"
+          git tag "$VERSION"
+          AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          echo "::add-mask::${AUTH}"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${AUTH}" \
+            push --atomic origin HEAD:refs/heads/master "refs/tags/${VERSION}"
+
+      # Pushes made with GITHUB_TOKEN don't trigger workflows, so start the
+      # release explicitly.
+      - name: Start release
+        if: steps.check.outputs.update == 'true' || steps.check.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.check.outputs.version }}
+        run: gh workflow run release.yml -R "$GITHUB_REPOSITORY" --ref "$VERSION"
