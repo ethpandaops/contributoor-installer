@@ -1,11 +1,13 @@
 name: update-contributoor
 
-# Checks for a new stable contributoor release. When one is found, it updates
-# go.mod, runs the repo's tests, shell tests and lint, pushes the commit and a
-# tag of the same version to master, then starts release.yml on that tag.
+# Checks every 15 minutes for a new stable contributoor release. When one is
+# found, it updates go.mod, runs the repo's tests, shell tests and lint, pushes
+# the commit and a tag of the same version to master, then starts release.yml
+# on that tag. install.sh downloads the installer release matching the latest
+# contributoor release, so the gap between the two should stay short.
 on:
   schedule:
-    - cron: '17 * * * *'
+    - cron: '7-59/15 * * * *'
   workflow_dispatch:
 
 permissions: {}
@@ -63,25 +65,49 @@ jobs:
           fi
 
           echo "go.mod: ${CURRENT}, latest stable release: ${LATEST}"
-          echo "update=false" >> "$GITHUB_OUTPUT"
+          {
+            echo "update=false"
+            echo "release=false"
+            echo "version=${LATEST}"
+          } >> "$GITHUB_OUTPUT"
+
+          # If this repo already has the tag, only make sure it has a release:
+          # start release.yml when there is neither a release nor a run for it.
+          TAG_REF=$(gh api "repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/${LATEST}" \
+            --jq ".[] | select(.ref == \"refs/tags/${LATEST}\") | .ref")
+          if [[ -n "$TAG_REF" ]]; then
+            if [[ "$CURRENT" != "$LATEST" ]]; then
+              echo "::warning::Tag ${LATEST} already exists in ${GITHUB_REPOSITORY} but go.mod has ${CURRENT}. Not updating."
+            fi
+            HAS_RELEASE=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+              --jq ".[] | select(.tag_name == \"${LATEST}\") | .tag_name")
+            if [[ -n "$HAS_RELEASE" ]]; then
+              echo "Tag and release ${LATEST} exist, nothing to do."
+              exit 0
+            fi
+            TAG_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/commits/refs/tags/${LATEST}" --jq .sha)
+            RELEASE_RUN=$(gh run list -R "$GITHUB_REPOSITORY" --workflow release.yml --commit "$TAG_SHA" \
+              --limit 1 --json status,conclusion \
+              --jq 'if length == 0 then "" else .[0] | "\(.status)/\(.conclusion)" end')
+            if [[ -n "$RELEASE_RUN" ]]; then
+              echo "::warning::Tag ${LATEST} has no release yet; its release.yml run is '${RELEASE_RUN}'. Re-run that run if it failed."
+              exit 0
+            fi
+            echo "Tag ${LATEST} has no release and no release.yml run, starting one."
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           # Semver order: compare the X.Y.Z core, and a prerelease or
           # pseudo-version of the same core sorts below the release.
           CURRENT_CORE=${CURRENT%%[-+]*}
           if [[ "$CURRENT" == "$LATEST" ]]; then
-            echo "Already up to date."
+            echo "::warning::go.mod already has ${LATEST} but tag ${LATEST} does not exist. Not tagging automatically."
             exit 0
           fi
           if [[ "$CURRENT_CORE" != "$LATEST" ]] && \
              [[ "$(printf '%s\n%s\n' "$CURRENT_CORE" "$LATEST" | sort -V | tail -n 1)" != "$LATEST" ]]; then
             echo "go.mod is ahead of the latest stable release, nothing to do."
-            exit 0
-          fi
-
-          TAG_REF=$(gh api "repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/${LATEST}" \
-            --jq ".[] | select(.ref == \"refs/tags/${LATEST}\") | .ref")
-          if [[ -n "$TAG_REF" ]]; then
-            echo "::warning::Tag ${LATEST} already exists in ${GITHUB_REPOSITORY} but go.mod has ${CURRENT}. Nothing to do."
             exit 0
           fi
 
@@ -97,7 +123,6 @@ jobs:
 
           echo "Updating ${UPSTREAM_MODULE} from ${CURRENT} to ${LATEST}."
           echo "update=true" >> "$GITHUB_OUTPUT"
-          echo "version=${LATEST}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go
         if: steps.check.outputs.update == 'true'
@@ -161,7 +186,7 @@ jobs:
       # Pushes made with GITHUB_TOKEN don't trigger workflows, so start the
       # release explicitly.
       - name: Start release
-        if: steps.check.outputs.update == 'true'
+        if: steps.check.outputs.update == 'true' || steps.check.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.check.outputs.version }}
