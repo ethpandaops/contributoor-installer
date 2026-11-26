@@ -4,12 +4,16 @@ on:
   push:
     tags:
       - 'v*'
+  # update-contributoor.yml starts this on the tag it pushes. A dispatched
+  # run only releases when started on a v* tag.
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   goreleaser:
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
